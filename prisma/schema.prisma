@@ -520,6 +520,7 @@ enum NotificationType {
   JOB_APPLICATION_RECEIVED
   JOB_APPLICATION_UPDATED
   GROUP_INVITATION
+  MENTION
 }
 
 // Candidates (scraped from LinkedIn via extension)

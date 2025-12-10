@@ -20,6 +20,7 @@ interface ProfileHeaderProps {
   isOwnProfile?: boolean
   connectionStatus?: "CONNECTED" | "PENDING" | "NONE"
   onConnect?: () => void
+  userId?: string
 }
 
 const ProfileHeader = ({
@@ -27,7 +28,29 @@ const ProfileHeader = ({
   isOwnProfile = false,
   connectionStatus,
   onConnect,
+  userId,
 }: ProfileHeaderProps) => {
+  const handleConnect = async () => {
+    if (!userId) return
+    
+    try {
+      const response = await fetch("/api/connections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiverId: userId }),
+      })
+      
+      if (response.ok) {
+        window.location.reload()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to send connection request")
+      }
+    } catch (error) {
+      console.error("Error connecting:", error)
+      alert("Failed to send connection request")
+    }
+  }
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       {/* Banner */}
@@ -74,7 +97,7 @@ const ProfileHeader = ({
                 </button>
               ) : (
                 <button
-                  onClick={onConnect}
+                  onClick={handleConnect}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Connect

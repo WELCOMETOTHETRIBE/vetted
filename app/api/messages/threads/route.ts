@@ -80,3 +80,62 @@ export async function POST(req: Request) {
   }
 }
 
+export async function GET(req: Request) {
+  try {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Get all threads for the current user
+    const threads = await prisma.messageThread.findMany({
+      where: {
+        OR: [
+          { user1Id: session.user.id },
+          { user2Id: session.user.id },
+        ],
+      },
+      include: {
+        user1: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            handle: true,
+          },
+        },
+        user2: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            handle: true,
+          },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    })
+
+    return NextResponse.json(threads)
+  } catch (error) {
+    console.error("Get threads error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+

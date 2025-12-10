@@ -111,18 +111,8 @@ export default async function ProfilePage({
           }}
           isOwnProfile={isOwnProfile}
           connectionStatus={isOwnProfile ? undefined : connectionStatus}
-          onConnect={async () => {
-            "use server"
-            if (!session?.user || isOwnProfile) return
-
-            await prisma.connection.create({
-              data: {
-                requesterId: session.user.id,
-                receiverId: user.id,
-                status: "PENDING",
-              },
-            })
-          }}
+          onConnect={undefined}
+          userId={user.id}
         />
 
         {/* Experience Section */}

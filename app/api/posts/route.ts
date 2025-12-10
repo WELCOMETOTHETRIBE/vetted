@@ -8,6 +8,7 @@ const createPostSchema = z.object({
   imageUrl: z.string().url().optional(),
   groupId: z.string().optional(),
   companyId: z.string().optional(),
+  mentions: z.array(z.string()).optional(), // Array of user IDs mentioned
 })
 
 export async function POST(req: Request) {
@@ -39,6 +40,59 @@ export async function POST(req: Request) {
         },
       },
     })
+
+    // Parse mentions from content (@username or @handle) and create notifications
+    if (data.content) {
+      const mentionRegex = /@(\w+)/g
+      const matches = Array.from(data.content.matchAll(mentionRegex))
+      const mentionedHandles = matches.map(m => m[1])
+
+      if (mentionedHandles.length > 0) {
+        // Find users by handle
+        const mentionedUsers = await prisma.user.findMany({
+          where: {
+            handle: { in: mentionedHandles },
+            isActive: true,
+          },
+          select: { id: true },
+        })
+
+        // Create notifications for mentioned users
+        const notifications = mentionedUsers
+          .filter(user => user.id !== session.user.id) // Don't notify yourself
+          .map(user => ({
+            userId: user.id,
+            type: "MENTION" as const,
+            title: "You were mentioned",
+            message: `${session.user.name || "Someone"} mentioned you in a post`,
+            link: `/feed`,
+          }))
+
+        if (notifications.length > 0) {
+          await prisma.notification.createMany({
+            data: notifications,
+          })
+        }
+      }
+    }
+
+    // Also handle explicit mentions array if provided
+    if (data.mentions && Array.isArray(data.mentions) && data.mentions.length > 0) {
+      const mentionedUserIds = data.mentions.filter(id => id !== session.user.id)
+      if (mentionedUserIds.length > 0) {
+        const notifications = mentionedUserIds.map(userId => ({
+          userId,
+          type: "MENTION" as const,
+          title: "You were mentioned",
+          message: `${session.user.name || "Someone"} mentioned you in a post`,
+          link: `/feed`,
+        }))
+
+        await prisma.notification.createMany({
+          data: notifications,
+        })
+      }
+    }
 
     return NextResponse.json(post, { status: 201 })
   } catch (error) {
