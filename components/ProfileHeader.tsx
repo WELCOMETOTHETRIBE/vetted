@@ -87,21 +87,50 @@ const ProfileHeader = ({
             </div>
           </div>
           {!isOwnProfile && (
-            <div className="mt-20">
+            <div className="mt-20 flex items-center space-x-2">
               {connectionStatus === "CONNECTED" ? (
-                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                  Connected
-                </button>
+                <>
+                  <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                    ✓ Connected
+                  </button>
+                  <Link
+                    href={`/messages`}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      // Create or get thread, then navigate
+                      try {
+                        const response = await fetch("/api/messages/threads", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ userId }),
+                        })
+                        if (response.ok) {
+                          window.location.href = "/messages"
+                        } else {
+                          window.location.href = "/messages"
+                        }
+                      } catch (error) {
+                        window.location.href = "/messages"
+                      }
+                    }}
+                  >
+                    Message
+                  </Link>
+                </>
               ) : connectionStatus === "PENDING" ? (
-                <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">
-                  Pending
+                <button 
+                  className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg cursor-default"
+                  title="Connection request pending"
+                >
+                  ⏳ Pending
                 </button>
               ) : (
                 <button
                   onClick={handleConnect}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Connect
+                  + Connect
                 </button>
               )}
             </div>
