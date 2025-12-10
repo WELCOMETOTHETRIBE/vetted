@@ -54,15 +54,20 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   function renderTable(documents) {
-    tableContainer.innerHTML = "";
-    profileDocuments = documents;
-
-    if (!documents || documents.length === 0) {
-      emptyState.style.display = "block";
+    if (!tableContainer) {
+      console.error("tableContainer not available");
       return;
     }
 
-    emptyState.style.display = "none";
+    tableContainer.innerHTML = "";
+    profileDocuments = documents || [];
+
+    if (!documents || documents.length === 0) {
+      if (emptyState) emptyState.style.display = "block";
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = "none";
 
     const table = document.createElement("table");
     const thead = document.createElement("thead");
