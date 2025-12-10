@@ -44,10 +44,15 @@ export async function POST(req: Request) {
 
     try {
       // Run migrations
-      const output = execSync("npx prisma db push --accept-data-loss", {
+      // Use --schema flag to explicitly point to schema file
+      const output = execSync("npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma", {
         encoding: "utf-8",
         cwd: process.cwd(),
-        env: { ...process.env },
+        env: { 
+          ...process.env,
+          // Ensure DATABASE_URL is available
+          DATABASE_URL: process.env.DATABASE_URL,
+        },
       })
 
       return NextResponse.json({
