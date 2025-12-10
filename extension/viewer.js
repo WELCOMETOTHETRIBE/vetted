@@ -632,6 +632,12 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error("Vetted API URL not configured.");
     }
 
+    console.log("Sending to Vetted API:", {
+      url: apiUrl,
+      profileCount: profiles.length,
+      hasApiKey: !!apiKey
+    });
+
     const headers = {
       "Content-Type": "application/json",
     };
@@ -641,24 +647,39 @@ document.addEventListener("DOMContentLoaded", () => {
       headers["Authorization"] = `Bearer ${apiKey}`;
     }
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: headers,
-      credentials: "include", // Include cookies for session-based auth
-      body: JSON.stringify(profiles),
-    });
+    let response;
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: headers,
+        credentials: "include", // Include cookies for session-based auth
+        body: JSON.stringify(profiles),
+      });
+    } catch (fetchError) {
+      console.error("Fetch error:", fetchError);
+      throw new Error(`Network error: ${fetchError.message}. Check your API URL and CORS settings.`);
+    }
 
     if (!response.ok) {
+      console.error("Vetted API response not OK:", {
+        status: response.status,
+        statusText: response.statusText,
+        url: apiUrl
+      });
+      
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       try {
         const errorData = await response.json();
+        console.error("Error response data:", errorData);
         errorMessage = errorData.error || errorMessage;
         if (errorData.details) {
           errorMessage += ` - ${JSON.stringify(errorData.details)}`;
         }
       } catch (e) {
+        console.error("Could not parse JSON error response:", e);
         try {
           const errorText = await response.text();
+          console.error("Error response text:", errorText);
           if (errorText) {
             errorMessage += ` - ${errorText.substring(0, 200)}`;
           }
@@ -673,7 +694,9 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (response.status === 403) {
         errorMessage = "Forbidden: You must be an admin user to upload candidates";
       } else if (response.status === 404) {
-        errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
+        errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload). Make sure you're using your actual Railway domain, not the placeholder.";
+      } else if (response.status === 405) {
+        errorMessage = "Method Not Allowed: The API endpoint may not be deployed yet. Wait a few minutes and try again.";
       } else if (response.status === 0 || response.status === undefined) {
         errorMessage = "Network Error: Check CORS settings or that the API URL is accessible";
       }
@@ -823,8 +846,15 @@ document.addEventListener("DOMContentLoaded", () => {
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
         } catch (vettedError) {
           console.error("Vetted API error:", vettedError);
+          console.error("Error details:", {
+            message: vettedError.message,
+            stack: vettedError.stack,
+            name: vettedError.name,
+            url: vettedSettings.vettedApiUrl
+          });
           // Don't fallback to Google Sheets - just show the Vetted error
-          throw new Error(`Vetted API: ${vettedError.message}`);
+          const errorMessage = vettedError.message || vettedError.toString() || "Unknown error";
+          throw new Error(`Vetted API: ${errorMessage}`);
         }
       } else {
         // No Vetted URL configured
@@ -834,7 +864,13 @@ document.addEventListener("DOMContentLoaded", () => {
       sendToVettedBtn.disabled = false;
       sendToVettedBtn.textContent = "Send to Vetted";
     } catch (error) {
-      alert("Error: " + error.message);
+      console.error("Send to Vetted failed:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      alert("Error: " + (error.message || error.toString() || "Unknown error occurred"));
       sendToVettedBtn.disabled = false;
       sendToVettedBtn.textContent = "Send to Vetted";
     }
