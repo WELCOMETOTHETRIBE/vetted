@@ -298,15 +298,15 @@ async function sendBatchToVetted() {
 
         const result = await response.json();
         
-        // Clear sent profiles from IndexedDB after successful send
+        // Clear sent profiles from chrome.storage.local after successful send
         // This prevents storage from filling up
         try {
           const allProfiles = await VettedStorage.getAllProfiles();
           
-          // Remove sent profiles from IndexedDB (match by LinkedIn URL)
+          // Remove sent profiles (match by LinkedIn URL)
           const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
           
-          // Delete each sent profile from IndexedDB (iterate backwards to maintain indices)
+          // Delete each sent profile (iterate backwards to maintain indices)
           for (let i = allProfiles.length - 1; i >= 0; i--) {
             const profile = allProfiles[i];
             const profileUrl = profile.extraction_metadata?.source_url || 
@@ -322,9 +322,9 @@ async function sendBatchToVetted() {
           // Clear queue from chrome.storage
           await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
           
-          console.log(`Cleared sent profiles from IndexedDB`);
+          console.log(`Cleared sent profiles from chrome.storage.local`);
         } catch (error) {
-          console.error("Error clearing profiles from IndexedDB:", error);
+          console.error("Error clearing profiles from chrome.storage.local:", error);
           // Still clear queue
           try {
             await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
