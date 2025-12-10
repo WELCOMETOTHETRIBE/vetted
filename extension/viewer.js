@@ -937,97 +937,113 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  sendToVettedBtn.onclick = async () => {
-    console.log("Send to Vetted clicked, profileDocuments length:", profileDocuments.length);
-    
-    // Reload data first to ensure we have the latest profiles
-    await new Promise((resolve) => {
-      chrome.storage.local.get(["profileDocuments"], (data) => {
-        const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
-        profileDocuments = documents;
-        console.log("Reloaded profiles from storage:", documents.length);
-        resolve(undefined);
-      });
-    });
-
-    if (profileDocuments.length === 0) {
-      alert("No profiles to send. Please save a profile first using 'Save Profile JSON'.");
-      return;
-    }
-
-    if (typeof ProfileProcessor === 'undefined') {
-      alert("Profile processor not loaded.");
-      return;
-    }
-
-    console.log("Processing", profileDocuments.length, "profiles...");
-    try {
-      const processed = ProfileProcessor.processProfileDocuments(profileDocuments);
-      console.log("Processed profiles:", processed.length);
-      
-      // Merge edited fields and tags
-      processed.forEach((profile, index) => {
-        const doc = profileDocuments[index];
-        if (doc._metadata) {
-          if (doc._metadata.editedFields) {
-            Object.assign(profile, doc._metadata.editedFields);
-          }
-          if (doc._metadata.tags) {
-            profile["Core Roles"] = doc._metadata.tags.coreRoles.join("; ");
-            profile["Domains"] = doc._metadata.tags.domains.join("; ");
-          }
-        }
-      });
-
-      if (processed.length === 0) {
-        alert("No valid profiles to send.");
-        return;
-      }
-
-      sendToVettedBtn.disabled = true;
-      sendToVettedBtn.textContent = "Sending...";
-
+  if (!sendToVettedBtn) {
+    console.error("sendToVettedBtn element not found!");
+  } else {
+    sendToVettedBtn.onclick = async () => {
       try {
-        // Try to send to Vetted API first, fallback to Google Sheets if not configured
-        const vettedSettings = await new Promise((resolve) => {
-          chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], resolve);
+        console.log("Send to Vetted clicked, profileDocuments length:", profileDocuments.length);
+        
+        // Reload data first to ensure we have the latest profiles
+        await new Promise((resolve, reject) => {
+          chrome.storage.local.get(["profileDocuments"], (data) => {
+            if (chrome.runtime.lastError) {
+              console.error("Error loading profiles:", chrome.runtime.lastError);
+              reject(chrome.runtime.lastError);
+              return;
+            }
+            const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+            profileDocuments = documents;
+            console.log("Reloaded profiles from storage:", documents.length);
+            resolve(undefined);
+          });
+        });
+
+        if (profileDocuments.length === 0) {
+          alert("No profiles to send. Please save a profile first using 'Save Profile JSON'.");
+          return;
+        }
+
+        if (typeof ProfileProcessor === 'undefined') {
+          alert("Profile processor not loaded. Please refresh the extension popup.");
+          return;
+        }
+
+        console.log("Processing", profileDocuments.length, "profiles...");
+        const processed = ProfileProcessor.processProfileDocuments(profileDocuments);
+        console.log("Processed profiles:", processed.length);
+        
+        if (!processed || processed.length === 0) {
+          alert("No valid profiles to send. Profiles may be invalid or corrupted.");
+          return;
+        }
+        
+        // Merge edited fields and tags
+        processed.forEach((profile, index) => {
+          const doc = profileDocuments[index];
+          if (doc && doc._metadata) {
+            if (doc._metadata.editedFields) {
+              Object.assign(profile, doc._metadata.editedFields);
+            }
+            if (doc._metadata.tags) {
+              profile["Core Roles"] = doc._metadata.tags.coreRoles?.join("; ") || "";
+              profile["Domains"] = doc._metadata.tags.domains?.join("; ") || "";
+            }
+          }
+        });
+
+        sendToVettedBtn.disabled = true;
+        sendToVettedBtn.textContent = "Sending...";
+
+        // Get Vetted API settings
+        const vettedSettings = await new Promise((resolve, reject) => {
+          chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], (data) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+              return;
+            }
+            resolve(data);
+          });
         });
 
         console.log("Vetted settings:", { 
           hasUrl: !!vettedSettings.vettedApiUrl, 
+          url: vettedSettings.vettedApiUrl,
           hasKey: !!vettedSettings.vettedApiKey 
         });
 
-        if (vettedSettings.vettedApiUrl) {
-          console.log("Calling sendToVetted...");
-          await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
-          console.log("sendToVetted completed successfully");
-          alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
-          
-          // Clear profiles from storage after successful send
-          chrome.storage.local.set({ profileDocuments: [] }, () => {
-            loadData();
-          });
-        } else {
-          // No Vetted URL configured
+        if (!vettedSettings.vettedApiUrl) {
           throw new Error("Vetted API URL not configured. Please configure it in Settings.");
         }
+
+        console.log("Calling sendToVetted with", processed.length, "profiles...");
+        await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
+        console.log("sendToVetted completed successfully");
+        
+        alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
+        
+        // Clear profiles from storage after successful send
+        chrome.storage.local.set({ profileDocuments: [] }, () => {
+          if (chrome.runtime.lastError) {
+            console.error("Error clearing profiles:", chrome.runtime.lastError);
+          } else {
+            loadData();
+          }
+        });
+      } catch (error) {
+        console.error("Send to Vetted failed:", error);
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        alert("Error: " + (error.message || error.toString() || "Unknown error occurred"));
       } finally {
         sendToVettedBtn.disabled = false;
         sendToVettedBtn.textContent = "Send to Vetted";
       }
-    } catch (error) {
-      console.error("Send to Vetted failed:", error);
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      alert("Error: " + (error.message || error.toString() || "Unknown error occurred"));
-      sendToVettedBtn.disabled = false;
-      sendToVettedBtn.textContent = "Send to Vetted";
-    }
-  };
+    };
+  }
 
   clearBtn.onclick = () => {
     if (!confirm("Clear all logged profile documents?")) return;
