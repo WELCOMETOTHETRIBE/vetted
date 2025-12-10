@@ -1,38 +1,33 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # Install Python and dependencies for Ashby scraper
-# Playwright on Alpine requires additional dependencies
-RUN apk add --no-cache \
+# Using Debian-based image for better Playwright compatibility
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    py3-pip \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Install Python dependencies for Ashby scraper
-# Note: On Alpine, we use system chromium instead of Playwright's bundled browser
 COPY requirements.txt ./
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     gcc \
-    musl-dev \
-    libffi-dev \
-    openssl-dev \
     && python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip setuptools wheel && \
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt && \
+    /opt/venv/bin/python3 -m playwright install chromium && \
+    /opt/venv/bin/python3 -m playwright install-deps chromium && \
+    apt-get purge -y python3-dev gcc && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Rebuild the source code only when needed
 FROM base AS builder
