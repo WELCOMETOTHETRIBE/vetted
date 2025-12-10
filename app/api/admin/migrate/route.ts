@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { execSync } from "child_process"
+import { existsSync, renameSync } from "fs"
 
 export async function POST(req: Request) {
   try {
@@ -44,8 +45,7 @@ export async function POST(req: Request) {
 
     try {
       // Run migrations
-      // Use --schema flag to explicitly point to schema file and skip config file
-      // Also set DATABASE_URL directly in the command to avoid config file issues
+      // Use --schema flag and set DATABASE_URL directly to bypass config file
       const dbUrl = process.env.DATABASE_URL
       if (!dbUrl) {
         return NextResponse.json(
@@ -54,18 +54,58 @@ export async function POST(req: Request) {
         )
       }
 
-      const output = execSync(
-        `DATABASE_URL="${dbUrl}" npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma --skip-generate`,
-        {
-          encoding: "utf-8",
-          cwd: process.cwd(),
-          env: { 
-            ...process.env,
-            DATABASE_URL: dbUrl,
-          },
-          shell: "/bin/sh",
+      // Temporarily rename config file to avoid loading issues
+      const configPath = './prisma.config.ts'
+      const configBackupPath = './prisma.config.ts.backup'
+      let configRenamed = false
+
+      try {
+        if (existsSync(configPath)) {
+          renameSync(configPath, configBackupPath)
+          configRenamed = true
         }
-      )
+      } catch (e) {
+        // Ignore rename errors
+      }
+
+      try {
+        const output = execSync(
+          `npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma --skip-generate`,
+          {
+            encoding: "utf-8",
+            cwd: process.cwd(),
+            env: { 
+              ...process.env,
+              DATABASE_URL: dbUrl,
+              // Unset any config-related env vars
+              PRISMA_CONFIG_PATH: undefined,
+            },
+            shell: "/bin/sh",
+          }
+        )
+
+        // Restore config file
+        if (configRenamed && existsSync(configBackupPath)) {
+          renameSync(configBackupPath, configPath)
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Migrations completed successfully",
+          output: output.split("\n").slice(-10), // Last 10 lines
+          isFirstSetup,
+        })
+      } catch (error: any) {
+        // Restore config file even on error
+        if (configRenamed && existsSync(configBackupPath)) {
+          try {
+            renameSync(configBackupPath, configPath)
+          } catch (e) {
+            // Ignore restore errors
+          }
+        }
+        throw error
+      }
 
       return NextResponse.json({
         success: true,
