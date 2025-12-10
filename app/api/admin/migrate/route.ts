@@ -2,13 +2,13 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { execSync } from "child_process"
-import { existsSync, unlinkSync, writeFileSync } from "fs"
+import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs"
+import { join } from "path"
 
 export async function POST(req: Request) {
   try {
     // For first-time setup, check if database tables exist
     let isFirstSetup = false
-    let isAdmin = false
 
     try {
       // Try to check if User table exists and count users
@@ -40,41 +40,48 @@ export async function POST(req: Request) {
       if (user?.role !== "ADMIN") {
         return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 })
       }
-      isAdmin = true
     }
 
-    try {
-      // Run migrations
-      // Use --schema flag and set DATABASE_URL directly to bypass config file
-      const dbUrl = process.env.DATABASE_URL
-      if (!dbUrl) {
-        return NextResponse.json(
-          { error: "DATABASE_URL environment variable is not set" },
-          { status: 500 }
-        )
-      }
+    const dbUrl = process.env.DATABASE_URL
+    if (!dbUrl) {
+      return NextResponse.json(
+        { error: "DATABASE_URL environment variable is not set" },
+        { status: 500 }
+      )
+    }
 
-      // Temporarily delete config file to avoid loading issues
-      // Prisma 7 will try to load it even with --schema flag
-      const configPath = './prisma.config.ts'
+    // Create a standalone schema file with DATABASE_URL in it
+    // This avoids needing the config file
+    const schemaPath = join(process.cwd(), 'prisma', 'schema.prisma')
+    const originalSchema = readFileSync(schemaPath, 'utf-8')
+    
+    // Create a temporary schema with url in datasource
+    const tempSchemaPath = join(process.cwd(), 'prisma', 'schema.migrate.prisma')
+    const tempSchema = originalSchema.replace(
+      /datasource db \{[^}]*\}/,
+      `datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}`
+    )
+    
+    writeFileSync(tempSchemaPath, tempSchema)
+
+    try {
+      // Delete config file if it exists
+      const configPath = join(process.cwd(), 'prisma.config.ts')
       let configDeleted = false
       let configContent = ''
-
-      try {
-        if (existsSync(configPath)) {
-          // Read content to restore later
-          const fs = require('fs')
-          configContent = fs.readFileSync(configPath, 'utf-8')
-          unlinkSync(configPath)
-          configDeleted = true
-        }
-      } catch (e) {
-        // Ignore delete errors
+      
+      if (existsSync(configPath)) {
+        configContent = readFileSync(configPath, 'utf-8')
+        unlinkSync(configPath)
+        configDeleted = true
       }
 
       try {
         const output = execSync(
-          `npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma --skip-generate`,
+          `npx prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
           {
             encoding: "utf-8",
             cwd: process.cwd(),
@@ -88,30 +95,49 @@ export async function POST(req: Request) {
 
         // Restore config file
         if (configDeleted && configContent) {
-          try {
-            writeFileSync(configPath, configContent, 'utf-8')
-          } catch (e) {
-            // Ignore restore errors
-          }
+          writeFileSync(configPath, configContent, 'utf-8')
+        }
+
+        // Clean up temp schema
+        if (existsSync(tempSchemaPath)) {
+          unlinkSync(tempSchemaPath)
         }
 
         return NextResponse.json({
           success: true,
           message: "Migrations completed successfully",
-          output: output.split("\n").slice(-10), // Last 10 lines
+          output: output.split("\n").slice(-10),
           isFirstSetup,
         })
       } catch (error: any) {
-        // Restore config file even on error
+        // Restore config file
         if (configDeleted && configContent) {
           try {
             writeFileSync(configPath, configContent, 'utf-8')
           } catch (e) {
-            // Ignore restore errors
+            // Ignore
+          }
+        }
+        // Clean up temp schema
+        if (existsSync(tempSchemaPath)) {
+          try {
+            unlinkSync(tempSchemaPath)
+          } catch (e) {
+            // Ignore
           }
         }
         throw error
       }
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          error: "Migration failed",
+          details: error.message,
+          output: error.stdout || error.stderr || error.toString(),
+        },
+        { status: 500 }
+      )
+    }
   } catch (error: any) {
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
@@ -119,4 +145,3 @@ export async function POST(req: Request) {
     )
   }
 }
-
