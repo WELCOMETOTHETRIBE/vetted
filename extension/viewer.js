@@ -768,16 +768,31 @@ document.addEventListener("DOMContentLoaded", () => {
       headers["Authorization"] = `Bearer ${apiKey}`;
     }
 
+    // Add timeout to prevent hanging
+    const timeoutMs = 30000; // 30 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
     let response;
     try {
+      console.log("Starting fetch request...");
       response = await fetch(apiUrl, {
         method: "POST",
         headers: headers,
         credentials: "include", // Include cookies for session-based auth
         body: JSON.stringify(profiles),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
+      console.log("Fetch completed, status:", response.status);
     } catch (fetchError) {
+      clearTimeout(timeoutId);
       console.error("Fetch error:", fetchError);
+      if (fetchError.name === 'AbortError') {
+        throw new Error(`Request timed out after ${timeoutMs/1000} seconds. Check your API URL and network connection.`);
+      }
       throw new Error(`Network error: ${fetchError.message}. Check your API URL and CORS settings.`);
     }
 
