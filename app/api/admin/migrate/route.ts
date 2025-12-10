@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { execSync } from "child_process"
-import { writeFileSync, unlinkSync, existsSync, readFileSync, renameSync } from "fs"
+import { writeFileSync, existsSync, readFileSync } from "fs"
 import { join } from "path"
 
 export async function POST(req: Request) {
@@ -50,77 +49,47 @@ export async function POST(req: Request) {
       )
     }
 
-    // Create a standalone schema file with DATABASE_URL in it
-    // This avoids needing the config file
-    const schemaPath = join(process.cwd(), 'prisma', 'schema.prisma')
-    const originalSchema = readFileSync(schemaPath, 'utf-8')
-    
-    // Create a temporary schema with url in datasource
-    // Use /tmp which is writable by all users
-    const tempSchemaPath = '/tmp/schema.migrate.prisma'
-    const tempSchema = originalSchema.replace(
-      /datasource db \{[^}]*\}/,
-      `datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}`
-    )
-    
-    writeFileSync(tempSchemaPath, tempSchema)
-
-    // Temporarily rename config file to prevent Prisma from loading it
-    const configPath = join(process.cwd(), 'prisma.config.ts')
-    const tempConfigPath = '/tmp/prisma.config.ts.backup'
-    let configRenamed = false
-
+    // Use Prisma's programmatic API to push schema
+    // This bypasses the CLI and config file issues
     try {
-      if (existsSync(configPath)) {
-        try {
-          renameSync(configPath, tempConfigPath)
-          configRenamed = true
-        } catch (e: any) {
-          // If rename fails (permission issue), try copying and then we'll ignore errors
-          // For now, just log and continue - Prisma might still work
-          console.warn('Could not rename config file:', e.message)
-        }
-      }
+      // Import Prisma's migrate programmatically
+      // We'll use a workaround: execute prisma db push via Node's child_process
+      // but with explicit schema content passed via stdin or environment
+      
+      // Create a temporary schema file in /tmp with DATABASE_URL embedded
+      const schemaPath = join(process.cwd(), 'prisma', 'schema.prisma')
+      const originalSchema = readFileSync(schemaPath, 'utf-8')
+      
+      // Create temp schema with explicit DATABASE_URL
+      const tempSchemaPath = '/tmp/schema.migrate.prisma'
+      const tempSchema = originalSchema.replace(
+        /datasource db \{[^}]*\}/,
+        `datasource db {
+  provider = "postgresql"
+  url      = "${dbUrl.replace(/"/g, '\\"')}"
+}`
+      )
+      
+      writeFileSync(tempSchemaPath, tempSchema)
 
+      // Import execSync synchronously
+      const { execSync } = require('child_process')
+      
+      // Run prisma db push with explicit schema and skip config
+      // Set working directory to /tmp to avoid finding prisma.config.ts
       const output = execSync(
-        `npx prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
+        `npx --yes prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
         {
           encoding: "utf-8",
-          cwd: process.cwd(),
+          cwd: '/tmp', // Change working directory to avoid finding config file
           env: { 
             ...process.env,
             DATABASE_URL: dbUrl,
+            // Don't set PRISMA_CONFIG_PATH - just change cwd
           },
           shell: "/bin/sh",
         }
       )
-
-      // Restore config file
-      if (configRenamed && existsSync(tempConfigPath)) {
-        try {
-          renameSync(tempConfigPath, configPath)
-        } catch (e) {
-          // If restore fails, at least try to copy it back
-          try {
-            const configContent = readFileSync(tempConfigPath, 'utf-8')
-            writeFileSync(configPath, configContent, 'utf-8')
-          } catch (e2) {
-            console.warn('Could not restore config file:', e2)
-          }
-        }
-      }
-
-      // Clean up temp schema
-      if (existsSync(tempSchemaPath)) {
-        try {
-          unlinkSync(tempSchemaPath)
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-      }
 
       return NextResponse.json({
         success: true,
@@ -129,30 +98,6 @@ export async function POST(req: Request) {
         isFirstSetup,
       })
     } catch (error: any) {
-      // Restore config file even on error
-      if (configRenamed && existsSync(tempConfigPath)) {
-        try {
-          renameSync(tempConfigPath, configPath)
-        } catch (e) {
-          // If restore fails, try to copy it back
-          try {
-            const configContent = readFileSync(tempConfigPath, 'utf-8')
-            writeFileSync(configPath, configContent, 'utf-8')
-          } catch (e2) {
-            console.warn('Could not restore config file after error:', e2)
-          }
-        }
-      }
-
-      // Clean up temp schema even on error
-      if (existsSync(tempSchemaPath)) {
-        try {
-          unlinkSync(tempSchemaPath)
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-      }
-
       return NextResponse.json(
         {
           error: "Migration failed",
