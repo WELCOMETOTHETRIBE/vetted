@@ -576,12 +576,12 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.style.display = "none";
         alert(`Profile sent successfully to Vetted! ${result.created || 1} candidate(s) added.`);
         
-        // Remove the sent profile from IndexedDB
+        // Remove the sent profile from chrome.storage.local
         try {
           await VettedStorage.deleteProfileByIndex(currentEditingIndex);
           loadData();
         } catch (error) {
-          console.error("Error removing profile from IndexedDB:", error);
+          console.error("Error removing profile from chrome.storage.local:", error);
           loadData(); // Still reload to refresh UI
         }
       } catch (error) {
@@ -993,7 +993,7 @@ document.addEventListener("DOMContentLoaded", () => {
           await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
           
-          // Clear sent profiles from IndexedDB after successful send
+          // Clear sent profiles from chrome.storage.local after successful send
           const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
           try {
             const allProfiles = await VettedStorage.getAllProfiles();
@@ -1006,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
               return !sentUrls.has(profileUrl);
             });
             
-            // Delete sent profiles from IndexedDB
+            // Delete sent profiles from chrome.storage.local
             const profilesToDelete = allProfiles.filter(profile => {
               const profileUrl = profile.extraction_metadata?.source_url || 
                                 profile.personal_info?.profile_url ||
@@ -1030,7 +1030,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Clear queue from chrome.storage
             await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
             
-            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from IndexedDB`);
+            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from chrome.storage.local`);
             loadData(); // Refresh the table
           } catch (error) {
             console.error("Error clearing sent profiles:", error);
@@ -1075,7 +1075,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Get storage info before clearing
       const storageBefore = await VettedStorage.getStorageSize();
       
-      // Clear IndexedDB profiles
+      // Clear chrome.storage.local profiles
       await VettedStorage.clearAllProfiles();
       
       // Clear queue from chrome.storage
