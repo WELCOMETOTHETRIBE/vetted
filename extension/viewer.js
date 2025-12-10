@@ -602,27 +602,41 @@ document.addEventListener("DOMContentLoaded", () => {
       // Check if VettedStorage is available
       if (typeof VettedStorage === 'undefined') {
         console.error("VettedStorage is not available! Make sure storage.js is loaded.");
-        alert("Storage system not loaded. Please reload the extension.");
         renderTable([]);
         return;
       }
 
-      // Initialize IndexedDB if needed
+      // Initialize IndexedDB if needed (with timeout to prevent hanging)
       if (typeof VettedStorage.initDB === 'function') {
         try {
-          await VettedStorage.initDB();
+          await Promise.race([
+            VettedStorage.initDB(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Init timeout")), 3000))
+          ]);
         } catch (initError) {
-          console.error("Error initializing IndexedDB:", initError);
+          console.warn("IndexedDB init:", initError.message);
+          // Continue - might still work
         }
       }
 
-      // Load profiles from IndexedDB
-      const documents = await VettedStorage.getAllProfiles();
+      // Load profiles from IndexedDB (with timeout to prevent hanging)
+      const documents = await Promise.race([
+        VettedStorage.getAllProfiles(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Load timeout")), 5000))
+      ]);
       console.log("Raw documents from IndexedDB:", documents);
       
-      // Load queue from chrome.storage (small data)
-      const settings = await VettedStorage.SettingsStorage.get(["vettedQueue"]);
-      const queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
+      // Load queue from chrome.storage (small data) - don't block on this
+      let queueCount = 0;
+      try {
+        const settings = await Promise.race([
+          VettedStorage.SettingsStorage.get(["vettedQueue"]),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Settings timeout")), 2000))
+        ]);
+        queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
+      } catch (settingsError) {
+        console.warn("Could not load queue:", settingsError.message);
+      }
       
       console.log(`Loaded ${documents.length} saved profiles from IndexedDB, ${queueCount} queued for Vetted`);
       
@@ -1100,13 +1114,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Wait for VettedStorage to be available before loading data (with timeout)
-  let initAttempts = 0;
-  const MAX_INIT_ATTEMPTS = 50; // 5 seconds max wait
-  
-  const initLoad = () => {
-    initAttempts++;
-    
+  // Simple initialization - don't wait, just try to load
+  // If VettedStorage isn't ready, show empty state
+  setTimeout(() => {
     if (typeof VettedStorage !== 'undefined') {
       console.log("VettedStorage is available, loading data...");
       loadData().catch(err => {
@@ -1114,20 +1124,10 @@ document.addEventListener("DOMContentLoaded", () => {
         renderTable([]);
       });
       loadSettings();
-    } else if (initAttempts < MAX_INIT_ATTEMPTS) {
-      console.log(`Waiting for VettedStorage to load... (attempt ${initAttempts}/${MAX_INIT_ATTEMPTS})`);
-      setTimeout(initLoad, 100);
     } else {
-      console.error("VettedStorage failed to load after", MAX_INIT_ATTEMPTS, "attempts");
-      alert("Error: Storage system failed to load. Please reload the extension.");
+      console.warn("VettedStorage not available, showing empty state");
       renderTable([]);
+      loadSettings(); // Settings can still load from chrome.storage
     }
-  };
-  
-  // Start initialization
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLoad);
-  } else {
-    initLoad();
-  }
+  }, 100); // Small delay to let scripts load
 });
