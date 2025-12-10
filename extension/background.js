@@ -59,8 +59,9 @@ function estimateStorageSize(obj) {
   return new Blob([JSON.stringify(obj)]).size;
 }
 
-// Listen for messages from the content script
+// Listen for messages from the content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("Background script received message:", message.type);
   if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
     try {
       // Get current profiles
@@ -195,6 +196,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Handle sending already-processed profiles from viewer
+  if (message.type === "SEND_PROCESSED_TO_VETTED" && Array.isArray(message.payload)) {
+    console.log("Received SEND_PROCESSED_TO_VETTED message with", message.payload.length, "profiles");
+    
+    // Capture sendResponse before async operation
+    const respond = (result) => {
+      try {
+        sendResponse(result);
+      } catch (e) {
+        console.error("Error calling sendResponse:", e);
+      }
+    };
+    
+    // Use async/await pattern for better error handling
+    sendProcessedProfilesToVetted(message.payload, message.apiKey)
+      .then((result) => {
+        console.log("sendProcessedProfilesToVetted result:", result);
+        respond(result);
+      })
+      .catch((error) => {
+        console.error("Error in SEND_PROCESSED_TO_VETTED:", error);
+        respond({ success: false, error: error.message || "Unknown error" });
+      });
+
+    return true; // Keep channel open for async response
+  }
+
   // Handle auto-send to Vetted (legacy - for immediate single sends)
   if (message.type === "AUTO_SEND_TO_VETTED" && typeof message.payload === "object" && message.payload !== null) {
     sendProfileToVetted(message.payload).then((result) => {
@@ -297,6 +325,89 @@ async function sendBatchToVetted() {
       }
     });
   });
+}
+
+// Function to send already-processed profiles to Vetted API
+async function sendProcessedProfilesToVetted(processedProfiles, apiKey) {
+  try {
+    // Hardcoded Vetted API URL
+    const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+    
+    if (!processedProfiles || processedProfiles.length === 0) {
+      return { success: false, error: "No profiles to send" };
+    }
+
+    // Prepare headers
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    // Send to Vetted API with timeout
+    const timeoutMs = 30000; // 30 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
+    let response;
+    try {
+      response = await fetch(VETTED_API_URL, {
+        method: "POST",
+        headers: headers,
+        credentials: "include",
+        body: JSON.stringify(processedProfiles),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error(`Request timed out after ${timeoutMs/1000} seconds`);
+      }
+      throw new Error(`Network error: ${fetchError.message}`);
+    }
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage += ` - ${errorText.substring(0, 200)}`;
+          }
+        } catch (textError) {
+          // Ignore
+        }
+      }
+      
+      if (response.status === 401) {
+        errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
+      } else if (response.status === 403) {
+        errorMessage = "Forbidden: You must be an admin user to upload candidates";
+      } else if (response.status === 404) {
+        errorMessage = "Not Found: Check that your API URL is correct";
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+
+    const result = await response.json();
+    return { 
+      success: true, 
+      sent: processedProfiles.length,
+      result: result 
+    };
+  } catch (error) {
+    console.error("Error sending processed profiles to Vetted:", error);
+    return { success: false, error: error.message || "Unknown error" };
+  }
 }
 
 // Function to send profile to Vetted API

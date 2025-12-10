@@ -15,6 +15,7 @@
     "db:deploy": "prisma db push",
     "db:check": "node scripts/check-db.js",
     "jobs:add": "tsx scripts/add-jobs.ts",
+    "scrape:ashby": "python3 scripts/ashby/ashby_scraper.py",
     "test": "vitest",
     "test:e2e": "playwright test"
   },

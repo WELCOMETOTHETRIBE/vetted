@@ -49,6 +49,15 @@ In your `vetted` service, add these environment variables in the **"Variables"**
    - For browser extension API access (admin users only)
    - Generate a random string
 
+5. **`SERPAPI_KEY`**
+   - Required for the Ashby job scraper (`/api/ashby-jobs`)
+   - Get your API key from [SerpAPI](https://serpapi.com/)
+   - Only needed if you plan to use the job scraper feature
+
+6. **`PYTHON_COMMAND`** (optional)
+   - Defaults to `python3` if not set
+   - Only change if your Railway environment uses a different Python command
+
 ## Step 4: Run Database Migrations
 
 After the database is connected, you need to create the database tables. You have two options:

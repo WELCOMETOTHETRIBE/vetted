@@ -239,6 +239,142 @@ Vetted supports importing candidate profiles from LinkedIn via browser extension
 - Notes system
 - API endpoint for extension integration
 
+## Ashby Job Scraper
+
+Vetted includes a Python-based scraper for collecting job postings from Ashby-powered job boards.
+
+### Setup
+
+1. **Install Python dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Install Playwright browser**:
+   ```bash
+   playwright install chromium
+   ```
+
+3. **Set environment variable**:
+   Add to your `.env` file:
+   ```
+   SERPAPI_KEY=your_serpapi_key_here
+   ```
+   
+   Get your API key from [SerpAPI](https://serpapi.com/).
+
+### Usage
+
+#### Command Line
+
+Run the scraper directly:
+```bash
+npm run scrape:ashby
+```
+
+Or directly with Python:
+```bash
+python3 scripts/ashby/ashby_scraper.py
+```
+
+The scraper will:
+1. Search Google for Ashby job postings matching "software engineer"
+2. Visit each job posting page using Playwright
+3. Parse and extract structured job data
+4. Save results to `ashby_jobs.json` in the project root
+
+#### API Endpoint
+
+Access scraped jobs via the API:
+```bash
+GET /api/ashby-jobs
+```
+
+**Query Parameters**:
+- `force=true` - Force a new scrape even if cached data exists (default: uses cache if < 24 hours old)
+
+**Response**:
+```json
+{
+  "jobs": [...],
+  "cached": false,
+  "count": 42
+}
+```
+
+**Authentication**: Requires a valid session (logged-in user).
+
+### Output Format
+
+Each job in the JSON array follows this structure:
+
+```json
+{
+  "company": "Company Name",
+  "title": "Job Title @ Company Name",
+  "location": "San Francisco, CA",
+  "employment_type": "Full-time",
+  "department": "Engineering",
+  "source": "ashbyhq",
+  "overview": {
+    "headline": "Brief headline",
+    "summary": "Full overview text"
+  },
+  "role": {
+    "summary": "Role description",
+    "responsibilities": ["Responsibility 1", "Responsibility 2"],
+    "ideal_candidate_profile": null
+  },
+  "technologies": {
+    "languages_and_frameworks": ["React", "TypeScript"],
+    "open_source_tech": ["PostgreSQL"],
+    "tooling": ["GitHub Actions"]
+  },
+  "what_we_value": ["Value 1", "Value 2"],
+  "requirements": ["Requirement 1", "Requirement 2"],
+  "not_for_you_if": ["Reason 1", "Reason 2"],
+  "compensation": {
+    "salary_range": {
+      "currency": "USD",
+      "min": 120000,
+      "max": 180000,
+      "period": "year"
+    },
+    "notes": "Full compensation text"
+  },
+  "benefits": ["Benefit 1", "Benefit 2"],
+  "meta": {
+    "work_hours_expectation": null,
+    "location_expectation": null,
+    "apply_url": null
+  },
+  "raw_sections": {
+    "overview_raw": "...",
+    "role_raw": "...",
+    "technologies_raw": "...",
+    "what_we_value_raw": "...",
+    "what_we_require_raw": "...",
+    "dont_work_here_raw": "...",
+    "compensation_raw": "...",
+    "benefits_raw": "..."
+  },
+  "description_text": "Full job description text",
+  "url": "https://jobs.ashbyhq.com/company/job-id",
+  "scraped_at": "2024-01-15T10:30:00Z"
+}
+```
+
+### Configuration
+
+You can customize the scraper behavior via environment variables:
+
+- `SERPAPI_KEY` (required) - Your SerpAPI key
+- `ASHBY_OUTPUT_FILE` (optional) - Output file path (default: `ashby_jobs.json`)
+
+The search query and max results can be modified in `scripts/ashby/ashby_scraper.py`:
+- `SEARCH_QUERY` - Google search query (default: `site:jobs.ashbyhq.com "software engineer"`)
+- `MAX_RESULTS` - Maximum number of jobs to scrape (default: 100)
+
 ## Support
 
 For issues and questions, please open an issue on GitHub.

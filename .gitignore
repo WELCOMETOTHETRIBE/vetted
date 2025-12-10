@@ -46,3 +46,6 @@ next-env.d.ts
 # uploads
 /public/resumes/*
 !/public/resumes/.gitkeep
+
+# scraper output
+ashby_jobs.json

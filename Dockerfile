@@ -1,5 +1,8 @@
 FROM node:20-alpine AS base
 
+# Install Python and dependencies for Ashby scraper
+RUN apk add --no-cache python3 py3-pip
+
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
@@ -7,6 +10,12 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm ci
+
+# Install Python dependencies for Ashby scraper
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    python3 -m playwright install chromium && \
+    python3 -m playwright install-deps chromium
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -142,6 +151,12 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Ensure Python and Playwright are available in production
+RUN apk add --no-cache python3 py3-pip && \
+    pip3 install --no-cache-dir playwright beautifulsoup4 serpapi lxml && \
+    python3 -m playwright install chromium && \
+    python3 -m playwright install-deps chromium
+
 COPY --from=builder /app/public ./public
 
 # Copy Next.js build output (standalone includes minimal node_modules)
@@ -159,6 +174,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 # Copy Prisma schema and config for runtime migrations (if needed)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+
+# Copy Python scraper scripts
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/ashby ./scripts/ashby
+COPY --from=builder --chown=nextjs:nodejs /app/requirements.txt ./requirements.txt
 
 # Ensure Prisma Client is accessible
 RUN test -d node_modules/.prisma/client && echo "Prisma client found" || echo "WARNING: Prisma client not found"
