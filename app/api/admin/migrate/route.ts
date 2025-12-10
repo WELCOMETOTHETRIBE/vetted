@@ -44,16 +44,28 @@ export async function POST(req: Request) {
 
     try {
       // Run migrations
-      // Use --schema flag to explicitly point to schema file
-      const output = execSync("npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma", {
-        encoding: "utf-8",
-        cwd: process.cwd(),
-        env: { 
-          ...process.env,
-          // Ensure DATABASE_URL is available
-          DATABASE_URL: process.env.DATABASE_URL,
-        },
-      })
+      // Use --schema flag to explicitly point to schema file and skip config file
+      // Also set DATABASE_URL directly in the command to avoid config file issues
+      const dbUrl = process.env.DATABASE_URL
+      if (!dbUrl) {
+        return NextResponse.json(
+          { error: "DATABASE_URL environment variable is not set" },
+          { status: 500 }
+        )
+      }
+
+      const output = execSync(
+        `DATABASE_URL="${dbUrl}" npx prisma db push --accept-data-loss --schema=./prisma/schema.prisma --skip-generate`,
+        {
+          encoding: "utf-8",
+          cwd: process.cwd(),
+          env: { 
+            ...process.env,
+            DATABASE_URL: dbUrl,
+          },
+          shell: "/bin/sh",
+        }
+      )
 
       return NextResponse.json({
         success: true,
