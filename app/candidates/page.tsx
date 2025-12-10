@@ -50,8 +50,8 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
   console.log("Candidates page - Found candidates:", {
     total,
     count: candidates.length,
-    candidateIds: candidates.map(c => c.id),
-    candidateNames: candidates.map(c => c.fullName)
+    candidateIds: candidates.map((c: { id: string; fullName: string }) => c.id),
+    candidateNames: candidates.map((c: { id: string; fullName: string }) => c.fullName)
   })
 
   return { candidates, total, page, limit }
