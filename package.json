@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "eslint",
     "db:generate": "prisma generate && node scripts/create-prisma-default.js",
     "db:push": "prisma db push",
