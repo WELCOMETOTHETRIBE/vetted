@@ -11,6 +11,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:deploy": "prisma db push",
+    "postinstall": "prisma generate",
     "test": "vitest",
     "test:e2e": "playwright test"
   },
