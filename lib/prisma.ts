@@ -20,9 +20,9 @@ if (typeof window === 'undefined') {
     const connectionString = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
     const pool = new Pool({ connectionString });
     adapter = new PrismaPg(pool);
-  } catch (e) {
+  } catch (e: any) {
     // Adapter not available - this will fail at runtime but allow build to proceed
-    console.warn('Prisma adapter creation failed:', e.message);
+    console.warn('Prisma adapter creation failed:', e?.message || String(e));
     adapter = undefined;
   }
   
