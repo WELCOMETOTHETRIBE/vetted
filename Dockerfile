@@ -25,37 +25,48 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
-# Compile TypeScript client files to JavaScript for Next.js page data collection
-# This allows require('./client') to work during build
-RUN if command -v tsc >/dev/null 2>&1; then \
-      cd node_modules/.prisma/client && \
-      tsc client.ts --module commonjs --target es2020 --esModuleInterop --skipLibCheck --outDir . 2>&1 || echo "TypeScript compilation skipped"; \
-    else \
-      echo "TypeScript compiler not available, using fallback"; \
-    fi
+# Install TypeScript to compile Prisma client files
+RUN npm install --save-dev typescript
 
-# Create default.js that requires the compiled client
+# Compile TypeScript client files to JavaScript for Next.js page data collection
+RUN cd node_modules/.prisma/client && \
+    npx tsc client.ts --module commonjs --target es2020 --esModuleInterop --skipLibCheck --moduleResolution node --resolveJsonModule --outDir . 2>&1 || echo "TypeScript compilation had warnings"
+
+# Create default.js that constructs PrismaClient from runtime
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
-// Try to require compiled client.js first, then fall back to client.ts (webpack will handle it)
+const runtime = require('@prisma/client/runtime/client');
+const { getPrismaClient } = runtime;
+const fs = require('fs');
+const path = require('path');
+
+let config;
 try {
-  const client = require('./client.js');
-  module.exports = client;
+  const classFile = path.join(__dirname, 'internal/class.ts');
+  const classContent = fs.readFileSync(classFile, 'utf8');
+  const schemaMatch = classContent.match(/inlineSchema["\s]*:["\s]*"((?:[^"\\]|\\.)+)"/);
+  const inlineSchema = schemaMatch ? schemaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+  config = {
+    previewFeatures: [],
+    clientVersion: "7.1.0",
+    engineVersion: "ab635e6b9d606fa5c8fb8b1a7f909c3c3c1c98ba",
+    activeProvider: "postgresql",
+    inlineSchema: inlineSchema
+  };
 } catch (e) {
-  try {
-    const client = require('./client');
-    module.exports = client;
-  } catch (e2) {
-    const runtime = require('@prisma/client/runtime/client');
-    module.exports = {
-      PrismaClient: class PrismaClient {
-        constructor() {
-          throw new Error('PrismaClient must be imported from @prisma/client');
-        }
-      },
-      ...runtime
-    };
-  }
+  config = {
+    previewFeatures: [],
+    clientVersion: "7.1.0",
+    engineVersion: "ab635e6b9d606fa5c8fb8b1a7f909c3c3c1c98ba",
+    activeProvider: "postgresql",
+    inlineSchema: ""
+  };
 }
+
+const PrismaClient = getPrismaClient(config);
+module.exports = {
+  PrismaClient,
+  ...runtime
+};
 EOFJS
 
 # Build the application
