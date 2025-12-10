@@ -569,11 +569,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Update in storage
     chrome.storage.local.get(["profileDocuments"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading profiles for save:", chrome.runtime.lastError);
+        setTimeout(() => {
+          alert("Error loading profiles: " + chrome.runtime.lastError.message);
+        }, 0);
+        return;
+      }
+      
       const docs = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+      if (currentEditingIndex < 0 || currentEditingIndex >= docs.length) {
+        console.error("Invalid editing index:", currentEditingIndex);
+        setTimeout(() => {
+          alert("Error: Invalid profile index");
+        }, 0);
+        return;
+      }
+      
       docs[currentEditingIndex] = doc;
       chrome.storage.local.set({ profileDocuments: docs }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving profile:", chrome.runtime.lastError);
+          setTimeout(() => {
+            alert("Error saving profile: " + chrome.runtime.lastError.message);
+          }, 0);
+          return;
+        }
+        
         modal.style.display = "none";
-        loadData();
+        // Don't call loadData() here - let the storage.onChanged listener handle it
+        // This prevents duplicate calls and potential loops
+        console.log("Profile saved successfully");
       });
     });
   }
@@ -584,7 +610,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
+  let isLoadingData = false; // Prevent concurrent loads
+  
   function loadData() {
+    // Prevent concurrent loads that could cause issues
+    if (isLoadingData) {
+      console.log("loadData already in progress, skipping...");
+      return;
+    }
+    
+    isLoadingData = true;
+    
     // Show loading state
     if (tableContainer) {
       tableContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Loading profiles...</div>';
@@ -596,6 +632,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Use setTimeout to make it non-blocking
     setTimeout(() => {
       chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
+        isLoadingData = false; // Reset flag
+        
         if (chrome.runtime.lastError) {
           console.error("Error loading:", chrome.runtime.lastError);
           if (tableContainer) {
@@ -1042,7 +1080,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (chrome.runtime.lastError) {
               console.error("Error clearing profiles:", chrome.runtime.lastError);
             } else {
-              loadData();
+              // Don't call loadData() here - let the storage.onChanged listener handle it
+              console.log("Profiles cleared after successful send");
             }
           });
         } catch (sendError) {
@@ -1074,9 +1113,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   clearBtn.onclick = () => {
-    if (!confirm("Clear all logged profile documents?")) return;
+    // Use non-blocking confirmation
+    const confirmed = window.confirm("Clear all logged profile documents?");
+    if (!confirmed) return;
+    
+    clearBtn.disabled = true;
+    clearBtn.textContent = "Clearing...";
+    
     chrome.storage.local.set({ profileDocuments: [] }, () => {
-      loadData();
+      if (chrome.runtime.lastError) {
+        console.error("Error clearing profiles:", chrome.runtime.lastError);
+        setTimeout(() => {
+          alert("Error clearing profiles: " + chrome.runtime.lastError.message);
+        }, 0);
+        clearBtn.disabled = false;
+        clearBtn.textContent = "Clear All";
+        return;
+      }
+      
+      // Don't call loadData() here - let the storage.onChanged listener handle it
+      console.log("Profiles cleared successfully");
+      clearBtn.disabled = false;
+      clearBtn.textContent = "Clear All";
     });
   };
 
@@ -1093,10 +1151,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 50);
 
   // Listen for storage changes to auto-refresh when profiles are saved
+  // Add debounce to prevent infinite loops
+  let loadDataTimeout = null;
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && changes.profileDocuments) {
-      console.log('Storage changed: profileDocuments updated, reloading data...');
-      loadData();
+      console.log('Storage changed: profileDocuments updated, scheduling reload...');
+      // Debounce: clear any pending reload and schedule a new one
+      if (loadDataTimeout) {
+        clearTimeout(loadDataTimeout);
+      }
+      loadDataTimeout = setTimeout(() => {
+        loadData();
+        loadDataTimeout = null;
+      }, 100); // Small delay to prevent rapid-fire reloads
     }
   });
 });
