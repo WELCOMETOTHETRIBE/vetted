@@ -104,7 +104,7 @@ export default async function JobDetailPage({
           <div className="prose max-w-none mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Description</h2>
             <div className="text-gray-700 whitespace-pre-wrap">
-              {job.description?.split('\n').map((line, idx) => {
+              {job.description?.split('\n').map((line: string, idx: number) => {
                 // Check if line contains a URL
                 const urlMatch = line.match(/https?:\/\/[^\s]+/g)
                 if (urlMatch) {
