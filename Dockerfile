@@ -25,21 +25,36 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
-# Create default.js that tries to require compiled client, falls back to runtime
+# Compile TypeScript client files to JavaScript for Next.js page data collection
+# This allows require('./client') to work during build
+RUN if command -v tsc >/dev/null 2>&1; then \
+      cd node_modules/.prisma/client && \
+      tsc client.ts --module commonjs --target es2020 --esModuleInterop --skipLibCheck --outDir . 2>&1 || echo "TypeScript compilation skipped"; \
+    else \
+      echo "TypeScript compiler not available, using fallback"; \
+    fi
+
+# Create default.js that requires the compiled client
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
+// Try to require compiled client.js first, then fall back to client.ts (webpack will handle it)
 try {
-  const client = require('./client');
+  const client = require('./client.js');
   module.exports = client;
 } catch (e) {
-  const runtime = require('@prisma/client/runtime/client');
-  module.exports = {
-    PrismaClient: class PrismaClient {
-      constructor() {
-        throw new Error('PrismaClient must be imported from @prisma/client');
-      }
-    },
-    ...runtime
-  };
+  try {
+    const client = require('./client');
+    module.exports = client;
+  } catch (e2) {
+    const runtime = require('@prisma/client/runtime/client');
+    module.exports = {
+      PrismaClient: class PrismaClient {
+        constructor() {
+          throw new Error('PrismaClient must be imported from @prisma/client');
+        }
+      },
+      ...runtime
+    };
+  }
 }
 EOFJS
 
