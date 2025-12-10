@@ -11,7 +11,12 @@ if (typeof window === 'undefined') {
 
   // Prisma 7: DATABASE_URL is read from environment variable
   // The schema no longer has url, it's configured in prisma.config.ts for migrations
-  prisma = globalForPrisma.prisma ?? new PrismaClient()
+  // Prisma 7 uses client engine by default, but should use binary engine when DATABASE_URL is set
+  // and no adapter/accelerateUrl is provided
+  prisma = globalForPrisma.prisma ?? new PrismaClient({
+    // Don't provide adapter or accelerateUrl - this should use binary engine
+    // Prisma will read DATABASE_URL from environment
+  })
 
   if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 } else {
