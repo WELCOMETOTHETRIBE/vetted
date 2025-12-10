@@ -608,7 +608,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
         
         console.log(`Loaded ${documents.length} saved profiles, ${queueCount} queued for Vetted`);
-        console.log("Documents:", documents);
+        
+        // Update the global profileDocuments variable
+        profileDocuments = documents;
         
         // Render table immediately
         if (documents.length > 0) {
@@ -936,8 +938,20 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   sendToVettedBtn.onclick = async () => {
+    console.log("Send to Vetted clicked, profileDocuments length:", profileDocuments.length);
+    
+    // Reload data first to ensure we have the latest profiles
+    await new Promise((resolve) => {
+      chrome.storage.local.get(["profileDocuments"], (data) => {
+        const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+        profileDocuments = documents;
+        console.log("Reloaded profiles from storage:", documents.length);
+        resolve(undefined);
+      });
+    });
+
     if (profileDocuments.length === 0) {
-      alert("No profiles to send.");
+      alert("No profiles to send. Please save a profile first using 'Save Profile JSON'.");
       return;
     }
 
@@ -946,8 +960,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    console.log("Processing", profileDocuments.length, "profiles...");
     try {
       const processed = ProfileProcessor.processProfileDocuments(profileDocuments);
+      console.log("Processed profiles:", processed.length);
       
       // Merge edited fields and tags
       processed.forEach((profile, index) => {
@@ -1031,4 +1047,12 @@ document.addEventListener("DOMContentLoaded", () => {
     loadData();
     loadSettings();
   }, 50);
+
+  // Listen for storage changes to auto-refresh when profiles are saved
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.profileDocuments) {
+      console.log('Storage changed: profileDocuments updated, reloading data...');
+      loadData();
+    }
+  });
 });
