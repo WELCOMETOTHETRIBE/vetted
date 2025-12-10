@@ -230,8 +230,16 @@
           fileName: error.fileName,
           lineNumber: error.lineNumber
         });
+        
+        // Check if it's an extension context error
         const errorMessage = error.message || error.toString() || "Unknown error occurred";
-        showToast(`Error: ${errorMessage}. Check console for details.`);
+        if (errorMessage.includes("Extension context invalidated") || 
+            errorMessage.includes("message port closed")) {
+          showExtensionReloadMessage();
+          showToast("Extension was reloaded. Please refresh this page.", true);
+        } else {
+          showToast(`Error: ${errorMessage}. Check console for details.`);
+        }
       }
     });
 
