@@ -114,18 +114,72 @@ export async function POST(req: Request) {
           })
         }
 
-        // Check if job already exists (by title+company or URL)
-        const existingJob = await prisma.job.findFirst({
+        // Check if job already exists using multiple strategies
+        // 1. Check by exact title + company match
+        let existingJob = await prisma.job.findFirst({
           where: {
-            OR: [
-              { title: jobTitle, companyId: company.id },
-              // Could also check by URL if we stored it
-            ],
+            title: jobTitle,
+            companyId: company.id,
+            isActive: true,
           },
         })
 
+        // 2. If not found, check by URL in description (if URL exists)
+        if (!existingJob && jobData.url) {
+          // Extract the base URL for matching
+          let baseUrl: string | undefined
+          try {
+            const url = new URL(jobData.url)
+            baseUrl = url.href.split('?')[0] // Remove query params
+          } catch {
+            // Invalid URL, skip URL check
+          }
+
+          if (baseUrl) {
+            // Search for jobs with this URL in their description
+            const jobsWithUrl = await prisma.job.findMany({
+              where: {
+                companyId: company.id,
+                isActive: true,
+                description: {
+                  contains: baseUrl,
+                },
+              },
+            })
+
+            if (jobsWithUrl.length > 0) {
+              existingJob = jobsWithUrl[0]
+            }
+          }
+        }
+
+        // 3. If still not found, check by normalized title + company (case-insensitive, trimmed)
+        if (!existingJob) {
+          const normalizedTitle = jobTitle.trim().toLowerCase()
+          const allCompanyJobs = await prisma.job.findMany({
+            where: {
+              companyId: company.id,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              title: true,
+            },
+          })
+
+          // Check if any job has a normalized title that matches
+          existingJob = allCompanyJobs.find(
+            (job) => job.title.trim().toLowerCase() === normalizedTitle
+          ) as any
+        }
+
         if (existingJob) {
-          skipped.push({ job: jobTitle, company: companyName, reason: "Already exists" })
+          skipped.push({
+            job: jobTitle,
+            company: companyName,
+            reason: "Already exists in database",
+            existingJobId: existingJob.id,
+          })
           continue
         }
 

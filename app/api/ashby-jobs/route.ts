@@ -43,6 +43,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const force = searchParams.get("force") === "true"
     const searchQuery = searchParams.get("query") || null
+    const skipExisting = searchParams.get("skipExisting") !== "false" // Default to true
 
     const outputFile = process.env.ASHBY_OUTPUT_FILE || "ashby_jobs.json"
     const outputPath = join(process.cwd(), outputFile)
@@ -117,12 +118,87 @@ export async function GET(req: Request) {
     // Read the output file
     try {
       const data = await readFile(outputPath, "utf-8")
-      const jobs = JSON.parse(data)
+      let jobs = JSON.parse(data)
+
+      // Filter out jobs that already exist in database if skipExisting is true
+      if (skipExisting && jobs.length > 0) {
+        const { prisma } = await import("@/lib/prisma")
+        
+        // Get all active jobs with their companies
+        const existingJobs = await prisma.job.findMany({
+          where: { isActive: true },
+          include: {
+            company: {
+              select: { name: true },
+            },
+          },
+        })
+
+        // Create a set of existing job identifiers for fast lookup
+        const existingJobKeys = new Set<string>()
+        for (const job of existingJobs) {
+          // Key 1: title + company name (normalized)
+          const key1 = `${job.title.trim().toLowerCase()}|${job.company.name.trim().toLowerCase()}`
+          existingJobKeys.add(key1)
+          
+          // Key 2: URL in description (if present)
+          if (job.description) {
+            const urlMatch = job.description.match(/https?:\/\/[^\s]+/g)
+            if (urlMatch) {
+              for (const url of urlMatch) {
+                try {
+                  const urlObj = new URL(url)
+                  const baseUrl = urlObj.href.split('?')[0]
+                  existingJobKeys.add(`url:${baseUrl}`)
+                } catch {
+                  // Invalid URL, skip
+                }
+              }
+            }
+          }
+        }
+
+        // Filter out duplicates
+        const originalCount = jobs.length
+        jobs = jobs.filter((jobData: any) => {
+          const companyName = (jobData.company || "Unknown Company").trim().toLowerCase()
+          const jobTitle = (jobData.title || "Untitled Position").trim().toLowerCase()
+          const key1 = `${jobTitle}|${companyName}`
+          
+          // Check by title + company
+          if (existingJobKeys.has(key1)) {
+            return false
+          }
+          
+          // Check by URL
+          if (jobData.url) {
+            try {
+              const urlObj = new URL(jobData.url)
+              const baseUrl = urlObj.href.split('?')[0]
+              if (existingJobKeys.has(`url:${baseUrl}`)) {
+                return false
+              }
+            } catch {
+              // Invalid URL, skip check
+            }
+          }
+          
+          return true
+        })
+
+        const filteredCount = originalCount - jobs.length
+        if (filteredCount > 0) {
+          console.log(`[ashby-jobs] Filtered out ${filteredCount} duplicate jobs`)
+        }
+      }
 
       return NextResponse.json({
         jobs,
         cached: false,
         count: jobs.length,
+        ...(skipExisting && jobs.length > 0 ? { 
+          note: "Duplicates filtered out automatically" 
+        } : {}),
       })
     } catch (error) {
       console.error("[ashby-jobs] Error reading output file:", error)
