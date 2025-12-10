@@ -53,29 +53,50 @@ RUN cd node_modules/.prisma/client && \
       echo "Warning: client.js not found after TypeScript compilation"; \
     fi
 
-# Create default.js that uses internal/class.js to get PrismaClient
-# The compiled client.js has ES module features that don't work in CommonJS context
+# Create default.js that constructs PrismaClient with binary engine
+# getPrismaClientClass() creates client engine, so we construct it directly with binary engine config
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
+const fs = require('fs');
+const path = require('path');
 
 let PrismaClient;
 
 try {
-  const classModule = require('./internal/class.js');
-  if (classModule && classModule.getPrismaClientClass) {
-    const ClientClass = classModule.getPrismaClientClass();
-    PrismaClient = class extends ClientClass {
-      constructor(options) {
-        super(options || {});
-      }
-    };
-  } else {
-    throw new Error('class.js does not export getPrismaClientClass');
+  const classFile = path.join(__dirname, 'internal/class.ts');
+  const classContent = fs.readFileSync(classFile, 'utf8');
+  
+  const schemaMatch = classContent.match(/inlineSchema["\s]*:["\s]*"((?:[^"\\]|\\.)+)"/);
+  const inlineSchema = schemaMatch ? schemaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+  
+  const runtimeDataModelMatch = classContent.match(/config\.runtimeDataModel\s*=\s*JSON\.parse\("((?:[^"\\]|\\.)+)"\)/);
+  let runtimeDataModel = { models: {}, enums: {}, types: {} };
+  if (runtimeDataModelMatch) {
+    try {
+      const jsonStr = runtimeDataModelMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '');
+      runtimeDataModel = JSON.parse(jsonStr);
+    } catch (e) {}
   }
+  
+  const { getPrismaClient } = runtime;
+  const ClientClass = getPrismaClient({
+    previewFeatures: [],
+    clientVersion: "7.1.0",
+    engineVersion: "ab635e6b9d606fa5c8fb8b1a7f909c3c3c1c98ba",
+    activeProvider: "postgresql",
+    inlineSchema: inlineSchema,
+    runtimeDataModel: runtimeDataModel,
+  });
+  
+  PrismaClient = class extends ClientClass {
+    constructor(options) {
+      super(options || {});
+    }
+  };
 } catch (e) {
   PrismaClient = class PrismaClient {
     constructor() {
-      throw new Error('PrismaClient not found. Error: ' + e.message);
+      throw new Error('PrismaClient construction failed: ' + e.message);
     }
   };
 }
