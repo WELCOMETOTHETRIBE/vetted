@@ -74,20 +74,6 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                 <span className="sm:hidden">{item.icon}</span>
               </Link>
             ))}
-            {/* Explicitly render Candidates tab for admins */}
-            {isAdmin && (
-              <Link
-                href="/candidates"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === "/candidates"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <span className="hidden sm:inline">Candidates</span>
-                <span className="sm:hidden">🎯</span>
-              </Link>
-            )}
             {/* Admin tab - separate from main nav items */}
             {isAdmin && (
               <Link

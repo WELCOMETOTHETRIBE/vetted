@@ -82,16 +82,37 @@ export default async function JobsPage({
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          <aside className="w-64">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <aside className="lg:w-72 flex-shrink-0">
             <JobFilters />
           </aside>
-          <main className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Jobs</h1>
+          <main className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Jobs</h1>
+                <p className="text-gray-600 mt-1">
+                  {jobs.length === 0 
+                    ? "No jobs found" 
+                    : `${jobs.length} ${jobs.length === 1 ? 'job' : 'jobs'} available`}
+                </p>
+              </div>
+            </div>
             <div className="space-y-4">
               {jobs.length === 0 ? (
-                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                  <p className="text-gray-600">No jobs found. Try adjusting your filters.</p>
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+                  <div className="max-w-md mx-auto">
+                    <div className="text-6xl mb-4">💼</div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No jobs found</h3>
+                    <p className="text-gray-600 mb-6">
+                      Try adjusting your filters or check back later for new opportunities.
+                    </p>
+                    <button
+                      onClick={() => window.location.href = '/jobs'}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
                 </div>
               ) : (
                 jobs.map((job: any) => <JobCard key={job.id} job={job} />)
