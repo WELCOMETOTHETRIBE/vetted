@@ -31,13 +31,20 @@ export default function AshbyScraperButton() {
 
     try {
       const queryParam = encodeURIComponent(searchQuery.trim())
+      // Create an AbortController with a very long timeout (15 minutes)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
+      
       const response = await fetch(
         `/api/ashby-jobs?query=${queryParam}&force=true`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
         }
       )
+      
+      clearTimeout(timeoutId)
 
       const data = await response.json()
 
