@@ -35,34 +35,29 @@ RUN cd node_modules/.prisma/client && \
     npx tsc --project tsconfig.json 2>&1 && \
     echo "TypeScript compilation completed" || (echo "TypeScript compilation failed, will use runtime fallback" && rm -f client.js)
 
-# Create default.js that exports PrismaClient using lazy getter to avoid circular dependency
+# Create default.js that exports PrismaClient directly from generated client
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
 
-let _PrismaClient = null;
-function getPrismaClient() {
-  if (!_PrismaClient) {
-    try {
-      const modulePath = require.resolve('@prisma/client');
-      delete require.cache[modulePath];
-      const pc = require('@prisma/client');
-      _PrismaClient = pc.PrismaClient;
-    } catch (e) {
-      try {
-        const clientModule = require('./client.js');
-        _PrismaClient = clientModule.PrismaClient;
-      } catch (e2) {
-        throw new Error('Failed to load PrismaClient: ' + e.message);
+let PrismaClient;
+try {
+  const clientModule = require('./client.js');
+  PrismaClient = clientModule.PrismaClient;
+} catch (e) {
+  try {
+    const clientModule = require('./client.ts');
+    PrismaClient = clientModule.PrismaClient;
+  } catch (e2) {
+    PrismaClient = class PrismaClient {
+      constructor() {
+        throw new Error('PrismaClient not found. Run: npx prisma generate');
       }
-    }
+    };
   }
-  return _PrismaClient;
 }
 
 module.exports = {
-  get PrismaClient() {
-    return getPrismaClient();
-  },
+  PrismaClient,
   ...runtime
 };
 EOFJS
