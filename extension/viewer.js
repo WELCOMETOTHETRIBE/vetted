@@ -543,32 +543,50 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function loadData() {
-    // Simple, synchronous loading - no async/await complexity
-    chrome.storage.local.get(['profileDocuments'], (data) => {
-      if (chrome.runtime.lastError) {
-        console.error("Error loading profiles:", chrome.runtime.lastError);
-        renderTable([]);
-        return;
-      }
+    if (!tableContainer) {
+      console.error("tableContainer not found");
+      return;
+    }
 
-      const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
-      console.log(`Loaded ${documents.length} profiles`);
-      renderTable(documents);
-      
-      // Load queue info separately (non-blocking)
-      chrome.storage.local.get(['vettedQueue'], (queueData) => {
-        if (!chrome.runtime.lastError && Array.isArray(queueData.vettedQueue) && queueData.vettedQueue.length > 0) {
-          const queueStatus = document.createElement("div");
-          queueStatus.id = "queue-status";
-          queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
-          queueStatus.innerHTML = `📤 ${queueData.vettedQueue.length} profile(s) queued for auto-send to Vetted.`;
-          const controls = document.getElementById("controls");
-          const existing = document.getElementById("queue-status");
-          if (existing) existing.remove();
-          if (controls) controls.insertBefore(queueStatus, controls.firstChild);
+    // Simple, synchronous loading - no async/await complexity
+    try {
+      chrome.storage.local.get(['profileDocuments'], (data) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error loading profiles:", chrome.runtime.lastError);
+          if (tableContainer) {
+            renderTable([]);
+          }
+          return;
         }
+
+        const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+        console.log(`Loaded ${documents.length} profiles`);
+        if (tableContainer) {
+          renderTable(documents);
+        }
+        
+        // Load queue info separately (non-blocking)
+        chrome.storage.local.get(['vettedQueue'], (queueData) => {
+          if (!chrome.runtime.lastError && Array.isArray(queueData.vettedQueue) && queueData.vettedQueue.length > 0) {
+            const controls = document.getElementById("controls");
+            if (controls) {
+              const queueStatus = document.createElement("div");
+              queueStatus.id = "queue-status";
+              queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
+              queueStatus.innerHTML = `📤 ${queueData.vettedQueue.length} profile(s) queued for auto-send to Vetted.`;
+              const existing = document.getElementById("queue-status");
+              if (existing) existing.remove();
+              controls.insertBefore(queueStatus, controls.firstChild);
+            }
+          }
+        });
       });
-    });
+    } catch (error) {
+      console.error("Error in loadData:", error);
+      if (tableContainer) {
+        tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error: ${error.message}</div>`;
+      }
+    }
   }
 
   function loadSettings() {
@@ -1025,6 +1043,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Simple initialization - load immediately
-  loadData();
-  loadSettings();
+  try {
+    loadData();
+    loadSettings();
+  } catch (error) {
+    console.error("Error during initialization:", error);
+    if (tableContainer) {
+      tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Initialization error: ${error.message}</div>`;
+    }
+  }
 });
