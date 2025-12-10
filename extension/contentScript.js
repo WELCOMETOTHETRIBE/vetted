@@ -73,21 +73,21 @@
             }
 
             if (response.success) {
-              // Check if auto-send is enabled and notify background script
+              // Check if auto-send is enabled and queue for batch send
               chrome.storage.local.get(["autoSendToVetted", "autoSendToSheets"], (settings) => {
                 if (settings.autoSendToVetted) {
-                  // Request background script to auto-send to Vetted
+                  // Queue profile for batch auto-send to Vetted
                   chrome.runtime.sendMessage({
-                    type: "AUTO_SEND_TO_VETTED",
+                    type: "QUEUE_FOR_VETTED",
                     payload: profileDoc
-                  }, (autoSendResponse) => {
+                  }, (queueResponse) => {
                     if (chrome.runtime.lastError) {
-                      console.error("Auto-send to Vetted error:", chrome.runtime.lastError);
-                    } else if (autoSendResponse && !autoSendResponse.success) {
-                      console.error("Vetted API error:", autoSendResponse.error);
+                      console.error("Queue error:", chrome.runtime.lastError);
+                    } else {
+                      const queuedCount = queueResponse?.queuedCount || 0;
+                      showToast(`Profile saved & queued for Vetted (${queuedCount} in queue)`);
                     }
                   });
-                  showToast(`Profile saved & sending to Vetted (#${response.count})`);
                 } else if (settings.autoSendToSheets) {
                   // Request background script to auto-send to Google Sheets
                   chrome.runtime.sendMessage({

@@ -155,7 +155,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  // Handle auto-send to Vetted
+  // Handle queue for batch auto-send to Vetted
+  if (message.type === "QUEUE_FOR_VETTED" && typeof message.payload === "object" && message.payload !== null) {
+    // Get current queue
+    chrome.storage.local.get(["vettedQueue"], (data) => {
+      const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+      
+      // Add profile to queue
+      queue.push(message.payload);
+      
+      // Save queue
+      chrome.storage.local.set({ vettedQueue: queue }, () => {
+        sendResponse({ success: true, queuedCount: queue.length });
+        
+        // Auto-send batch if queue reaches 5 profiles or after 10 seconds
+        if (queue.length >= 5) {
+          sendBatchToVetted();
+        } else if (queue.length === 1) {
+          // Start timer for first item in queue
+          setTimeout(() => {
+            sendBatchToVetted();
+          }, 10000); // 10 seconds
+        }
+      });
+    });
+
+    // Keep the message channel open for async response
+    return true;
+  }
+
+  // Handle manual batch send request
+  if (message.type === "SEND_BATCH_TO_VETTED") {
+    sendBatchToVetted().then((result) => {
+      sendResponse(result);
+    }).catch((error) => {
+      sendResponse({ success: false, error: error.message });
+    });
+
+    return true;
+  }
+
+  // Handle auto-send to Vetted (legacy - for immediate single sends)
   if (message.type === "AUTO_SEND_TO_VETTED" && typeof message.payload === "object" && message.payload !== null) {
     sendProfileToVetted(message.payload).then((result) => {
       sendResponse(result);
@@ -167,6 +207,99 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+// Function to send batch of profiles to Vetted
+async function sendBatchToVetted() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["vettedQueue", "vettedApiUrl", "vettedApiKey"], async (data) => {
+      const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+      
+      if (queue.length === 0) {
+        resolve({ success: true, sent: 0, message: "No profiles in queue" });
+        return;
+      }
+
+      if (!data.vettedApiUrl) {
+        resolve({ success: false, error: "Vetted API URL not configured" });
+        return;
+      }
+
+      try {
+        // Process all profiles in queue
+        if (typeof ProfileProcessor === 'undefined') {
+          resolve({ success: false, error: "Profile processor not available" });
+          return;
+        }
+
+        const processed = queue.map(profileDoc => {
+          try {
+            return ProfileProcessor.processProfileDocument(profileDoc);
+          } catch (e) {
+            console.error("Error processing profile:", e);
+            return null;
+          }
+        }).filter(p => p !== null);
+
+        if (processed.length === 0) {
+          // Clear queue if all failed
+          chrome.storage.local.set({ vettedQueue: [] });
+          resolve({ success: false, error: "No valid profiles to send" });
+          return;
+        }
+
+        // Send batch to Vetted API
+        const headers = {
+          "Content-Type": "application/json",
+        };
+
+        if (data.vettedApiKey) {
+          headers["Authorization"] = `Bearer ${data.vettedApiKey}`;
+        }
+
+        const response = await fetch(data.vettedApiUrl, {
+          method: "POST",
+          headers: headers,
+          credentials: "include",
+          body: JSON.stringify(processed),
+        });
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorMessage += ` - ${errorText.substring(0, 200)}`;
+              }
+            } catch (textError) {
+              // Ignore
+            }
+          }
+          resolve({ success: false, error: errorMessage, sent: 0 });
+          return;
+        }
+
+        const result = await response.json();
+        
+        // Clear queue after successful send
+        chrome.storage.local.set({ vettedQueue: [] });
+        
+        resolve({ 
+          success: true, 
+          sent: processed.length,
+          result: result,
+          message: `Successfully sent ${processed.length} profile(s) to Vetted`
+        });
+      } catch (error) {
+        console.error("Batch send error:", error);
+        resolve({ success: false, error: error.message, sent: 0 });
+      }
+    });
+  });
+}
 
 // Function to send profile to Vetted API
 async function sendProfileToVetted(profileDoc) {

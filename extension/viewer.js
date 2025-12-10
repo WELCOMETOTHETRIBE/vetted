@@ -520,9 +520,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function loadData() {
-    chrome.storage.local.get(["profileDocuments"], (data) => {
+    chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
       const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+      const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
+      
+      console.log(`Loaded ${documents.length} saved profiles, ${queueCount} queued for Vetted`);
+      
       renderTable(documents);
+      
+      // Show queue status if there are queued profiles
+      if (queueCount > 0) {
+        const queueStatus = document.createElement("div");
+        queueStatus.id = "queue-status";
+        queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
+        queueStatus.innerHTML = `📤 ${queueCount} profile(s) queued for auto-send to Vetted. They will be sent automatically in batches.`;
+        const controls = document.getElementById("controls");
+        if (controls && !document.getElementById("queue-status")) {
+          controls.insertBefore(queueStatus, controls.firstChild);
+        }
+      } else {
+        const queueStatus = document.getElementById("queue-status");
+        if (queueStatus) {
+          queueStatus.remove();
+        }
+      }
       
       // Check storage usage
       chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
@@ -536,6 +557,20 @@ document.addEventListener("DOMContentLoaded", () => {
           
           if (percentage > 80) {
             console.warn("Storage is getting full! Consider clearing old profiles.");
+            // Show warning in UI
+            const storageWarning = document.createElement("div");
+            storageWarning.style.cssText = "background: #fff3cd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px; color: #856404;";
+            storageWarning.innerHTML = `⚠️ Storage is ${percentage}% full. Consider clearing old profiles.`;
+            const controls = document.getElementById("controls");
+            if (controls && !document.getElementById("storage-warning")) {
+              storageWarning.id = "storage-warning";
+              controls.insertBefore(storageWarning, controls.firstChild);
+            }
+          } else {
+            const storageWarning = document.getElementById("storage-warning");
+            if (storageWarning) {
+              storageWarning.remove();
+            }
           }
         }
       });
