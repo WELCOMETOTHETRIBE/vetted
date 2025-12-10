@@ -73,8 +73,18 @@ export async function GET(req: Request) {
 
     // Run the Python scraper
     const pythonScript = join(process.cwd(), "scripts", "ashby", "ashby_scraper.py")
-    // Use virtual environment Python if available, otherwise fallback to system python3
     const fs = await import("fs")
+    
+    // Check if script exists
+    if (!fs.existsSync(pythonScript)) {
+      console.error(`[ashby-jobs] Script not found: ${pythonScript}`)
+      return NextResponse.json(
+        { error: "Scraper script not found", path: pythonScript },
+        { status: 500 }
+      )
+    }
+    
+    // Use virtual environment Python if available, otherwise fallback to system python3
     let pythonCmd = process.env.PYTHON_COMMAND
     if (!pythonCmd) {
       if (process.env.VIRTUAL_ENV) {
@@ -86,6 +96,30 @@ export async function GET(req: Request) {
       }
     }
     
+    // Verify Python command exists
+    try {
+      await execAsync(`which ${pythonCmd}`, { timeout: 5000 })
+    } catch (error) {
+      console.error(`[ashby-jobs] Python command not found: ${pythonCmd}`)
+      return NextResponse.json(
+        { 
+          error: "Python not found", 
+          pythonCmd,
+          suggestion: "Make sure Python 3 is installed and accessible"
+        },
+        { status: 500 }
+      )
+    }
+    
+    // Check SERPAPI_KEY
+    if (!process.env.SERPAPI_KEY) {
+      console.error("[ashby-jobs] SERPAPI_KEY not set")
+      return NextResponse.json(
+        { error: "SERPAPI_KEY environment variable is not set" },
+        { status: 500 }
+      )
+    }
+    
     // Build command with search query if provided
     let command = `${pythonCmd} ${pythonScript}`
     if (searchQuery) {
@@ -95,24 +129,51 @@ export async function GET(req: Request) {
     }
     
     console.log(`[ashby-jobs] Running scraper: ${command}`)
+    console.log(`[ashby-jobs] Script path: ${pythonScript}`)
+    console.log(`[ashby-jobs] Python command: ${pythonCmd}`)
 
     // Set timeout to 10 minutes (scraping can take a while)
-    const { stdout, stderr } = await execAsync(
-      command,
-      {
-        timeout: 600000, // 10 minutes
-        env: {
-          ...process.env,
-          SERPAPI_KEY: process.env.SERPAPI_KEY,
-          ASHBY_OUTPUT_FILE: outputFile,
-          // Also set as env var as fallback
-          ...(searchQuery ? { ASHBY_SEARCH_QUERY: searchQuery } : {}),
+    let stdout = ""
+    let stderr = ""
+    try {
+      const result = await execAsync(
+        command,
+        {
+          timeout: 600000, // 10 minutes
+          env: {
+            ...process.env,
+            SERPAPI_KEY: process.env.SERPAPI_KEY,
+            ASHBY_OUTPUT_FILE: outputFile,
+            // Also set as env var as fallback
+            ...(searchQuery ? { ASHBY_SEARCH_QUERY: searchQuery } : {}),
+          },
+        }
+      )
+      stdout = result.stdout || ""
+      stderr = result.stderr || ""
+    } catch (execError: any) {
+      console.error("[ashby-jobs] Exec error:", execError)
+      stdout = execError.stdout || ""
+      stderr = execError.stderr || execError.message || ""
+      
+      // Return detailed error
+      return NextResponse.json(
+        {
+          error: "Failed to execute scraper",
+          message: execError.message || String(execError),
+          stdout: stdout.substring(0, 1000),
+          stderr: stderr.substring(0, 1000),
+          command,
         },
-      }
-    )
+        { status: 500 }
+      )
+    }
 
     if (stderr) {
       console.error("[ashby-jobs] Scraper stderr:", stderr)
+    }
+    if (stdout) {
+      console.log("[ashby-jobs] Scraper stdout:", stdout.substring(0, 500))
     }
 
     // Read the output file
