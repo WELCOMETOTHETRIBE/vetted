@@ -603,8 +603,17 @@ document.addEventListener("DOMContentLoaded", () => {
       "googleSheetsUrl", 
       "autoSendToSheets"
     ], (data) => {
+      // Pre-fill with default Vetted API URL if not already set
+      const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
       if (data.vettedApiUrl) {
         vettedApiUrlInput.value = data.vettedApiUrl;
+      } else {
+        // Set default URL if not configured
+        vettedApiUrlInput.value = defaultVettedApiUrl;
+        // Auto-save the default URL so it persists
+        chrome.storage.local.set({ vettedApiUrl: defaultVettedApiUrl }, () => {
+          console.log("Default Vetted API URL set:", defaultVettedApiUrl);
+        });
       }
       if (data.vettedApiKey) {
         vettedApiKeyInput.value = data.vettedApiKey;
@@ -958,19 +967,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   clearBtn.onclick = () => {
     if (!confirm("Clear all logged profile documents? This will also clear the send queue.")) return;
-    // Clear both profileDocuments and queue
-    chrome.storage.local.set({ 
-      profileDocuments: [],
-      vettedQueue: []
-    }, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Error clearing storage:", chrome.runtime.lastError);
-        alert("Error clearing storage: " + chrome.runtime.lastError.message);
-      } else {
-        console.log("Storage cleared successfully");
-        loadData();
-        alert("All profiles and queue cleared!");
-      }
+    
+    // Get current storage usage before clearing
+    chrome.storage.local.getBytesInUse(null, (bytesBefore) => {
+      // Clear both profileDocuments and queue
+      chrome.storage.local.set({ 
+        profileDocuments: [],
+        vettedQueue: []
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error clearing storage:", chrome.runtime.lastError);
+          alert("Error clearing storage: " + chrome.runtime.lastError.message);
+        } else {
+          // Verify storage was cleared
+          chrome.storage.local.getBytesInUse(null, (bytesAfter) => {
+            const freedMB = ((bytesBefore - bytesAfter) / (1024 * 1024)).toFixed(2);
+            console.log("Storage cleared successfully", {
+              before: `${(bytesBefore / (1024 * 1024)).toFixed(2)}MB`,
+              after: `${(bytesAfter / (1024 * 1024)).toFixed(2)}MB`,
+              freed: `${freedMB}MB`
+            });
+            
+            // Reload data to refresh the UI
+            loadData();
+            
+            // Show success message with freed space info
+            if (freedMB > 0) {
+              alert(`All profiles and queue cleared! Freed ${freedMB}MB of storage.`);
+            } else {
+              alert("All profiles and queue cleared!");
+            }
+          });
+        }
+      });
     });
   };
 

@@ -7,9 +7,16 @@ importScripts('profileProcessor.js');
 
 // Initialize storage on install
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get(["profileDocuments"], (data) => {
+  chrome.storage.local.get(["profileDocuments", "vettedApiUrl"], (data) => {
     if (!Array.isArray(data.profileDocuments)) {
       chrome.storage.local.set({ profileDocuments: [] });
+    }
+    // Set default Vetted API URL if not already configured
+    if (!data.vettedApiUrl) {
+      const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
+      chrome.storage.local.set({ vettedApiUrl: defaultVettedApiUrl }, () => {
+        console.log("Default Vetted API URL set on install:", defaultVettedApiUrl);
+      });
     }
   });
 });
