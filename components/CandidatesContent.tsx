@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 interface Candidate {
@@ -41,16 +41,24 @@ export default function CandidatesContent({
   initialLimit,
 }: CandidatesContentProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [candidates, setCandidates] = useState(initialCandidates)
   const [total, setTotal] = useState(initialTotal)
   const [page, setPage] = useState(initialPage)
-  const [search, setSearch] = useState(searchParams.get("search") || "")
-  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "")
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+
+  // Initialize search params from URL on client side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      setSearch(params.get("search") || "")
+      setStatusFilter(params.get("status") || "")
+    }
+  }, [])
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true)

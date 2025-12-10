@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import CandidatesContent from "@/components/CandidatesContent"
+import { Suspense } from "react"
 
 async function getCandidates(searchParams: { [key: string]: string | undefined }) {
   const search = searchParams.search
@@ -82,12 +83,14 @@ export default async function CandidatesPage({
             Total: {data.total} candidates
           </div>
         </div>
-        <CandidatesContent
-          initialCandidates={data.candidates}
-          initialTotal={data.total}
-          initialPage={data.page}
-          initialLimit={data.limit}
-        />
+        <Suspense fallback={<div className="p-8 text-center text-gray-600">Loading...</div>}>
+          <CandidatesContent
+            initialCandidates={data.candidates}
+            initialTotal={data.total}
+            initialPage={data.page}
+            initialLimit={data.limit}
+          />
+        </Suspense>
       </div>
     </div>
   )
