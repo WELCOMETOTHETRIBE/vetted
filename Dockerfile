@@ -35,43 +35,36 @@ RUN cd node_modules/.prisma/client && \
     npx tsc --project tsconfig.json 2>&1 && \
     echo "TypeScript compilation completed" || (echo "TypeScript compilation failed, will use runtime fallback" && rm -f client.js)
 
-# Create default.js that exports PrismaClient with multiple fallback strategies
+# Create default.js that exports PrismaClient from compiled client.js
+# Verify client.js exists and exports PrismaClient correctly
+RUN cd node_modules/.prisma/client && \
+    if [ -f client.js ]; then \
+      echo "client.js exists, checking exports..."; \
+      node -e "const c = require('./client.js'); console.log('PrismaClient type:', typeof c.PrismaClient);" || echo "Warning: client.js may not export PrismaClient correctly"; \
+    else \
+      echo "Warning: client.js not found after TypeScript compilation"; \
+    fi
+
+# Create default.js that requires compiled client.js
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
 
 let PrismaClient;
-
 try {
+  const clientJs = require.resolve('./client.js');
+  delete require.cache[clientJs];
   const clientModule = require('./client.js');
-  if (clientModule && clientModule.PrismaClient) {
+  if (clientModule && typeof clientModule.PrismaClient === 'function') {
     PrismaClient = clientModule.PrismaClient;
   } else {
-    throw new Error('client.js does not export PrismaClient');
+    throw new Error('client.js does not export PrismaClient function');
   }
 } catch (e) {
-  try {
-    const clientModule = require('./client.ts');
-    if (clientModule && clientModule.PrismaClient) {
-      PrismaClient = clientModule.PrismaClient;
-    } else {
-      throw new Error('client.ts does not export PrismaClient');
+  PrismaClient = class PrismaClient {
+    constructor(options) {
+      throw new Error('PrismaClient: Compiled client.js not found or invalid. Error: ' + e.message);
     }
-  } catch (e2) {
-    try {
-      const classModule = require('./internal/class.js');
-      if (classModule && classModule.getPrismaClientClass) {
-        PrismaClient = classModule.getPrismaClientClass();
-      } else {
-        throw new Error('class.js does not export getPrismaClientClass');
-      }
-    } catch (e3) {
-      PrismaClient = class PrismaClient {
-        constructor() {
-          throw new Error('PrismaClient not found. Run: npx prisma generate');
-        }
-      };
-    }
-  }
+  };
 }
 
 module.exports = {
