@@ -112,23 +112,6 @@ export async function POST(req: Request) {
         }
         throw error
       }
-
-      return NextResponse.json({
-        success: true,
-        message: "Migrations completed successfully",
-        output: output.split("\n").slice(-10), // Last 10 lines
-        isFirstSetup,
-      })
-    } catch (error: any) {
-      return NextResponse.json(
-        {
-          error: "Migration failed",
-          details: error.message,
-          output: error.stdout || error.stderr,
-        },
-        { status: 500 }
-      )
-    }
   } catch (error: any) {
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
