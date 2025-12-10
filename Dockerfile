@@ -34,10 +34,14 @@ RUN cd node_modules/.prisma/client && \
     echo '{"compilerOptions":{"module":"commonjs","target":"es2020","esModuleInterop":true,"skipLibCheck":true,"moduleResolution":"node","resolveJsonModule":true,"outDir":".","declaration":false,"allowSyntheticDefaultImports":true},"include":["**/*.ts"],"exclude":["node_modules"]}' > tsconfig.json && \
     npx tsc --project tsconfig.json 2>&1 && \
     echo "TypeScript compilation completed" && \
-    # Fix require paths to include .js extensions for Node.js compatibility
+    # Fix require paths to include .js extensions
     sed -i 's/require("\.\/\([^"]*\)")/require(".\/\1.js")/g' client.js && \
-    sed -i 's/require('\''\.\/\([^'\'']*\)'\'')/require('\''.\/\1.js'\'')/g' client.js || \
-    (echo "TypeScript compilation failed, will use runtime fallback" && rm -f client.js)
+    sed -i 's/require('\''\.\/\([^'\'']*\)'\'')/require('\''.\/\1.js'\'')/g' client.js && \
+    # Fix import.meta.url which doesn't work in CommonJS - replace with __dirname
+    sed -i 's/globalThis\['\''__dirname'\''\] = path\.dirname((0, node_url_1\.fileURLToPath)(import\.meta\.url);/\/\/ __dirname is available in CommonJS/g' client.js && \
+    # Remove unused imports if they're only used for import.meta
+    sed -i '/^const node_url_1 = require("node:url");$/d' client.js || \
+    (echo "TypeScript compilation failed" && rm -f client.js)
 
 # Create default.js that exports PrismaClient from compiled client.js
 # Verify client.js exists and exports PrismaClient correctly
