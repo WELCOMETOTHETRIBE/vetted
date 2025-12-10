@@ -1401,7 +1401,9 @@
   function buildProfileDocument() {
     try {
       const url = window.location.href;
-      const rawHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      // Truncate raw HTML to save storage (keep first 500KB)
+      const fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const rawHtml = fullHtml.length > 500000 ? fullHtml.substring(0, 500000) + "\n... (truncated)" : fullHtml;
       const rawText = document.body ? document.body.innerText : "";
       const now = new Date().toISOString();
 
