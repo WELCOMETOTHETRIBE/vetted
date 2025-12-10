@@ -44,11 +44,15 @@ RUN cd node_modules/.prisma/client && \
     # Replace any import.meta.url with __dirname
     sed -i 's/import\.meta\.url/__dirname/g' client.js && \
     sed -i 's/import\.meta/__dirname/g' client.js && \
-    # Fix any code that tries to use import.meta for __dirname
-    sed -i 's/globalThis\[.__dirname.\] = path\.dirname((0, node_url_1\.fileURLToPath)(import\.meta\.url);/\/\/ __dirname is available in CommonJS/g' client.js && \
-    sed -i 's/globalThis\[.__dirname.\] = path\.dirname((0, node_url_1\.fileURLToPath)(__dirname);/\/\/ __dirname is available in CommonJS/g' client.js && \
-    # Remove unused imports if they're only used for import.meta
+    # Remove all node_url_1 references (we removed the import, so any usage will fail)
+    sed -i 's/(0, node_url_1\.fileURLToPath)([^)]*)/__dirname/g' client.js && \
+    sed -i 's/node_url_1\.fileURLToPath([^)]*)/__dirname/g' client.js && \
+    sed -i 's/globalThis\[.__dirname.\] = path\.dirname((0, node_url_1\.fileURLToPath)([^)]*);/\/\/ __dirname is available in CommonJS/g' client.js && \
+    sed -i 's/globalThis\[.__dirname.\] = path\.dirname(__dirname);/\/\/ __dirname is available in CommonJS/g' client.js && \
+    # Remove the node_url_1 import line
     sed -i '/^const node_url_1 = require("node:url");$/d' client.js && \
+    # Remove any remaining node_url_1 references
+    sed -i 's/node_url_1[^;]*;//g' client.js && \
     # Ensure "use strict" is at the top for CommonJS (Alpine sed syntax)
     if ! head -1 client.js | grep -q "use strict"; then \
       sed -i '1i"use strict";' client.js; \
