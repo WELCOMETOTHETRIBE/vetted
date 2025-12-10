@@ -172,9 +172,35 @@ export async function POST(req: Request) {
           continue
         }
 
-        // Determine if remote from title
-        const isRemote = jobData.title.toLowerCase().includes('remote') || 
-                        jobData.title.toLowerCase().includes('(remote)')
+        // Determine if remote from title or description
+        const titleLower = jobData.title.toLowerCase()
+        const descLower = (jobData.description || '').toLowerCase()
+        const isRemote = titleLower.includes('remote') || 
+                        titleLower.includes('(remote)') ||
+                        descLower.includes('remote') ||
+                        descLower.includes('fully-remote')
+        
+        // Determine if hybrid
+        const isHybrid = titleLower.includes('hybrid') || descLower.includes('hybrid')
+
+        // Use provided description or create default
+        const jobDescription = jobData.description 
+          ? `${jobData.description}\n\nApply at: ${jobData.url}`
+          : `We are hiring a ${jobTitle} to join our team at ${companyName}.\n\nApply at: ${jobData.url}\n\nThis position is posted through our job board. Please visit the application URL for more details and to apply.`
+
+        // Determine location from description if available
+        let location = 'Location TBD'
+        if (isRemote) {
+          location = 'Remote'
+        } else if (descLower.includes('san francisco') || descLower.includes('sf')) {
+          location = 'San Francisco, CA'
+        } else if (descLower.includes('new york') || descLower.includes('ny')) {
+          location = 'New York, NY'
+        } else if (descLower.includes('boston')) {
+          location = 'Boston, MA'
+        } else if (descLower.includes('huntington beach')) {
+          location = 'Huntington Beach, CA'
+        }
 
         // Create job
         const job = await prisma.job.create({
@@ -182,14 +208,11 @@ export async function POST(req: Request) {
             title: jobTitle,
             companyId: company.id,
             postedById: postedBy.id,
-            location: isRemote ? 'Remote' : 'Location TBD',
+            location: location,
             isRemote: isRemote,
+            isHybrid: isHybrid,
             employmentType: 'FULL_TIME',
-            description: `We are hiring a ${jobTitle} to join our team at ${companyName}. 
-
-Apply at: ${jobData.url}
-
-This position is posted through our job board. Please visit the application URL for more details and to apply.`,
+            description: jobDescription,
             requirements: `Requirements will be listed on the application page. Please visit ${jobData.url} for full details.`,
           },
         })
