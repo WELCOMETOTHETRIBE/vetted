@@ -72,7 +72,18 @@ export async function GET(req: Request) {
 
     // Run the Python scraper
     const pythonScript = join(process.cwd(), "scripts", "ashby", "ashby_scraper.py")
-    const pythonCmd = process.env.PYTHON_COMMAND || "python3"
+    // Use virtual environment Python if available, otherwise fallback to system python3
+    const fs = await import("fs")
+    let pythonCmd = process.env.PYTHON_COMMAND
+    if (!pythonCmd) {
+      if (process.env.VIRTUAL_ENV) {
+        pythonCmd = `${process.env.VIRTUAL_ENV}/bin/python3`
+      } else if (process.platform !== 'win32' && fs.existsSync('/opt/venv/bin/python3')) {
+        pythonCmd = "/opt/venv/bin/python3"
+      } else {
+        pythonCmd = "python3"
+      }
+    }
     
     // Build command with search query if provided
     let command = `${pythonCmd} ${pythonScript}`

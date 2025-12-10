@@ -13,9 +13,11 @@ RUN npm ci
 
 # Install Python dependencies for Ashby scraper
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt && \
-    python3 -m playwright install chromium && \
-    python3 -m playwright install-deps chromium
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt && \
+    /opt/venv/bin/python3 -m playwright install chromium && \
+    /opt/venv/bin/python3 -m playwright install-deps chromium
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -152,10 +154,8 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Ensure Python and Playwright are available in production
-RUN apk add --no-cache python3 py3-pip && \
-    pip3 install --no-cache-dir playwright beautifulsoup4 serpapi lxml && \
-    python3 -m playwright install chromium && \
-    python3 -m playwright install-deps chromium
+# Note: We need to copy the venv from builder stage or recreate it
+RUN apk add --no-cache python3 py3-pip
 
 COPY --from=builder /app/public ./public
 
@@ -178,6 +178,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.
 # Copy Python scraper scripts
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/ashby ./scripts/ashby
 COPY --from=builder --chown=nextjs:nodejs /app/requirements.txt ./requirements.txt
+
+# Copy Python virtual environment from builder
+COPY --from=builder --chown=nextjs:nodejs /opt/venv /opt/venv
+
+# Set PATH to include venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Ensure Prisma Client is accessible
 RUN test -d node_modules/.prisma/client && echo "Prisma client found" || echo "WARNING: Prisma client not found"
