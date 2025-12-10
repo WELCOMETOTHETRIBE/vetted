@@ -56,7 +56,8 @@ export async function POST(req: Request) {
     const originalSchema = readFileSync(schemaPath, 'utf-8')
     
     // Create a temporary schema with url in datasource
-    const tempSchemaPath = join(process.cwd(), 'prisma', 'schema.migrate.prisma')
+    // Use /tmp which is writable by all users
+    const tempSchemaPath = '/tmp/schema.migrate.prisma'
     const tempSchema = originalSchema.replace(
       /datasource db \{[^}]*\}/,
       `datasource db {
@@ -68,40 +69,31 @@ export async function POST(req: Request) {
     writeFileSync(tempSchemaPath, tempSchema)
 
     try {
-      // Delete config file if it exists
-      const configPath = join(process.cwd(), 'prisma.config.ts')
-      let configDeleted = false
-      let configContent = ''
-      
-      if (existsSync(configPath)) {
-        configContent = readFileSync(configPath, 'utf-8')
-        unlinkSync(configPath)
-        configDeleted = true
-      }
-
-      try {
-        const output = execSync(
-          `npx prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
-          {
-            encoding: "utf-8",
-            cwd: process.cwd(),
-            env: { 
-              ...process.env,
-              DATABASE_URL: dbUrl,
-            },
-            shell: "/bin/sh",
-          }
-        )
-
-        // Restore config file
-        if (configDeleted && configContent) {
-          writeFileSync(configPath, configContent, 'utf-8')
+      // Don't try to delete config file - just use temp schema
+      // Set PRISMA_CONFIG_PATH to empty to skip config file
+      const output = execSync(
+        `npx prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
+        {
+          encoding: "utf-8",
+          cwd: process.cwd(),
+          env: { 
+            ...process.env,
+            DATABASE_URL: dbUrl,
+            // Try to skip config file by setting path to empty
+            PRISMA_CONFIG_PATH: '',
+          },
+          shell: "/bin/sh",
         }
+      )
 
-        // Clean up temp schema
-        if (existsSync(tempSchemaPath)) {
+      // Clean up temp schema
+      if (existsSync(tempSchemaPath)) {
+        try {
           unlinkSync(tempSchemaPath)
+        } catch (e) {
+          // Ignore cleanup errors
         }
+      }
 
         return NextResponse.json({
           success: true,
@@ -127,6 +119,15 @@ export async function POST(req: Request) {
           }
         }
         throw error
+      } finally {
+        // Clean up temp schema even on error
+        if (existsSync(tempSchemaPath)) {
+          try {
+            unlinkSync(tempSchemaPath)
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+        }
       }
     } catch (error: any) {
       return NextResponse.json(
