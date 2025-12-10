@@ -21,6 +21,9 @@ export default function MessagesContent({
   const [showNewMessage, setShowNewMessage] = useState(false)
   const [newMessageUserId, setNewMessageUserId] = useState("")
   const [newMessageText, setNewMessageText] = useState("")
+  const [userSearchQuery, setUserSearchQuery] = useState("")
+  const [userSearchResults, setUserSearchResults] = useState<any[]>([])
+  const [showUserSearch, setShowUserSearch] = useState(false)
 
   useEffect(() => {
     if (selectedThread) {
@@ -81,9 +84,45 @@ export default function MessagesContent({
 
   const displayedThreads = activeTab === "inbox" ? inboxThreads : sentThreads
 
+  // Search for users
+  const searchUsers = async (query: string) => {
+    if (query.length < 2) {
+      setUserSearchResults([])
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=people`)
+      if (response.ok) {
+        const data = await response.json()
+        setUserSearchResults(data.people || [])
+      }
+    } catch (error) {
+      console.error("Error searching users:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (userSearchQuery) {
+      const timeoutId = setTimeout(() => {
+        searchUsers(userSearchQuery)
+      }, 300) // Debounce search
+      return () => clearTimeout(timeoutId)
+    } else {
+      setUserSearchResults([])
+    }
+  }, [userSearchQuery])
+
+  const handleSelectUser = (user: any) => {
+    setNewMessageUserId(user.id)
+    setUserSearchQuery(user.name || user.handle || user.email || "")
+    setUserSearchResults([])
+    setShowUserSearch(false)
+  }
+
   const handleStartNewMessage = async () => {
     if (!newMessageUserId.trim() || !newMessageText.trim()) {
-      alert("Please enter a user ID and message")
+      alert("Please select a user and enter a message")
       return
     }
 
@@ -108,6 +147,7 @@ export default function MessagesContent({
         if (messageResponse.ok) {
           setNewMessageUserId("")
           setNewMessageText("")
+          setUserSearchQuery("")
           setShowNewMessage(false)
           // Reload threads
           window.location.reload()
@@ -159,14 +199,63 @@ export default function MessagesContent({
 
         {/* New Message Form */}
         {showNewMessage && (
-          <div className="p-3 border-b border-gray-200 bg-gray-50">
-            <input
-              type="text"
-              value={newMessageUserId}
-              onChange={(e) => setNewMessageUserId(e.target.value)}
-              placeholder="User ID or handle"
-              className="w-full px-3 py-2 mb-2 border border-gray-300 rounded text-sm"
-            />
+          <div className="p-3 border-b border-gray-200 bg-gray-50 relative">
+            <div className="relative mb-2">
+              <input
+                type="text"
+                value={userSearchQuery}
+                onChange={(e) => {
+                  setUserSearchQuery(e.target.value)
+                  setShowUserSearch(true)
+                  if (!e.target.value) {
+                    setNewMessageUserId("")
+                  }
+                }}
+                onFocus={() => setShowUserSearch(true)}
+                placeholder="Search for a user by name, handle, or email..."
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+              />
+              {showUserSearch && userSearchResults.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {userSearchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => handleSelectUser(user)}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-3"
+                    >
+                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">
+                        {user.image ? (
+                          <Image
+                            src={user.image}
+                            alt={user.name || "User"}
+                            width={32}
+                            height={32}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          user.name?.charAt(0).toUpperCase() || "U"
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {user.name || "Anonymous"}
+                        </p>
+                        {(user.handle || user.email) && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.handle ? `@${user.handle}` : user.email}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {newMessageUserId && (
+              <div className="mb-2 px-2 py-1 bg-blue-50 rounded text-sm text-blue-700">
+                Selected: {userSearchQuery}
+              </div>
+            )}
             <textarea
               value={newMessageText}
               onChange={(e) => setNewMessageText(e.target.value)}
@@ -176,7 +265,8 @@ export default function MessagesContent({
             />
             <button
               onClick={handleStartNewMessage}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              disabled={!newMessageUserId || !newMessageText.trim()}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Send
             </button>

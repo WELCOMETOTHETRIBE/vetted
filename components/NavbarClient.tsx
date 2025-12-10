@@ -29,13 +29,13 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
+          {/* Logo - More Prominent */}
           <div className="flex items-center">
-            <Link href="/feed" className="flex items-center space-x-2">
+            <Link href="/feed" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
               <img
                 src="/vetted-logo.png"
                 alt="Vetted"
-                className="h-8 w-auto"
+                className="h-12 w-auto"
                 onError={(e) => {
                   // Fallback to text if image fails to load
                   const target = e.target as HTMLImageElement
@@ -43,12 +43,13 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                   const parent = target.parentElement
                   if (parent && !parent.querySelector(".fallback-logo")) {
                     const fallback = document.createElement("span")
-                    fallback.className = "fallback-logo text-2xl font-bold text-blue-600"
+                    fallback.className = "fallback-logo text-3xl font-bold text-blue-600"
                     fallback.textContent = "Vetted"
                     parent.appendChild(fallback)
                   }
                 }}
               />
+              <span className="hidden md:block text-xl font-bold text-gray-900">Vetted</span>
             </Link>
           </div>
 

@@ -9,15 +9,57 @@ async function getNotifications(userId: string) {
     where: { userId },
     orderBy: { createdAt: "desc" },
     take: 50,
+    include: {
+      // Include connection info for connection request notifications
+      // We'll need to parse the message to extract connection ID or user info
+    },
   })
 
-  // Mark as read
+  // Get connection requests for connection request notifications
+  const connectionRequests = await prisma.connection.findMany({
+    where: {
+      receiverId: userId,
+      status: "PENDING",
+    },
+    include: {
+      requester: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          handle: true,
+        },
+      },
+    },
+  })
+
+  // Enrich notifications with connection data
+  const enrichedNotifications = notifications.map((notification) => {
+    if (notification.type === "CONNECTION_REQUEST") {
+      // Find matching connection request
+      const connection = connectionRequests.find(
+        (conn) => notification.message.includes(conn.requester.name || "")
+      )
+      return {
+        ...notification,
+        connectionId: connection?.id,
+        requester: connection?.requester,
+      }
+    }
+    return notification
+  })
+
+  // Mark as read (but don't mark connection requests as read until they're acted upon)
   await prisma.notification.updateMany({
-    where: { userId, isRead: false },
+    where: {
+      userId,
+      isRead: false,
+      type: { not: "CONNECTION_REQUEST" }, // Don't auto-mark connection requests as read
+    },
     data: { isRead: true },
   })
 
-  return notifications
+  return enrichedNotifications
 }
 
 export default async function NotificationsPage() {
