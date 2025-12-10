@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-prisma"],
   // Use webpack for better Prisma support
   turbopack: undefined,
+  images: {
+    remotePatterns: [],
+    unoptimized: false,
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Exclude Prisma from client-side bundle
