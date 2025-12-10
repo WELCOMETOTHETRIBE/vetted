@@ -4,25 +4,12 @@
 
 // Import profile processor functions
 importScripts('profileProcessor.js');
-importScripts('storage.js');
 
 // Initialize storage on install
-chrome.runtime.onInstalled.addListener(async () => {
-  // Initialize IndexedDB (no need to check profileDocuments - IndexedDB handles it)
-  try {
-    await VettedStorage.initDB();
-    console.log("IndexedDB initialized");
-  } catch (error) {
-    console.error("Error initializing IndexedDB:", error);
-  }
-  
-  // Set default Vetted API URL if not already configured (use chrome.storage for settings)
-  chrome.storage.local.get(["vettedApiUrl"], (data) => {
-    if (!data.vettedApiUrl) {
-      const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
-      chrome.storage.local.set({ vettedApiUrl: defaultVettedApiUrl }, () => {
-        console.log("Default Vetted API URL set on install:", defaultVettedApiUrl);
-      });
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.get(["profileDocuments"], (data) => {
+    if (!Array.isArray(data.profileDocuments)) {
+      chrome.storage.local.set({ profileDocuments: [] });
     }
   });
 });
@@ -112,84 +99,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const currentListSize = estimateStorageSize(currentList);
           const estimatedNewSize = currentListSize + newProfileSize;
           
-          // Chrome storage limit is ~10MB
+          // Chrome storage limit is ~10MB, warn if approaching limit
           const STORAGE_LIMIT = 10 * 1024 * 1024; // 10MB
-          const STORAGE_WARNING_THRESHOLD = STORAGE_LIMIT * 0.85; // 85% threshold
-          
-          // Check storage before attempting to save
-          chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
-            const currentUsage = bytesInUse || 0;
-            const wouldExceed = (currentUsage + newProfileSize) > STORAGE_LIMIT;
-            
-            if (wouldExceed) {
-              const mbUsed = (currentUsage / (1024 * 1024)).toFixed(2);
-              const mbLimit = (STORAGE_LIMIT / (1024 * 1024)).toFixed(0);
-              const errorMsg = `Storage full (${mbUsed}MB / ${mbLimit}MB). Please clear some profiles using the extension popup.`;
-              console.warn("Storage would exceed limit:", {
-                currentUsage: currentUsage,
-                newProfileSize: newProfileSize,
-                wouldExceed: wouldExceed
-              });
+          if (estimatedNewSize > STORAGE_LIMIT * 0.9) {
+            console.warn("Storage approaching limit:", estimatedNewSize, "bytes");
+          }
+
+          currentList.push(message.payload);
+
+          // Try to save with error handling
+          chrome.storage.local.set({ profileDocuments: currentList }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Storage error:", chrome.runtime.lastError);
               sendResponse({ 
                 success: false, 
-                error: errorMsg,
-                count: currentList.length,
-                storageInfo: {
-                  used: currentUsage,
-                  limit: STORAGE_LIMIT,
-                  percentage: ((currentUsage / STORAGE_LIMIT) * 100).toFixed(1)
-                }
+                error: chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.",
+                count: currentList.length - 1 // Don't count the failed one
               });
               return;
             }
             
-            // Warn if approaching limit
-            if (estimatedNewSize > STORAGE_WARNING_THRESHOLD) {
-              console.warn("Storage approaching limit:", {
-                estimatedSize: estimatedNewSize,
-                percentage: ((estimatedNewSize / STORAGE_LIMIT) * 100).toFixed(1) + "%"
-              });
-            }
-
-            currentList.push(message.payload);
-
-            // Try to save with error handling
-            chrome.storage.local.set({ profileDocuments: currentList }, () => {
-              if (chrome.runtime.lastError) {
-                const errorMsg = chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.";
-                
-                // Get updated storage usage for accurate reporting
-                chrome.storage.local.getBytesInUse(null, (bytesAfterError) => {
-                  const finalUsage = bytesAfterError || currentUsage;
-                  const storageInfo = {
-                    used: finalUsage,
-                    limit: STORAGE_LIMIT,
-                    percentage: ((finalUsage / STORAGE_LIMIT) * 100).toFixed(1)
-                  };
-                  
-                  console.error("Storage error:", {
-                    error: chrome.runtime.lastError,
-                    currentListSize: currentList.length,
-                    estimatedSize: estimatedNewSize,
-                    storageInfo: {
-                      used: `${(storageInfo.used / (1024 * 1024)).toFixed(2)}MB`,
-                      limit: `${(storageInfo.limit / (1024 * 1024)).toFixed(0)}MB`,
-                      percentage: `${storageInfo.percentage}%`
-                    }
-                  });
-                  
-                  sendResponse({ 
-                    success: false, 
-                    error: errorMsg,
-                    count: currentList.length - 1, // Don't count the failed one
-                    storageInfo: storageInfo
-                  });
-                });
-                return;
-              }
-              
-              sendResponse({ success: true, count: currentList.length });
-            });
+            sendResponse({ success: true, count: currentList.length });
           });
         } catch (error) {
           console.error("Error processing profile save:", error);
@@ -236,20 +166,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
       // Save queue
       chrome.storage.local.set({ vettedQueue: queue }, () => {
-        if (chrome.runtime.lastError) {
-          console.error("Error saving queue:", chrome.runtime.lastError);
-          sendResponse({ 
-            success: false, 
-            error: chrome.runtime.lastError.message || "Failed to save queue",
-            queuedCount: queue.length - 1
-          });
-          return;
-        }
-        
         sendResponse({ success: true, queuedCount: queue.length });
         
-        // Auto-send batch if queue reaches 10 profiles or after 10 seconds
-        if (queue.length >= 10) {
+        // Auto-send batch if queue reaches 5 profiles or after 10 seconds
+        if (queue.length >= 5) {
           sendBatchToVetted();
         } else if (queue.length === 1) {
           // Start timer for first item in queue
@@ -322,11 +242,7 @@ async function sendBatchToVetted() {
 
         if (processed.length === 0) {
           // Clear queue if all failed
-          chrome.storage.local.set({ vettedQueue: [] }, () => {
-            if (chrome.runtime.lastError) {
-              console.error("Error clearing queue:", chrome.runtime.lastError);
-            }
-          });
+          chrome.storage.local.set({ vettedQueue: [] });
           resolve({ success: false, error: "No valid profiles to send" });
           return;
         }
@@ -368,40 +284,8 @@ async function sendBatchToVetted() {
 
         const result = await response.json();
         
-        // Clear sent profiles from IndexedDB after successful send
-        // This prevents storage from filling up
-        try {
-          const allProfiles = await VettedStorage.getAllProfiles();
-          
-          // Remove sent profiles from IndexedDB (match by LinkedIn URL)
-          const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
-          
-          // Delete each sent profile from IndexedDB (iterate backwards to maintain indices)
-          for (let i = allProfiles.length - 1; i >= 0; i--) {
-            const profile = allProfiles[i];
-            const profileUrl = profile.extraction_metadata?.source_url || 
-                              profile.personal_info?.profile_url ||
-                              profile.comprehensive_data?.find(item => 
-                                item.category === 'metadata' && item.data?.source_url
-                              )?.data?.source_url;
-            if (sentUrls.has(profileUrl)) {
-              await VettedStorage.deleteProfileByIndex(i);
-            }
-          }
-          
-          // Clear queue from chrome.storage
-          await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
-          
-          console.log(`Cleared sent profiles from IndexedDB`);
-        } catch (error) {
-          console.error("Error clearing profiles from IndexedDB:", error);
-          // Still clear queue
-          try {
-            await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
-          } catch (queueError) {
-            console.error("Error clearing queue:", queueError);
-          }
-        }
+        // Clear queue after successful send
+        chrome.storage.local.set({ vettedQueue: [] });
         
         resolve({ 
           success: true, 

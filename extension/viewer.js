@@ -502,92 +502,14 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     doc._metadata.lastEdited = new Date().toISOString();
 
-    // Process the profile for sending to Vetted
-    if (typeof ProfileProcessor === 'undefined') {
-      alert("Profile processor not available");
-      return;
-    }
-
-    const processed = ProfileProcessor.processProfileDocument(doc);
-    if (!processed) {
-      alert("Error processing profile");
-      return;
-    }
-
-    // Send directly to Vetted API instead of storing locally
-    chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], async (settings) => {
-      if (chrome.runtime.lastError) {
-        console.error("Error loading settings:", chrome.runtime.lastError);
-        alert("Error loading settings: " + chrome.runtime.lastError.message);
-        return;
-      }
-
-      const apiUrl = settings.vettedApiUrl || "https://vetted-production.up.railway.app/api/candidates/upload";
-      
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (settings.vettedApiKey) {
-        headers["Authorization"] = `Bearer ${settings.vettedApiKey}`;
-      }
-
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: headers,
-          credentials: "include",
-          body: JSON.stringify([processed]),
-        });
-
-        if (!response.ok) {
-          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-            if (errorData.details) {
-              errorMessage += ` - ${JSON.stringify(errorData.details)}`;
-            }
-          } catch (e) {
-            try {
-              const errorText = await response.text();
-              if (errorText) {
-                errorMessage += ` - ${errorText.substring(0, 200)}`;
-              }
-            } catch (textError) {
-              console.error("Could not parse error response:", textError);
-            }
-          }
-          
-          if (response.status === 401) {
-            errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
-          } else if (response.status === 403) {
-            errorMessage = "Forbidden: You must be an admin user to upload candidates";
-          } else if (response.status === 404) {
-            errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
-          }
-          
-          throw new Error(errorMessage);
-        }
-
-        const result = await response.json();
-        
-        // Close modal and show success
+    // Update in storage
+    chrome.storage.local.get(["profileDocuments"], (data) => {
+      const docs = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+      docs[currentEditingIndex] = doc;
+      chrome.storage.local.set({ profileDocuments: docs }, () => {
         modal.style.display = "none";
-        alert(`Profile sent successfully to Vetted! ${result.created || 1} candidate(s) added.`);
-        
-        // Remove the sent profile from IndexedDB
-        try {
-          await VettedStorage.deleteProfileByIndex(currentEditingIndex);
-          loadData();
-        } catch (error) {
-          console.error("Error removing profile from IndexedDB:", error);
-          loadData(); // Still reload to refresh UI
-        }
-      } catch (error) {
-        console.error("Error sending to Vetted:", error);
-        alert(`Error sending to Vetted: ${error.message}`);
-      }
+        loadData();
+      });
     });
   }
 
@@ -597,16 +519,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
-  async function loadData() {
-    try {
-      // Load profiles from IndexedDB
-      const documents = await VettedStorage.getAllProfiles();
+  function loadData() {
+    chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
+      const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+      const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
       
-      // Load queue from chrome.storage (small data)
-      const settings = await VettedStorage.SettingsStorage.get(["vettedQueue"]);
-      const queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
-      
-      console.log(`Loaded ${documents.length} saved profiles from IndexedDB, ${queueCount} queued for Vetted`);
+      console.log(`Loaded ${documents.length} saved profiles, ${queueCount} queued for Vetted`);
       
       renderTable(documents);
       
@@ -627,27 +545,36 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       
-      // Check storage usage (IndexedDB)
-      const storageInfo = await VettedStorage.getStorageSize();
-      console.log(`IndexedDB storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
-      
-      // Show storage info (no warnings needed since IndexedDB has much larger limits)
-      const storageInfoDiv = document.createElement("div");
-      storageInfoDiv.id = "storage-info";
-      storageInfoDiv.style.cssText = "background: #e8f5e9; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: #2e7d32;";
-      storageInfoDiv.innerHTML = `💾 IndexedDB: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored`;
-      const controls = document.getElementById("controls");
-      const existingInfo = document.getElementById("storage-info");
-      if (existingInfo) {
-        existingInfo.remove();
-      }
-      if (controls) {
-        controls.insertBefore(storageInfoDiv, controls.firstChild);
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
-      renderTable([]);
-    }
+      // Check storage usage
+      chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
+        if (bytesInUse !== undefined) {
+          const mbUsed = (bytesInUse / (1024 * 1024)).toFixed(2);
+          const mbLimit = 10; // Chrome storage limit is ~10MB
+          const percentage = ((bytesInUse / (1024 * 1024 * mbLimit)) * 100).toFixed(1);
+          
+          // Show storage info in console and optionally in UI
+          console.log(`Storage usage: ${mbUsed}MB / ${mbLimit}MB (${percentage}%)`);
+          
+          if (percentage > 80) {
+            console.warn("Storage is getting full! Consider clearing old profiles.");
+            // Show warning in UI
+            const storageWarning = document.createElement("div");
+            storageWarning.style.cssText = "background: #fff3cd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px; color: #856404;";
+            storageWarning.innerHTML = `⚠️ Storage is ${percentage}% full. Consider clearing old profiles.`;
+            const controls = document.getElementById("controls");
+            if (controls && !document.getElementById("storage-warning")) {
+              storageWarning.id = "storage-warning";
+              controls.insertBefore(storageWarning, controls.firstChild);
+            }
+          } else {
+            const storageWarning = document.getElementById("storage-warning");
+            if (storageWarning) {
+              storageWarning.remove();
+            }
+          }
+        }
+      });
+    });
   }
 
   function loadSettings() {
@@ -658,17 +585,8 @@ document.addEventListener("DOMContentLoaded", () => {
       "googleSheetsUrl", 
       "autoSendToSheets"
     ], (data) => {
-      // Pre-fill with default Vetted API URL if not already set
-      const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
       if (data.vettedApiUrl) {
         vettedApiUrlInput.value = data.vettedApiUrl;
-      } else {
-        // Set default URL if not configured
-        vettedApiUrlInput.value = defaultVettedApiUrl;
-        // Auto-save the default URL so it persists
-        chrome.storage.local.set({ vettedApiUrl: defaultVettedApiUrl }, () => {
-          console.log("Default Vetted API URL set:", defaultVettedApiUrl);
-        });
       }
       if (data.vettedApiKey) {
         vettedApiKeyInput.value = data.vettedApiKey;
@@ -959,53 +877,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (vettedSettings.vettedApiUrl) {
         try {
-          // Send all profiles in batch
           await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
-          
-          // Clear sent profiles from IndexedDB after successful send
-          const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
-          try {
-            const allProfiles = await VettedStorage.getAllProfiles();
-            const remainingProfiles = allProfiles.filter(profile => {
-              const profileUrl = profile.extraction_metadata?.source_url || 
-                                profile.personal_info?.profile_url ||
-                                profile.comprehensive_data?.find(item => 
-                                  item.category === 'metadata' && item.data?.source_url
-                                )?.data?.source_url;
-              return !sentUrls.has(profileUrl);
-            });
-            
-            // Delete sent profiles from IndexedDB
-            const profilesToDelete = allProfiles.filter(profile => {
-              const profileUrl = profile.extraction_metadata?.source_url || 
-                                profile.personal_info?.profile_url ||
-                                profile.comprehensive_data?.find(item => 
-                                  item.category === 'metadata' && item.data?.source_url
-                                )?.data?.source_url;
-              return sentUrls.has(profileUrl);
-            });
-            
-            // Delete each sent profile
-            for (let i = allProfiles.length - 1; i >= 0; i--) {
-              if (sentUrls.has(allProfiles[i].extraction_metadata?.source_url || 
-                               allProfiles[i].personal_info?.profile_url ||
-                               allProfiles[i].comprehensive_data?.find(item => 
-                                 item.category === 'metadata' && item.data?.source_url
-                               )?.data?.source_url)) {
-                await VettedStorage.deleteProfileByIndex(i);
-              }
-            }
-            
-            // Clear queue from chrome.storage
-            await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
-            
-            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from IndexedDB`);
-            loadData(); // Refresh the table
-          } catch (error) {
-            console.error("Error clearing sent profiles:", error);
-            loadData(); // Still refresh the table
-          }
         } catch (vettedError) {
           console.error("Vetted API error:", vettedError);
           console.error("Error details:", {
@@ -1038,33 +911,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  clearBtn.onclick = async () => {
-    if (!confirm("Clear all logged profile documents? This will also clear the send queue.")) return;
-    
-    try {
-      // Get storage info before clearing
-      const storageBefore = await VettedStorage.getStorageSize();
-      
-      // Clear IndexedDB profiles
-      await VettedStorage.clearAllProfiles();
-      
-      // Clear queue from chrome.storage
-      await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
-      
-      console.log("Storage cleared successfully", {
-        before: `${storageBefore.mb}MB`,
-        profilesCleared: storageBefore.count
-      });
-      
-      // Reload data to refresh the UI
+  clearBtn.onclick = () => {
+    if (!confirm("Clear all logged profile documents?")) return;
+    chrome.storage.local.set({ profileDocuments: [] }, () => {
       loadData();
-      
-      // Show success message
-      alert(`All profiles and queue cleared! Freed ${storageBefore.mb}MB of storage (${storageBefore.count} profiles).`);
-    } catch (error) {
-      console.error("Error clearing storage:", error);
-      alert("Error clearing storage: " + error.message);
-    }
+    });
   };
 
   window.onclick = (event) => {
