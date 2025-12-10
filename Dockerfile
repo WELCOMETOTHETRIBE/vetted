@@ -45,35 +45,26 @@ RUN cd node_modules/.prisma/client && \
       echo "Warning: client.js not found after TypeScript compilation"; \
     fi
 
-# Create default.js that gets PrismaClient from internal/class.js first
-# This avoids dependency issues with compiled client.js
+# Create default.js that exports PrismaClient from compiled client.js
+# client.js should have all dependencies compiled, so it should work
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
 
 let PrismaClient;
 
 try {
-  const classModule = require('./internal/class.js');
-  if (classModule && classModule.getPrismaClientClass) {
-    PrismaClient = classModule.getPrismaClientClass();
+  const clientModule = require('./client.js');
+  if (clientModule && clientModule.PrismaClient) {
+    PrismaClient = clientModule.PrismaClient;
   } else {
-    throw new Error('class.js does not export getPrismaClientClass');
+    throw new Error('client.js does not export PrismaClient');
   }
 } catch (e) {
-  try {
-    const clientModule = require('./client.js');
-    if (clientModule && clientModule.PrismaClient) {
-      PrismaClient = clientModule.PrismaClient;
-    } else {
-      throw new Error('client.js does not export PrismaClient');
+  PrismaClient = class PrismaClient {
+    constructor() {
+      throw new Error('PrismaClient not found. Please ensure all TypeScript files are compiled. Error: ' + e.message);
     }
-  } catch (e2) {
-    PrismaClient = class PrismaClient {
-      constructor() {
-        throw new Error('PrismaClient not found. Error: ' + e.message);
-      }
-    };
-  }
+  };
 }
 
 module.exports = {
