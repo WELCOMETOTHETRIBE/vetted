@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip setuptools wheel && \
     /opt/venv/bin/pip install --no-cache-dir -r requirements.txt && \
-    /opt/venv/bin/python3 -m playwright install chromium && \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers /opt/venv/bin/python3 -m playwright install chromium && \
     /opt/venv/bin/python3 -m playwright install-deps chromium && \
     apt-get purge -y python3-dev gcc && \
     apt-get autoremove -y && \
