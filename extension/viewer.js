@@ -663,27 +663,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       
-      // Check storage usage (IndexedDB) - don't block UI on this
-      VettedStorage.getStorageSize().then(storageInfo => {
-        console.log(`IndexedDB storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
-        
-        // Show storage info (no warnings needed since IndexedDB has much larger limits)
-        const storageInfoDiv = document.createElement("div");
-        storageInfoDiv.id = "storage-info";
-        storageInfoDiv.style.cssText = "background: #e8f5e9; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: #2e7d32;";
-        storageInfoDiv.innerHTML = `💾 IndexedDB: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored`;
-        const controls = document.getElementById("controls");
-        const existingInfo = document.getElementById("storage-info");
-        if (existingInfo) {
-          existingInfo.remove();
-        }
-        if (controls) {
-          controls.insertBefore(storageInfoDiv, controls.firstChild);
-        }
-      }).catch(err => {
-        console.warn("Could not get storage size:", err);
-        // Don't show error to user - not critical
-      });
+        // Check storage usage (chrome.storage.local)
+        VettedStorage.getStorageSize().then(storageInfo => {
+          console.log(`Chrome storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
+          
+          // Show storage info with warning if approaching limit
+          const storageInfoDiv = document.createElement("div");
+          storageInfoDiv.id = "storage-info";
+          const mbUsed = parseFloat(storageInfo.mb);
+          const isNearLimit = mbUsed > 8; // Warn if over 8MB (10MB is Chrome's limit)
+          storageInfoDiv.style.cssText = `background: ${isNearLimit ? '#fff3cd' : '#e8f5e9'}; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: ${isNearLimit ? '#856404' : '#2e7d32'};`;
+          storageInfoDiv.innerHTML = `💾 Chrome Storage: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored${isNearLimit ? ' (near 10MB limit)' : ''}`;
+          const controls = document.getElementById("controls");
+          const existingInfo = document.getElementById("storage-info");
+          if (existingInfo) {
+            existingInfo.remove();
+          }
+          if (controls) {
+            controls.insertBefore(storageInfoDiv, controls.firstChild);
+          }
+        }).catch(err => {
+          console.warn("Could not get storage size:", err);
+        });
     } catch (error) {
       console.error("Error loading data:", error);
       tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error loading profiles: ${error.message}</div>`;

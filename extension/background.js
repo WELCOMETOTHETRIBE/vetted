@@ -7,16 +7,17 @@ importScripts('profileProcessor.js');
 importScripts('storage.js');
 
 // Initialize storage on install
-chrome.runtime.onInstalled.addListener(async () => {
-  // Initialize IndexedDB (no need to check profileDocuments - IndexedDB handles it)
-  try {
-    await VettedStorage.initDB();
-    console.log("IndexedDB initialized");
-  } catch (error) {
-    console.error("Error initializing IndexedDB:", error);
-  }
+chrome.runtime.onInstalled.addListener(() => {
+  // Initialize profileDocuments array if it doesn't exist
+  chrome.storage.local.get(["profileDocuments"], (data) => {
+    if (!data.profileDocuments) {
+      chrome.storage.local.set({ profileDocuments: [] }, () => {
+        console.log("Initialized profileDocuments array");
+      });
+    }
+  });
   
-  // Set default Vetted API URL if not already configured (use chrome.storage for settings)
+  // Set default Vetted API URL if not already configured
   chrome.storage.local.get(["vettedApiUrl"], (data) => {
     if (!data.vettedApiUrl) {
       const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
@@ -75,10 +76,10 @@ function estimateStorageSize(obj) {
 // Listen for messages from the content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
-    // Use async function to handle IndexedDB
+    // Use async function to handle chrome.storage.local
     (async () => {
       try {
-        // Get current profiles from IndexedDB
+        // Get current profiles from chrome.storage.local
         const currentList = await VettedStorage.getAllProfiles();
 
         // Check if profile already exists (by URL) to avoid duplicates
@@ -88,7 +89,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                             item.category === 'metadata' && item.data?.source_url
                           )?.data?.source_url;
 
-        // Check for duplicate by URL in IndexedDB
+        // Check for duplicate by URL
         const isDuplicate = profileUrl && currentList.some(existing => {
           const existingUrl = existing.extraction_metadata?.source_url || 
                             existing.personal_info?.profile_url ||
@@ -107,7 +108,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-        // Add profile to IndexedDB (no size limit concerns with IndexedDB)
+        // Check storage size before adding (Chrome has 10MB limit)
+        const currentSize = await VettedStorage.getStorageSize();
+        const profileSize = new Blob([JSON.stringify(message.payload)]).size;
+        const newSizeMB = (currentSize.bytes + profileSize) / (1024 * 1024);
+        
+        if (newSizeMB > 9.5) { // Warn if approaching 10MB limit
+          sendResponse({ 
+            success: false, 
+            error: `Storage limit approaching (${newSizeMB.toFixed(2)}MB / 10MB). Please clear some profiles.`,
+            count: currentList.length 
+          });
+          return;
+        }
+
+        // Add profile to chrome.storage.local
         await VettedStorage.addProfile(message.payload);
         
         const newCount = currentList.length + 1;

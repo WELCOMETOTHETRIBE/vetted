@@ -1,224 +1,125 @@
-// IndexedDB storage utility for Vetted extension
-// Replaces chrome.storage.local with IndexedDB for unlimited storage
+// Chrome storage utility for Vetted extension
+// Uses chrome.storage.local for profile storage
 
-const DB_NAME = 'vettedExtensionDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'profiles';
+const STORAGE_KEY = 'profileDocuments';
 
-let dbInstance = null;
-
-// Initialize IndexedDB
-function initDB() {
-  return new Promise((resolve, reject) => {
-    if (dbInstance) {
-      resolve(dbInstance);
-      return;
-    }
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => {
-      console.error('IndexedDB error:', request.error);
-      reject(request.error);
-    };
-
-    request.onsuccess = () => {
-      dbInstance = request.result;
-      resolve(dbInstance);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      
-      // Create object store if it doesn't exist
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-        objectStore.createIndex('linkedinUrl', 'linkedinUrl', { unique: false });
-        objectStore.createIndex('createdAt', 'createdAt', { unique: false });
-      }
-    };
-  });
-}
-
-// Get all profiles
+// Get all profiles from chrome.storage.local
 async function getAllProfiles() {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const results = request.result || [];
-        console.log(`IndexedDB getAllProfiles: Found ${results.length} profiles`);
-        if (results.length > 0) {
-          console.log("First profile sample:", results[0]);
-        }
-        resolve(results);
-      };
-
-      request.onerror = () => {
-        console.error('IndexedDB getAllProfiles error:', request.error);
-        reject(request.error);
-      };
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY], (data) => {
+      const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
+      console.log(`Chrome storage getAllProfiles: Found ${profiles.length} profiles`);
+      resolve(profiles);
     });
-  } catch (error) {
-    console.error('Error getting all profiles:', error);
-    return [];
-  }
+  });
 }
 
 // Add a profile
 async function addProfile(profile) {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get([STORAGE_KEY], (data) => {
+      const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
       
       // Add createdAt if not present
       if (!profile.createdAt) {
         profile.createdAt = new Date().toISOString();
       }
       
-      console.log('IndexedDB addProfile: Adding profile', {
-        hasExtractionMetadata: !!profile.extraction_metadata,
-        hasPersonalInfo: !!profile.personal_info,
-        createdAt: profile.createdAt
-      });
+      profiles.push(profile);
       
-      const request = store.add(profile);
-
-      request.onsuccess = () => {
-        console.log('IndexedDB addProfile: Success, ID:', request.result);
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        console.error('IndexedDB addProfile error:', request.error);
-        reject(request.error);
-      };
+      chrome.storage.local.set({ [STORAGE_KEY]: profiles }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Chrome storage addProfile error:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+        } else {
+          console.log('Chrome storage addProfile: Success, total profiles:', profiles.length);
+          resolve(profiles.length);
+        }
+      });
     });
-  } catch (error) {
-    console.error('Error adding profile:', error);
-    throw error;
-  }
+  });
 }
 
 // Update a profile by index
 async function updateProfileByIndex(index, profile) {
-  try {
-    const profiles = await getAllProfiles();
-    if (index < 0 || index >= profiles.length) {
-      throw new Error('Invalid index');
-    }
-    
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get([STORAGE_KEY], (data) => {
+      const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
       
-      // Get the profile to update
-      const profileToUpdate = profiles[index];
-      if (!profileToUpdate) {
-        reject(new Error('Profile not found'));
+      if (index < 0 || index >= profiles.length) {
+        reject(new Error('Invalid index'));
         return;
       }
       
       // Merge updates
-      const updatedProfile = { ...profileToUpdate, ...profile };
-      updatedProfile.updatedAt = new Date().toISOString();
+      profiles[index] = { ...profiles[index], ...profile };
+      profiles[index].updatedAt = new Date().toISOString();
       
-      const request = store.put(updatedProfile);
-
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
+      chrome.storage.local.set({ [STORAGE_KEY]: profiles }, () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
+      });
     });
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    throw error;
-  }
+  });
 }
 
 // Delete a profile by index
 async function deleteProfileByIndex(index) {
-  try {
-    const profiles = await getAllProfiles();
-    if (index < 0 || index >= profiles.length) {
-      throw new Error('Invalid index');
-    }
-    
-    const profileToDelete = profiles[index];
-    if (!profileToDelete || !profileToDelete.id) {
-      throw new Error('Profile not found');
-    }
-    
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.delete(profileToDelete.id);
-
-      request.onsuccess = () => {
-        resolve();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get([STORAGE_KEY], (data) => {
+      const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
+      
+      if (index < 0 || index >= profiles.length) {
+        reject(new Error('Invalid index'));
+        return;
+      }
+      
+      profiles.splice(index, 1);
+      
+      chrome.storage.local.set({ [STORAGE_KEY]: profiles }, () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
+      });
     });
-  } catch (error) {
-    console.error('Error deleting profile:', error);
-    throw error;
-  }
+  });
 }
 
 // Clear all profiles
 async function clearAllProfiles() {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.clear();
-
-      request.onsuccess = () => {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ [STORAGE_KEY]: [] }, () => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
         resolve();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
+      }
     });
-  } catch (error) {
-    console.error('Error clearing profiles:', error);
-    throw error;
-  }
+  });
 }
 
 // Get storage size estimate
 async function getStorageSize() {
-  try {
-    const profiles = await getAllProfiles();
-    const size = new Blob([JSON.stringify(profiles)]).size;
-    return {
-      bytes: size,
-      mb: (size / (1024 * 1024)).toFixed(2),
-      count: profiles.length
-    };
-  } catch (error) {
-    console.error('Error getting storage size:', error);
-    return { bytes: 0, mb: '0', count: 0 };
-  }
+  return new Promise((resolve) => {
+    chrome.storage.local.getBytesInUse([STORAGE_KEY], (bytes) => {
+      chrome.storage.local.get([STORAGE_KEY], (data) => {
+        const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
+        resolve({
+          bytes: bytes || 0,
+          mb: ((bytes || 0) / (1024 * 1024)).toFixed(2),
+          count: profiles.length
+        });
+      });
+    });
+  });
 }
 
-// Settings storage (still use chrome.storage for settings as they're small)
+// Settings storage (wrapper for chrome.storage.local)
 const SettingsStorage = {
   async get(keys) {
     return new Promise((resolve) => {
@@ -250,19 +151,6 @@ const SettingsStorage = {
 };
 
 // Export for use in other scripts
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    getAllProfiles,
-    addProfile,
-    updateProfileByIndex,
-    deleteProfileByIndex,
-    clearAllProfiles,
-    getStorageSize,
-    SettingsStorage
-  };
-}
-
-// Make available globally (for both window and service worker contexts)
 const VettedStorage = {
   getAllProfiles,
   addProfile,
@@ -270,24 +158,20 @@ const VettedStorage = {
   deleteProfileByIndex,
   clearAllProfiles,
   getStorageSize,
-  SettingsStorage,
-  initDB // Export initDB for initialization
+  SettingsStorage
 };
 
-// Export for window context (popup)
+// Make available globally (for both window and service worker contexts)
 if (typeof window !== 'undefined') {
   window.VettedStorage = VettedStorage;
-  console.log("VettedStorage initialized in window context");
+  console.log("VettedStorage initialized in window context (chrome.storage.local)");
 }
 
-// Export for service worker context
 if (typeof self !== 'undefined' && typeof importScripts !== 'undefined') {
   self.VettedStorage = VettedStorage;
-  console.log("VettedStorage initialized in service worker context");
+  console.log("VettedStorage initialized in service worker context (chrome.storage.local)");
 }
 
-// Also make available globally without window/self prefix for compatibility
 if (typeof globalThis !== 'undefined') {
   globalThis.VettedStorage = VettedStorage;
 }
-
