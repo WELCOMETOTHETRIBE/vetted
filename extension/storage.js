@@ -50,10 +50,16 @@ async function getAllProfiles() {
       const request = store.getAll();
 
       request.onsuccess = () => {
-        resolve(request.result || []);
+        const results = request.result || [];
+        console.log(`IndexedDB getAllProfiles: Found ${results.length} profiles`);
+        if (results.length > 0) {
+          console.log("First profile sample:", results[0]);
+        }
+        resolve(results);
       };
 
       request.onerror = () => {
+        console.error('IndexedDB getAllProfiles error:', request.error);
         reject(request.error);
       };
     });
@@ -76,13 +82,21 @@ async function addProfile(profile) {
         profile.createdAt = new Date().toISOString();
       }
       
+      console.log('IndexedDB addProfile: Adding profile', {
+        hasExtractionMetadata: !!profile.extraction_metadata,
+        hasPersonalInfo: !!profile.personal_info,
+        createdAt: profile.createdAt
+      });
+      
       const request = store.add(profile);
 
       request.onsuccess = () => {
+        console.log('IndexedDB addProfile: Success, ID:', request.result);
         resolve(request.result);
       };
 
       request.onerror = () => {
+        console.error('IndexedDB addProfile error:', request.error);
         reject(request.error);
       };
     });
