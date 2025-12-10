@@ -35,24 +35,42 @@ RUN cd node_modules/.prisma/client && \
     npx tsc --project tsconfig.json 2>&1 && \
     echo "TypeScript compilation completed" || (echo "TypeScript compilation failed, will use runtime fallback" && rm -f client.js)
 
-# Create default.js that exports PrismaClient directly from generated client
+# Create default.js that exports PrismaClient with multiple fallback strategies
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
 
 let PrismaClient;
+
 try {
   const clientModule = require('./client.js');
-  PrismaClient = clientModule.PrismaClient;
+  if (clientModule && clientModule.PrismaClient) {
+    PrismaClient = clientModule.PrismaClient;
+  } else {
+    throw new Error('client.js does not export PrismaClient');
+  }
 } catch (e) {
   try {
     const clientModule = require('./client.ts');
-    PrismaClient = clientModule.PrismaClient;
+    if (clientModule && clientModule.PrismaClient) {
+      PrismaClient = clientModule.PrismaClient;
+    } else {
+      throw new Error('client.ts does not export PrismaClient');
+    }
   } catch (e2) {
-    PrismaClient = class PrismaClient {
-      constructor() {
-        throw new Error('PrismaClient not found. Run: npx prisma generate');
+    try {
+      const classModule = require('./internal/class.js');
+      if (classModule && classModule.getPrismaClientClass) {
+        PrismaClient = classModule.getPrismaClientClass();
+      } else {
+        throw new Error('class.js does not export getPrismaClientClass');
       }
-    };
+    } catch (e3) {
+      PrismaClient = class PrismaClient {
+        constructor() {
+          throw new Error('PrismaClient not found. Run: npx prisma generate');
+        }
+      };
+    }
   }
 }
 
