@@ -53,50 +53,24 @@ RUN cd node_modules/.prisma/client && \
       echo "Warning: client.js not found after TypeScript compilation"; \
     fi
 
-# Create default.js that constructs PrismaClient without compilerWasm to force binary engine
+# Create default.js that exports PrismaClient from compiled client.js
+# Prisma 7 uses client engine which requires adapter (provided in lib/prisma.ts)
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
-const fs = require('fs');
-const path = require('path');
 
 let PrismaClient;
 
 try {
-  const classFile = path.join(__dirname, 'internal/class.ts');
-  const classContent = fs.readFileSync(classFile, 'utf8');
-  
-  const schemaMatch = classContent.match(/inlineSchema["\s]*:["\s]*"((?:[^"\\]|\\.)+)"/);
-  const inlineSchema = schemaMatch ? schemaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
-  
-  const runtimeDataModelMatch = classContent.match(/config\.runtimeDataModel\s*=\s*JSON\.parse\("((?:[^"\\]|\\.)+)"\)/);
-  let runtimeDataModel = { models: {}, enums: {}, types: {} };
-  if (runtimeDataModelMatch) {
-    try {
-      const jsonStr = runtimeDataModelMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '');
-      runtimeDataModel = JSON.parse(jsonStr);
-    } catch (e) {}
+  const clientModule = require('./client.js');
+  if (clientModule && clientModule.PrismaClient) {
+    PrismaClient = clientModule.PrismaClient;
+  } else {
+    throw new Error('client.js does not export PrismaClient');
   }
-  
-  const { getPrismaClient } = runtime;
-  // Don't provide compilerWasm - this should force binary engine
-  const ClientClass = getPrismaClient({
-    previewFeatures: [],
-    clientVersion: "7.1.0",
-    engineVersion: "ab635e6b9d606fa5c8fb8b1a7f909c3c3c1c98ba",
-    activeProvider: "postgresql",
-    inlineSchema: inlineSchema,
-    runtimeDataModel: runtimeDataModel,
-  });
-  
-  PrismaClient = class extends ClientClass {
-    constructor(options) {
-      super(options || {});
-    }
-  };
 } catch (e) {
   PrismaClient = class PrismaClient {
     constructor() {
-      throw new Error('PrismaClient construction failed: ' + e.message);
+      throw new Error('PrismaClient not found. Error: ' + (e?.message || String(e)));
     }
   };
 }
