@@ -96,19 +96,39 @@ export async function GET(req: Request) {
       }
     }
     
-    // Verify Python command exists
+    // Verify Python command exists (use 'command -v' which works better than 'which')
     try {
-      await execAsync(`which ${pythonCmd}`, { timeout: 5000 })
+      // Try to run Python with --version to verify it works
+      await execAsync(`${pythonCmd} --version`, { timeout: 5000 })
     } catch (error) {
-      console.error(`[ashby-jobs] Python command not found: ${pythonCmd}`)
-      return NextResponse.json(
-        { 
-          error: "Python not found", 
-          pythonCmd,
-          suggestion: "Make sure Python 3 is installed and accessible"
-        },
-        { status: 500 }
-      )
+      console.error(`[ashby-jobs] Python command not found or not working: ${pythonCmd}`, error)
+      // Try alternative Python commands
+      const alternatives = ["python3", "python", "/opt/venv/bin/python3", "/usr/bin/python3"]
+      let workingPython = null
+      for (const alt of alternatives) {
+        try {
+          await execAsync(`${alt} --version`, { timeout: 5000 })
+          workingPython = alt
+          break
+        } catch {
+          // Continue trying
+        }
+      }
+      
+      if (workingPython) {
+        pythonCmd = workingPython
+        console.log(`[ashby-jobs] Using alternative Python: ${pythonCmd}`)
+      } else {
+        return NextResponse.json(
+          { 
+            error: "Python not found", 
+            pythonCmd,
+            tried: alternatives,
+            suggestion: "Make sure Python 3 is installed and accessible in the container"
+          },
+          { status: 500 }
+        )
+      }
     }
     
     // Check SERPAPI_KEY

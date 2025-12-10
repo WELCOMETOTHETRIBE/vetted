@@ -52,7 +52,21 @@ export default function AshbyScraperButton() {
           `Successfully scraped ${count} job${count !== 1 ? "s" : ""}!`
         )
       } else {
-        setMessage(`Error: ${data.error || "Failed to scrape jobs"}`)
+        // Show detailed error message
+        let errorMsg = data.error || "Failed to scrape jobs"
+        if (data.message) {
+          errorMsg += `: ${data.message}`
+        }
+        if (data.stderr) {
+          errorMsg += `\n\nDetails: ${data.stderr.substring(0, 200)}`
+        } else if (data.stdout) {
+          errorMsg += `\n\nOutput: ${data.stdout.substring(0, 200)}`
+        }
+        if (data.suggestion) {
+          errorMsg += `\n\n${data.suggestion}`
+        }
+        setMessage(errorMsg)
+        console.error("Scraper error details:", data)
       }
     } catch (error: any) {
       setMessage(`Error: ${error.message || "Failed to scrape jobs"}`)
