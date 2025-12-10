@@ -25,11 +25,29 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
-# Create default.js that exports from @prisma/client/index.js
-# This avoids circular dependency and TypeScript compilation issues
+# Create default.js that uses a Proxy to lazily load from generated client
+# Webpack will resolve the client.ts file during compilation
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
-const pc = require('@prisma/client/index.js');
-module.exports = pc;
+const handler = {
+  get(target, prop) {
+    try {
+      const client = require('./client');
+      if (client && client[prop]) {
+        return client[prop];
+      }
+    } catch (e) {}
+    return undefined;
+  },
+  ownKeys() {
+    try {
+      const client = require('./client');
+      return Object.keys(client || {});
+    } catch (e) {
+      return [];
+    }
+  }
+};
+module.exports = new Proxy({}, handler);
 EOFJS
 
 # Build the application
