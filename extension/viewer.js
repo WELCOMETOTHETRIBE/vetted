@@ -449,7 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   };
 
-  function saveProfile() {
+  async function saveProfile() {
     if (currentEditingIndex === -1) return;
 
     const doc = profileDocuments[currentEditingIndex];
@@ -502,93 +502,46 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     doc._metadata.lastEdited = new Date().toISOString();
 
-    // Process the profile for sending to Vetted
-    if (typeof ProfileProcessor === 'undefined') {
-      alert("Profile processor not available");
-      return;
-    }
+    // Disable save button to prevent double-clicks
+    saveProfileBtn.disabled = true;
+    saveProfileBtn.textContent = "Saving...";
 
-    const processed = ProfileProcessor.processProfileDocument(doc);
-    if (!processed) {
-      alert("Error processing profile");
-      return;
-    }
-
-    // Send directly to Vetted API instead of storing locally
-    chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], async (settings) => {
-      if (chrome.runtime.lastError) {
-        console.error("Error loading settings:", chrome.runtime.lastError);
-        alert("Error loading settings: " + chrome.runtime.lastError.message);
-        return;
-      }
-
-      const apiUrl = settings.vettedApiUrl || "https://vetted-production.up.railway.app/api/candidates/upload";
+    try {
+      // Update the profile in storage (don't send to Vetted yet)
+      await VettedStorage.updateProfileByIndex(currentEditingIndex, doc);
       
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (settings.vettedApiKey) {
-        headers["Authorization"] = `Bearer ${settings.vettedApiKey}`;
-      }
-
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: headers,
-          credentials: "include",
-          body: JSON.stringify([processed]),
+      // Close modal immediately
+      modal.style.display = "none";
+      currentEditingIndex = -1;
+      
+      // Show success notification (non-blocking)
+      const successNotif = document.createElement("div");
+      successNotif.style.cssText = "position: fixed; top: 10px; right: 10px; background: #4caf50; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
+      successNotif.textContent = "Profile saved! Use 'Send to Vetted' to upload.";
+      document.body.appendChild(successNotif);
+      setTimeout(() => successNotif.remove(), 3000);
+      
+      // Refresh the table (will happen automatically via storage listener, but do it explicitly)
+      setTimeout(() => {
+        loadData().catch(err => {
+          console.error("Error refreshing after save:", err);
         });
-
-        if (!response.ok) {
-          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-            if (errorData.details) {
-              errorMessage += ` - ${JSON.stringify(errorData.details)}`;
-            }
-          } catch (e) {
-            try {
-              const errorText = await response.text();
-              if (errorText) {
-                errorMessage += ` - ${errorText.substring(0, 200)}`;
-              }
-            } catch (textError) {
-              console.error("Could not parse error response:", textError);
-            }
-          }
-          
-          if (response.status === 401) {
-            errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
-          } else if (response.status === 403) {
-            errorMessage = "Forbidden: You must be an admin user to upload candidates";
-          } else if (response.status === 404) {
-            errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
-          }
-          
-          throw new Error(errorMessage);
-        }
-
-        const result = await response.json();
-        
-        // Close modal and show success
-        modal.style.display = "none";
-        alert(`Profile sent successfully to Vetted! ${result.created || 1} candidate(s) added.`);
-        
-        // Remove the sent profile from chrome.storage.local
-        try {
-          await VettedStorage.deleteProfileByIndex(currentEditingIndex);
-          loadData();
-        } catch (error) {
-          console.error("Error removing profile from chrome.storage.local:", error);
-          loadData(); // Still reload to refresh UI
-        }
-      } catch (error) {
-        console.error("Error sending to Vetted:", error);
-        alert(`Error sending to Vetted: ${error.message}`);
-      }
-    });
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      
+      // Show error notification (non-blocking)
+      const errorNotif = document.createElement("div");
+      errorNotif.style.cssText = "position: fixed; top: 10px; right: 10px; background: #e53935; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
+      errorNotif.textContent = `Error saving: ${error.message || "Unknown error"}`;
+      document.body.appendChild(errorNotif);
+      setTimeout(() => errorNotif.remove(), 5000);
+    } finally {
+      // Re-enable save button
+      saveProfileBtn.disabled = false;
+      saveProfileBtn.textContent = "Save Changes";
+    }
   }
 
   function escapeHtml(text) {
