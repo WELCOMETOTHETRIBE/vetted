@@ -960,12 +960,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (profileDocuments.length === 0) {
-          alert("No profiles to send. Please save a profile first using 'Save Profile JSON'.");
+          setTimeout(() => {
+            alert("No profiles to send. Please save a profile first using 'Save Profile JSON'.");
+          }, 0);
           return;
         }
 
         if (typeof ProfileProcessor === 'undefined') {
-          alert("Profile processor not loaded. Please refresh the extension popup.");
+          setTimeout(() => {
+            alert("Profile processor not loaded. Please refresh the extension popup.");
+          }, 0);
           return;
         }
 
