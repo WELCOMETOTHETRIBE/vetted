@@ -31,11 +31,32 @@ export default function NetworkContent({
 
       if (response.ok) {
         const updated = await response.json()
+        // Remove from pending received
         setPendingReceived(pendingReceived.filter((c) => c.id !== connectionId))
-        setConnections([...connections, updated])
+        // Add to connections with full user data
+        const connectionWithUsers = {
+          ...updated,
+          requester: pendingReceived.find(c => c.id === connectionId)?.requester,
+          receiver: pendingReceived.find(c => c.id === connectionId)?.receiver || {
+            id: updated.receiverId,
+            name: null,
+            image: null,
+            handle: null,
+            profile: null
+          }
+        }
+        setConnections([...connections, connectionWithUsers])
+        // Refresh the page after a short delay to ensure UI updates
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to accept connection")
       }
     } catch (error) {
       console.error("Error accepting connection:", error)
+      alert("Failed to accept connection. Please try again.")
     }
   }
 
@@ -49,9 +70,17 @@ export default function NetworkContent({
 
       if (response.ok) {
         setPendingReceived(pendingReceived.filter((c) => c.id !== connectionId))
+        // Refresh after a short delay
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to reject connection")
       }
     } catch (error) {
       console.error("Error rejecting connection:", error)
+      alert("Failed to reject connection. Please try again.")
     }
   }
 

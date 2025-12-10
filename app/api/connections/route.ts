@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // Check if connection already exists
+    // Check if connection already exists (check both directions)
     const existing = await prisma.connection.findFirst({
       where: {
         OR: [

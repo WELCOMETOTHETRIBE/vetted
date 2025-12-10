@@ -41,6 +41,7 @@ const ProfileHeader = ({
       })
       
       if (response.ok) {
+        // Reload page to show updated connection status
         window.location.reload()
       } else {
         const error = await response.json()

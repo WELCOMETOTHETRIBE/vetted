@@ -17,6 +17,10 @@ export default function MessagesContent({
   const [selectedThread, setSelectedThread] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
   const [messageText, setMessageText] = useState("")
+  const [activeTab, setActiveTab] = useState<"inbox" | "sent">("inbox")
+  const [showNewMessage, setShowNewMessage] = useState(false)
+  const [newMessageUserId, setNewMessageUserId] = useState("")
+  const [newMessageText, setNewMessageText] = useState("")
 
   useEffect(() => {
     if (selectedThread) {
@@ -64,55 +68,172 @@ export default function MessagesContent({
     return thread.user1Id === currentUserId ? thread.user2 : thread.user1
   }
 
+  // Filter threads by inbox (received) or sent
+  const inboxThreads = threads.filter((thread) => {
+    const lastMessage = thread.messages?.[0]
+    return lastMessage && lastMessage.senderId !== currentUserId
+  })
+
+  const sentThreads = threads.filter((thread) => {
+    const lastMessage = thread.messages?.[0]
+    return lastMessage && lastMessage.senderId === currentUserId
+  })
+
+  const displayedThreads = activeTab === "inbox" ? inboxThreads : sentThreads
+
+  const handleStartNewMessage = async () => {
+    if (!newMessageUserId.trim() || !newMessageText.trim()) {
+      alert("Please enter a user ID and message")
+      return
+    }
+
+    try {
+      // Create or get thread
+      const threadResponse = await fetch("/api/messages/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: newMessageUserId }),
+      })
+
+      if (threadResponse.ok) {
+        const thread = await threadResponse.json()
+        
+        // Send first message
+        const messageResponse = await fetch(`/api/messages/threads/${thread.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: newMessageText }),
+        })
+
+        if (messageResponse.ok) {
+          setNewMessageUserId("")
+          setNewMessageText("")
+          setShowNewMessage(false)
+          // Reload threads
+          window.location.reload()
+        }
+      }
+    } catch (error) {
+      console.error("Error starting new message:", error)
+      alert("Failed to send message. Please try again.")
+    }
+  }
+
   return (
     <div className="flex gap-4 h-[calc(100vh-200px)]">
       {/* Thread List */}
-      <div className="w-80 bg-white rounded-lg border border-gray-200 overflow-y-auto">
-        {threads.length === 0 ? (
-          <div className="p-8 text-center text-gray-600">
-            <p>No messages yet</p>
+      <div className="w-80 bg-white rounded-lg border border-gray-200 flex flex-col">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab("inbox")}
+            className={`flex-1 px-4 py-3 font-medium text-sm ${
+              activeTab === "inbox"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Inbox ({inboxThreads.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("sent")}
+            className={`flex-1 px-4 py-3 font-medium text-sm ${
+              activeTab === "sent"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Sent ({sentThreads.length})
+          </button>
+        </div>
+
+        {/* New Message Button */}
+        <div className="p-3 border-b border-gray-200">
+          <button
+            onClick={() => setShowNewMessage(!showNewMessage)}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          >
+            {showNewMessage ? "Cancel" : "+ New Message"}
+          </button>
+        </div>
+
+        {/* New Message Form */}
+        {showNewMessage && (
+          <div className="p-3 border-b border-gray-200 bg-gray-50">
+            <input
+              type="text"
+              value={newMessageUserId}
+              onChange={(e) => setNewMessageUserId(e.target.value)}
+              placeholder="User ID or handle"
+              className="w-full px-3 py-2 mb-2 border border-gray-300 rounded text-sm"
+            />
+            <textarea
+              value={newMessageText}
+              onChange={(e) => setNewMessageText(e.target.value)}
+              placeholder="Type your message..."
+              rows={3}
+              className="w-full px-3 py-2 mb-2 border border-gray-300 rounded text-sm resize-none"
+            />
+            <button
+              onClick={handleStartNewMessage}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            >
+              Send
+            </button>
           </div>
-        ) : (
-          threads.map((thread) => {
-            const otherUser = getOtherUser(thread)
-            const lastMessage = thread.messages[0]
-            return (
-              <button
-                key={thread.id}
-                onClick={() => setSelectedThread(thread)}
-                className={`w-full p-4 text-left border-b border-gray-200 hover:bg-gray-50 ${
-                  selectedThread?.id === thread.id ? "bg-blue-50" : ""
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white">
-                    {otherUser.image ? (
-                      <Image
-                        src={otherUser.image}
-                        alt={otherUser.name || "User"}
-                        width={48}
-                        height={48}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      otherUser.name?.charAt(0).toUpperCase() || "U"
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">
-                      {otherUser.name || "Anonymous"}
-                    </p>
-                    {lastMessage && (
-                      <p className="text-sm text-gray-600 truncate">
-                        {lastMessage.content}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            )
-          })
         )}
+
+        {/* Thread List */}
+        <div className="flex-1 overflow-y-auto">
+          {displayedThreads.length === 0 ? (
+            <div className="p-8 text-center text-gray-600">
+              <p>No {activeTab === "inbox" ? "received" : "sent"} messages yet</p>
+            </div>
+          ) : (
+            displayedThreads.map((thread) => {
+              const otherUser = getOtherUser(thread)
+              const lastMessage = thread.messages?.[0]
+              return (
+                <button
+                  key={thread.id}
+                  onClick={() => setSelectedThread(thread)}
+                  className={`w-full p-4 text-left border-b border-gray-200 hover:bg-gray-50 ${
+                    selectedThread?.id === thread.id ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                      {otherUser.image ? (
+                        <Image
+                          src={otherUser.image}
+                          alt={otherUser.name || "User"}
+                          width={48}
+                          height={48}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        otherUser.name?.charAt(0).toUpperCase() || "U"
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">
+                        {otherUser.name || "Anonymous"}
+                      </p>
+                      {lastMessage && (
+                        <p className="text-sm text-gray-600 truncate">
+                          {lastMessage.content}
+                        </p>
+                      )}
+                      {!lastMessage && (
+                        <p className="text-sm text-gray-400 italic">No messages yet</p>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              )
+            })
+          )}
+        </div>
       </div>
 
       {/* Message Panel */}
@@ -125,33 +246,45 @@ export default function MessagesContent({
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.senderId === currentUserId ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      message.senderId === currentUserId
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-900"
-                    }`}
-                  >
-                    <p>{message.content}</p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        message.senderId === currentUserId
-                          ? "text-blue-100"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {new Date(message.createdAt).toLocaleTimeString()}
-                    </p>
-                  </div>
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>No messages in this conversation yet</p>
                 </div>
-              ))}
+              ) : (
+                messages.map((message) => {
+                  const isSent = message.senderId === currentUserId
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isSent ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          isSent
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-200 text-gray-900"
+                        }`}
+                      >
+                        {!isSent && message.sender && (
+                          <p className="text-xs font-semibold mb-1 text-gray-700">
+                            {message.sender.name || "Anonymous"}
+                          </p>
+                        )}
+                        <p className={isSent ? "text-white" : "text-gray-900"}>
+                          {message.content}
+                        </p>
+                        <p
+                          className={`text-xs mt-1 ${
+                            isSent ? "text-blue-100" : "text-gray-500"
+                          }`}
+                        >
+                          {new Date(message.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
             <div className="p-4 border-t border-gray-200">
               <div className="flex space-x-2">
