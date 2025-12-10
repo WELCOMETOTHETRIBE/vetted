@@ -19,11 +19,17 @@ const nextConfig: NextConfig = {
       // Ensure Prisma client is resolved correctly on server
       // The .prisma/client path needs to resolve from @prisma/client location
       const prismaClientPath = path.resolve(process.cwd(), "node_modules/.prisma/client");
+      // Create a proper module resolution for .prisma/client/default
       config.resolve.alias = {
         ...config.resolve.alias,
         ".prisma/client": prismaClientPath,
-        ".prisma/client/default": path.join(prismaClientPath, "client"),
       };
+      // Add the Prisma client directory to module resolution
+      config.resolve.modules = [
+        ...(config.resolve.modules || []),
+        path.resolve(process.cwd(), "node_modules"),
+        path.resolve(process.cwd(), "node_modules/@prisma/client"),
+      ];
     }
     return config;
   },

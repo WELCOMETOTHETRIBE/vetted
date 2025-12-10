@@ -26,7 +26,20 @@ RUN npx prisma generate
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
 # Create default.js entry point for Prisma Client (required for module resolution)
-RUN echo "module.exports = require('./client');" > node_modules/.prisma/client/default.js || echo "Failed to create default.js"
+# This allows @prisma/client/default.js to resolve .prisma/client/default
+RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
+// Default entry point for Prisma Client
+// Webpack will handle the TypeScript compilation of client.ts
+try {
+  module.exports = require('./client.ts');
+} catch (e) {
+  try {
+    module.exports = require('./client');
+  } catch (e2) {
+    module.exports = require('@prisma/client');
+  }
+}
+EOFJS
 
 # Build the application
 RUN npm run build
