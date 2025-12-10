@@ -1095,6 +1095,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  loadData();
-  loadSettings();
+  // Wait for VettedStorage to be available before loading data
+  const initLoad = () => {
+    if (typeof VettedStorage !== 'undefined') {
+      console.log("VettedStorage is available, loading data...");
+      loadData();
+      loadSettings();
+    } else {
+      console.log("Waiting for VettedStorage to load...");
+      setTimeout(initLoad, 100);
+    }
+  };
+  
+  initLoad();
 });
