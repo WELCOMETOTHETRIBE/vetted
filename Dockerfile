@@ -25,15 +25,22 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
-# Create default.js that exports from Prisma runtime
-# This breaks the circular dependency by using the runtime directly
+# Create default.js that tries to require compiled client, falls back to runtime
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
-const runtime = require('@prisma/client/runtime/client');
-const { getPrismaClient } = runtime;
-module.exports = {
-  getPrismaClient,
-  ...runtime
-};
+try {
+  const client = require('./client');
+  module.exports = client;
+} catch (e) {
+  const runtime = require('@prisma/client/runtime/client');
+  module.exports = {
+    PrismaClient: class PrismaClient {
+      constructor() {
+        throw new Error('PrismaClient must be imported from @prisma/client');
+      }
+    },
+    ...runtime
+  };
+}
 EOFJS
 
 # Build the application
