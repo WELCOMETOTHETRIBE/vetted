@@ -4,14 +4,20 @@
 
 // Import profile processor functions
 importScripts('profileProcessor.js');
+importScripts('storage.js');
 
 // Initialize storage on install
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get(["profileDocuments", "vettedApiUrl"], (data) => {
-    if (!Array.isArray(data.profileDocuments)) {
-      chrome.storage.local.set({ profileDocuments: [] });
-    }
-    // Set default Vetted API URL if not already configured
+chrome.runtime.onInstalled.addListener(async () => {
+  // Initialize IndexedDB (no need to check profileDocuments - IndexedDB handles it)
+  try {
+    await VettedStorage.initDB();
+    console.log("IndexedDB initialized");
+  } catch (error) {
+    console.error("Error initializing IndexedDB:", error);
+  }
+  
+  // Set default Vetted API URL if not already configured (use chrome.storage for settings)
+  chrome.storage.local.get(["vettedApiUrl"], (data) => {
     if (!data.vettedApiUrl) {
       const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
       chrome.storage.local.set({ vettedApiUrl: defaultVettedApiUrl }, () => {
