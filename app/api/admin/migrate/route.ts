@@ -72,20 +72,29 @@ export async function POST(req: Request) {
       
       writeFileSync(tempSchemaPath, tempSchema)
 
+      // Create a minimal dummy config file in /tmp to satisfy Prisma
+      const tempConfigPath = '/tmp/prisma.config.ts'
+      const dummyConfig = `export default {
+  schema: "${tempSchemaPath}",
+  datasource: {
+    url: "${dbUrl.replace(/"/g, '\\"')}",
+  },
+};`
+      writeFileSync(tempConfigPath, dummyConfig)
+
       // Import execSync synchronously
       const { execSync } = require('child_process')
       
-      // Run prisma db push with explicit schema and skip config
-      // Set working directory to /tmp to avoid finding prisma.config.ts
+      // Run prisma db push with explicit schema and config
+      // Set working directory to /tmp to use our dummy config
       const output = execSync(
-        `npx --yes prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
+        `npx --yes prisma db push --accept-data-loss --schema=${tempSchemaPath} --config=${tempConfigPath}`,
         {
           encoding: "utf-8",
-          cwd: '/tmp', // Change working directory to avoid finding config file
+          cwd: '/tmp', // Change working directory to use dummy config
           env: { 
             ...process.env,
             DATABASE_URL: dbUrl,
-            // Don't set PRISMA_CONFIG_PATH - just change cwd
           },
           shell: "/bin/sh",
         }
