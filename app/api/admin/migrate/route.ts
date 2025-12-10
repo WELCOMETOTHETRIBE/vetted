@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { execSync } from "child_process"
-import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs"
+import { writeFileSync, unlinkSync, existsSync, readFileSync, renameSync } from "fs"
 import { join } from "path"
 
 export async function POST(req: Request) {
@@ -68,9 +68,23 @@ export async function POST(req: Request) {
     
     writeFileSync(tempSchemaPath, tempSchema)
 
+    // Temporarily rename config file to prevent Prisma from loading it
+    const configPath = join(process.cwd(), 'prisma.config.ts')
+    const tempConfigPath = '/tmp/prisma.config.ts.backup'
+    let configRenamed = false
+
     try {
-      // Don't try to delete config file - just use temp schema
-      // Set PRISMA_CONFIG_PATH to empty to skip config file
+      if (existsSync(configPath)) {
+        try {
+          renameSync(configPath, tempConfigPath)
+          configRenamed = true
+        } catch (e: any) {
+          // If rename fails (permission issue), try copying and then we'll ignore errors
+          // For now, just log and continue - Prisma might still work
+          console.warn('Could not rename config file:', e.message)
+        }
+      }
+
       const output = execSync(
         `npx prisma db push --accept-data-loss --schema=${tempSchemaPath} --skip-generate`,
         {
@@ -79,12 +93,25 @@ export async function POST(req: Request) {
           env: { 
             ...process.env,
             DATABASE_URL: dbUrl,
-            // Try to skip config file by setting path to empty
-            PRISMA_CONFIG_PATH: '',
           },
           shell: "/bin/sh",
         }
       )
+
+      // Restore config file
+      if (configRenamed && existsSync(tempConfigPath)) {
+        try {
+          renameSync(tempConfigPath, configPath)
+        } catch (e) {
+          // If restore fails, at least try to copy it back
+          try {
+            const configContent = readFileSync(tempConfigPath, 'utf-8')
+            writeFileSync(configPath, configContent, 'utf-8')
+          } catch (e2) {
+            console.warn('Could not restore config file:', e2)
+          }
+        }
+      }
 
       // Clean up temp schema
       if (existsSync(tempSchemaPath)) {
@@ -102,6 +129,21 @@ export async function POST(req: Request) {
         isFirstSetup,
       })
     } catch (error: any) {
+      // Restore config file even on error
+      if (configRenamed && existsSync(tempConfigPath)) {
+        try {
+          renameSync(tempConfigPath, configPath)
+        } catch (e) {
+          // If restore fails, try to copy it back
+          try {
+            const configContent = readFileSync(tempConfigPath, 'utf-8')
+            writeFileSync(configPath, configContent, 'utf-8')
+          } catch (e2) {
+            console.warn('Could not restore config file after error:', e2)
+          }
+        }
+      }
+
       // Clean up temp schema even on error
       if (existsSync(tempSchemaPath)) {
         try {
@@ -110,6 +152,7 @@ export async function POST(req: Request) {
           // Ignore cleanup errors
         }
       }
+
       return NextResponse.json(
         {
           error: "Migration failed",
