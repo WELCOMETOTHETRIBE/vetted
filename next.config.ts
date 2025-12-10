@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -13,6 +14,15 @@ const nextConfig: NextConfig = {
         ...config.resolve.fallback,
         "@prisma/client": false,
         ".prisma/client": false,
+      };
+    } else {
+      // Ensure Prisma client is resolved correctly on server
+      // The .prisma/client path needs to resolve from @prisma/client location
+      const prismaClientPath = path.resolve(process.cwd(), "node_modules/.prisma/client");
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ".prisma/client": prismaClientPath,
+        ".prisma/client/default": path.join(prismaClientPath, "client"),
       };
     }
     return config;

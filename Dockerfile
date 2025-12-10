@@ -25,6 +25,9 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
+# Create default.js entry point for Prisma Client (required for module resolution)
+RUN echo "module.exports = require('./client');" > node_modules/.prisma/client/default.js || echo "Failed to create default.js"
+
 # Build the application
 RUN npm run build
 
