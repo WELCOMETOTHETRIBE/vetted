@@ -25,6 +25,9 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
+# Create default.js for Prisma Client (will be overwritten later with compiled version)
+RUN node scripts/create-prisma-default.js || echo "Note: default.js will be created after TypeScript compilation"
+
 # Install TypeScript to compile Prisma client files
 RUN npm install --save-dev typescript
 
