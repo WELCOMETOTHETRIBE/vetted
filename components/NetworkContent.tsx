@@ -20,6 +20,7 @@ export default function NetworkContent({
   const [activeTab, setActiveTab] = useState<"connections" | "pending" | "sent">("connections")
   const [connections, setConnections] = useState(initialData.connections)
   const [pendingReceived, setPendingReceived] = useState(initialData.pendingReceived)
+  const [pendingSent, setPendingSent] = useState(initialData.pendingSent)
 
   const handleAccept = async (connectionId: string) => {
     try {

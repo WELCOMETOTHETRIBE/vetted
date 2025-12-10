@@ -502,25 +502,93 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     doc._metadata.lastEdited = new Date().toISOString();
 
-    // Update in storage
-    chrome.storage.local.get(["profileDocuments"], (data) => {
+    // Process the profile for sending to Vetted
+    if (typeof ProfileProcessor === 'undefined') {
+      alert("Profile processor not available");
+      return;
+    }
+
+    const processed = ProfileProcessor.processProfileDocument(doc);
+    if (!processed) {
+      alert("Error processing profile");
+      return;
+    }
+
+    // Send directly to Vetted API instead of storing locally
+    chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], async (settings) => {
       if (chrome.runtime.lastError) {
-        console.error("Error loading profiles for edit:", chrome.runtime.lastError);
-        alert("Error loading profile: " + chrome.runtime.lastError.message);
+        console.error("Error loading settings:", chrome.runtime.lastError);
+        alert("Error loading settings: " + chrome.runtime.lastError.message);
         return;
       }
+
+      const apiUrl = settings.vettedApiUrl || "https://vetted-production.up.railway.app/api/candidates/upload";
       
-      const docs = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
-      docs[currentEditingIndex] = doc;
-      chrome.storage.local.set({ profileDocuments: docs }, () => {
-        if (chrome.runtime.lastError) {
-          console.error("Error saving edited profile:", chrome.runtime.lastError);
-          alert("Error saving profile: " + chrome.runtime.lastError.message);
-          return;
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (settings.vettedApiKey) {
+        headers["Authorization"] = `Bearer ${settings.vettedApiKey}`;
+      }
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: headers,
+          credentials: "include",
+          body: JSON.stringify([processed]),
+        });
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+            if (errorData.details) {
+              errorMessage += ` - ${JSON.stringify(errorData.details)}`;
+            }
+          } catch (e) {
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorMessage += ` - ${errorText.substring(0, 200)}`;
+              }
+            } catch (textError) {
+              console.error("Could not parse error response:", textError);
+            }
+          }
+          
+          if (response.status === 401) {
+            errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
+          } else if (response.status === 403) {
+            errorMessage = "Forbidden: You must be an admin user to upload candidates";
+          } else if (response.status === 404) {
+            errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
+          }
+          
+          throw new Error(errorMessage);
         }
+
+        const result = await response.json();
+        
+        // Close modal and show success
         modal.style.display = "none";
-        loadData();
-      });
+        alert(`Profile sent successfully to Vetted! ${result.created || 1} candidate(s) added.`);
+        
+        // Optionally remove from local storage after successful send
+        chrome.storage.local.get(["profileDocuments"], (data) => {
+          const docs = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+          // Remove the sent profile from storage
+          docs.splice(currentEditingIndex, 1);
+          chrome.storage.local.set({ profileDocuments: docs }, () => {
+            loadData();
+          });
+        });
+      } catch (error) {
+        console.error("Error sending to Vetted:", error);
+        alert(`Error sending to Vetted: ${error.message}`);
+      }
     });
   }
 

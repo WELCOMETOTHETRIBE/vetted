@@ -34,7 +34,7 @@ async function getNotifications(userId: string) {
   })
 
   // Enrich notifications with connection data
-  const enrichedNotifications = notifications.map((notification) => {
+  const enrichedNotifications = notifications.map((notification: any) => {
     if (notification.type === "CONNECTION_REQUEST") {
       // Find matching connection request
       const connection = connectionRequests.find(
