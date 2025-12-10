@@ -194,8 +194,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/requirements.txt ./requirements.t
 # Copy Python virtual environment from deps stage (where it was created)
 COPY --from=deps --chown=nextjs:nodejs /opt/venv /opt/venv
 
-# Copy Playwright browsers if they exist
-COPY --from=deps --chown=nextjs:nodejs /opt/playwright-browsers /opt/playwright-browsers 2>/dev/null || true
+# Copy Playwright browsers
+COPY --from=deps --chown=nextjs:nodejs /opt/playwright-browsers /opt/playwright-browsers
 
 # Set PATH to include venv and Playwright browsers path
 ENV PATH="/opt/venv/bin:$PATH"
