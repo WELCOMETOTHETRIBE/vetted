@@ -117,7 +117,15 @@
         );
       } catch (error) {
         console.error("Error building/saving profile:", error);
-        showToast(`Error: ${error.message || "Unknown error"}`);
+        console.error("Error details:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          fileName: error.fileName,
+          lineNumber: error.lineNumber
+        });
+        const errorMessage = error.message || error.toString() || "Unknown error occurred";
+        showToast(`Error: ${errorMessage}. Check console for details.`);
       }
     });
 
@@ -1391,31 +1399,68 @@
 
   // Build the full profile document - COMPREHENSIVE VERSION
   function buildProfileDocument() {
-    const url = window.location.href;
-    const rawHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-    const rawText = document.body ? document.body.innerText : "";
-    const now = new Date().toISOString();
+    try {
+      const url = window.location.href;
+      const rawHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const rawText = document.body ? document.body.innerText : "";
+      const now = new Date().toISOString();
 
-    // Extract ALL structured data
-    const structured = extractStructuredData();
+      // Extract ALL structured data
+      let structured;
+      try {
+        structured = extractStructuredData();
+      } catch (e) {
+        console.error("Error in extractStructuredData:", e);
+        throw new Error(`Failed to extract structured data: ${e.message}`);
+      }
 
-    // Extract ALL sections
-    const allSections = extractAllSections();
+      // Extract ALL sections
+      let allSections = [];
+      try {
+        allSections = extractAllSections();
+      } catch (e) {
+        console.warn("Error extracting sections:", e);
+      }
 
-    // Extract ALL list items
-    const allListItems = extractAllListItems();
+      // Extract ALL list items
+      let allListItems = [];
+      try {
+        allListItems = extractAllListItems();
+      } catch (e) {
+        console.warn("Error extracting list items:", e);
+      }
 
-    // Extract ALL links
-    const allLinks = extractAllLinks();
+      // Extract ALL links
+      let allLinks = [];
+      try {
+        allLinks = extractAllLinks();
+      } catch (e) {
+        console.warn("Error extracting links:", e);
+      }
 
-    // Extract ALL images
-    const allImages = extractAllImages();
+      // Extract ALL images
+      let allImages = [];
+      try {
+        allImages = extractAllImages();
+      } catch (e) {
+        console.warn("Error extracting images:", e);
+      }
 
-    // Extract ALL headings
-    const allHeadings = extractAllHeadings();
+      // Extract ALL headings
+      let allHeadings = [];
+      try {
+        allHeadings = extractAllHeadings();
+      } catch (e) {
+        console.warn("Error extracting headings:", e);
+      }
 
-    // Extract ALL tables
-    const allTables = extractAllTables();
+      // Extract ALL tables
+      let allTables = [];
+      try {
+        allTables = extractAllTables();
+      } catch (e) {
+        console.warn("Error extracting tables:", e);
+      }
 
     // Build comprehensive JSON array with ALL extracted data, sorted by category
     const comprehensiveData = [
@@ -1706,5 +1751,9 @@
         text_size_bytes: rawText.length
       }
     };
+    } catch (error) {
+      console.error("Error in buildProfileDocument:", error);
+      throw new Error(`Failed to build profile document: ${error.message}`);
+    }
   }
 })();
