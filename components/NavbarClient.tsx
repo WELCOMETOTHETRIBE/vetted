@@ -12,15 +12,19 @@ interface NavbarClientProps {
 const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
   const pathname = usePathname()
 
-  const navItems = [
+  // Base navigation items
+  const baseNavItems = [
     { href: "/feed", label: "Feed", icon: "📰" },
     { href: "/jobs", label: "Jobs", icon: "💼" },
     { href: "/network", label: "Network", icon: "👥" },
     { href: "/messages", label: "Messages", icon: "💬" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
-    // Add Candidates tab for admins (will be filtered below)
-    ...(isAdmin ? [{ href: "/candidates", label: "Candidates", icon: "🎯" }] : []),
   ]
+
+  // Add Candidates tab for admins
+  const navItems = isAdmin
+    ? [...baseNavItems, { href: "/candidates", label: "Candidates", icon: "🎯" }]
+    : baseNavItems
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">

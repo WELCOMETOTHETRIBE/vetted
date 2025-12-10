@@ -28,9 +28,15 @@ export default function OnboardingPage() {
       if (response.ok) {
         // Redirect to feed after successful profile update
         window.location.href = "/feed"
+        return
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("Profile update failed:", errorData)
+        alert("Failed to update profile. Please try again.")
       }
     } catch (error) {
       console.error("Error updating profile:", error)
+      alert("An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
