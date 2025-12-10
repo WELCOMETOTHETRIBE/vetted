@@ -6,7 +6,13 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="flex justify-between items-center py-6">
-          <div className="text-2xl font-bold text-blue-600">Vetted</div>
+          <Link href="/" className="flex items-center space-x-3">
+            <img
+              src="/vetted.png"
+              alt="Vetted"
+              className="h-12 w-auto"
+            />
+          </Link>
           <div className="flex items-center space-x-4">
             <Link
               href="/auth/signin"
@@ -25,6 +31,13 @@ export default function Home() {
 
         {/* Hero Section */}
         <div className="py-20 text-center">
+          <div className="flex justify-center mb-8">
+            <img
+              src="/vetted.png"
+              alt="Vetted"
+              className="h-24 w-auto"
+            />
+          </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             Connect. Grow. Get Hired.
           </h1>
