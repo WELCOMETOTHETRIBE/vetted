@@ -40,7 +40,14 @@ RUN cd node_modules/.prisma/client && \
     # Fix import.meta.url which doesn't work in CommonJS - replace with __dirname
     sed -i 's/globalThis\['\''__dirname'\''\] = path\.dirname((0, node_url_1\.fileURLToPath)(import\.meta\.url);/\/\/ __dirname is available in CommonJS/g' client.js && \
     # Remove unused imports if they're only used for import.meta
-    sed -i '/^const node_url_1 = require("node:url");$/d' client.js || \
+    sed -i '/^const node_url_1 = require("node:url");$/d' client.js && \
+    # Ensure "use strict" is at the top for CommonJS
+    if ! head -1 client.js | grep -q "use strict"; then \
+      sed -i '1i"use strict";' client.js; \
+    fi && \
+    # Remove any ES module export/import syntax
+    sed -i 's/^export /\/\/ export /g' client.js && \
+    sed -i 's/^import /\/\/ import /g' client.js || \
     (echo "TypeScript compilation failed" && rm -f client.js)
 
 # Create default.js that exports PrismaClient from compiled client.js
