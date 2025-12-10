@@ -21,10 +21,9 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 
-  // Add Candidates tab for admins
-  const navItems = isAdmin
-    ? [...baseNavItems, { href: "/candidates", label: "Candidates", icon: "🎯" }]
-    : baseNavItems
+  // Add Candidates tab for admins - ensure it's visible
+  const adminNavItems = isAdmin ? [{ href: "/candidates", label: "Candidates", icon: "🎯" }] : []
+  const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
