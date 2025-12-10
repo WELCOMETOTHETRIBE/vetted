@@ -8,9 +8,20 @@ import { prisma } from "@/lib/prisma"
  */
 export async function POST(req: Request) {
   try {
+    // Add CORS headers for browser extension
+    const headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    }
+
     const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { error: "Unauthorized: Please log in to Vetted as an admin user" },
+        { status: 401, headers }
+      )
     }
 
     // Check if user is admin
@@ -20,7 +31,10 @@ export async function POST(req: Request) {
     })
 
     if (user?.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json(
+        { error: "Forbidden: Admin access required" },
+        { status: 403, headers }
+      )
     }
 
     const body = await req.json()
@@ -118,14 +132,27 @@ export async function POST(req: Request) {
         candidates: created,
         errorDetails: errors,
       },
-      { status: 201 }
+      { status: 201, headers }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload candidates error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: "Internal server error", details: error.message },
+      { status: 500, headers }
     )
   }
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    },
+  })
 }
 

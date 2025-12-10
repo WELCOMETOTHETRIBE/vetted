@@ -649,8 +649,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        if (errorData.details) {
+          errorMessage += ` - ${JSON.stringify(errorData.details)}`;
+        }
+      } catch (e) {
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage += ` - ${errorText.substring(0, 200)}`;
+          }
+        } catch (textError) {
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      
+      // Provide helpful messages for common errors
+      if (response.status === 401) {
+        errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
+      } else if (response.status === 403) {
+        errorMessage = "Forbidden: You must be an admin user to upload candidates";
+      } else if (response.status === 404) {
+        errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
+      } else if (response.status === 0 || response.status === undefined) {
+        errorMessage = "Network Error: Check CORS settings or that the API URL is accessible";
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();

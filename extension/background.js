@@ -208,15 +208,55 @@ async function sendProfileToVetted(profileDoc) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-      return { success: false, error: errorData.error || `HTTP ${response.status}` };
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        // Include more details if available
+        if (errorData.details) {
+          errorMessage += ` - ${JSON.stringify(errorData.details)}`;
+        }
+      } catch (e) {
+        // If JSON parsing fails, try to get text
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage += ` - ${errorText.substring(0, 200)}`;
+          }
+        } catch (textError) {
+          // If both fail, use the status
+          console.error("Could not parse error response:", textError);
+        }
+      }
+      
+      // Provide helpful messages for common errors
+      if (response.status === 401) {
+        errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
+      } else if (response.status === 403) {
+        errorMessage = "Forbidden: You must be an admin user to upload candidates";
+      } else if (response.status === 404) {
+        errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
+      } else if (response.status === 0 || response.status === undefined) {
+        errorMessage = "Network Error: Check CORS settings or that the API URL is accessible";
+      }
+      
+      return { success: false, error: errorMessage };
     }
 
     const result = await response.json();
     return { success: true, result };
   } catch (error) {
     console.error("Error sending to Vetted:", error);
-    return { success: false, error: error.message };
+    let errorMessage = error.message || "Unknown error";
+    
+    // Provide more context for network errors
+    if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+      errorMessage = "Network Error: Could not reach Vetted API. Check your API URL and CORS settings.";
+    } else if (error.message.includes("CORS")) {
+      errorMessage = "CORS Error: The API server needs to allow requests from browser extensions.";
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }
 
