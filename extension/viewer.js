@@ -87,124 +87,148 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const tbody = document.createElement("tbody");
 
-    // Process documents in batches to prevent UI freeze
-    let index = 0;
-    const batchSize = 10;
+    // For small numbers, render directly. For large numbers, use batches
+    const batchSize = 20;
+    const useBatching = documents.length > batchSize;
     
-    function processBatch() {
-      const end = Math.min(index + batchSize, documents.length);
-      
-      console.log(`processBatch: Processing rows ${index} to ${end - 1} of ${documents.length}`);
-      
-      for (let i = index; i < end; i++) {
-        const doc = documents[i];
-        if (!doc) {
-          console.warn(`processBatch: Document at index ${i} is undefined`);
-          continue;
-        }
-        
-        const tr = document.createElement("tr");
-        tr.dataset.index = i;
-
-        // Skip ProfileProcessor for table rendering to speed things up
-        // Just use basic fields
-        let currentCompany = "";
-        let currentTitle = "";
-        let tags = [];
-
-        if (doc.personal_info) {
-          currentCompany = doc.personal_info.current_employer || "";
-          currentTitle = doc.personal_info.headline || "";
-        }
-
-        // Get tags from document metadata
-        if (doc._metadata && doc._metadata.tags) {
-          tags = [...(doc._metadata.tags.coreRoles || []), ...(doc._metadata.tags.domains || [])];
-        }
-
-        // #
-        const tdIndex = document.createElement("td");
-        tdIndex.textContent = (i + 1).toString();
-        tr.appendChild(tdIndex);
-
-        // Name
-        const tdName = document.createElement("td");
-        tdName.textContent = doc.personal_info?.name || "—";
-        tr.appendChild(tdName);
-
-        // Current Company
-        const tdCompany = document.createElement("td");
-        tdCompany.textContent = currentCompany || "—";
-        tr.appendChild(tdCompany);
-
-        // Job Title
-        const tdTitle = document.createElement("td");
-        tdTitle.textContent = currentTitle || "—";
-        tr.appendChild(tdTitle);
-
-        // Location
-        const tdLocation = document.createElement("td");
-        tdLocation.textContent = doc.personal_info?.location || "—";
-        tr.appendChild(tdLocation);
-
-        // Tags
-        const tdTags = document.createElement("td");
-        if (tags.length > 0) {
-          tags.slice(0, 3).forEach(tag => {
-            const badge = document.createElement("span");
-            badge.className = "badge badge-tagged";
-            badge.textContent = tag;
-            tdTags.appendChild(badge);
-          });
-          if (tags.length > 3) {
-            const more = document.createElement("span");
-            more.textContent = ` +${tags.length - 3}`;
-            more.style.color = "#666";
-            tdTags.appendChild(more);
-          }
-        } else {
-          tdTags.textContent = "—";
-        }
-        tr.appendChild(tdTags);
-
-        // Actions
-        const tdActions = document.createElement("td");
-        const editBtn = document.createElement("button");
-        editBtn.className = "btn-primary";
-        editBtn.textContent = "Edit";
-        editBtn.style.fontSize = "11px";
-        editBtn.style.padding = "4px 8px";
-        editBtn.onclick = (e) => {
-          e.stopPropagation();
-          openEditModal(i);
-        };
-        tdActions.appendChild(editBtn);
-        tr.appendChild(tdActions);
-
-        tr.onclick = () => openEditModal(i);
-        tbody.appendChild(tr);
+    function renderRow(i, doc) {
+      if (!doc) {
+        console.warn(`renderRow: Document at index ${i} is undefined`);
+        return null;
       }
       
-      index = end;
-      
-      if (index < documents.length) {
-        // Process next batch asynchronously
-        setTimeout(processBatch, 0);
+      const tr = document.createElement("tr");
+      tr.dataset.index = i;
+
+      // Skip ProfileProcessor for table rendering to speed things up
+      // Just use basic fields
+      let currentCompany = "";
+      let currentTitle = "";
+      let tags = [];
+
+      if (doc.personal_info) {
+        currentCompany = doc.personal_info.current_employer || "";
+        currentTitle = doc.personal_info.headline || "";
+      }
+
+      // Get tags from document metadata
+      if (doc._metadata && doc._metadata.tags) {
+        tags = [...(doc._metadata.tags.coreRoles || []), ...(doc._metadata.tags.domains || [])];
+      }
+
+      // #
+      const tdIndex = document.createElement("td");
+      tdIndex.textContent = (i + 1).toString();
+      tr.appendChild(tdIndex);
+
+      // Name
+      const tdName = document.createElement("td");
+      tdName.textContent = doc.personal_info?.name || "—";
+      tr.appendChild(tdName);
+
+      // Current Company
+      const tdCompany = document.createElement("td");
+      tdCompany.textContent = currentCompany || "—";
+      tr.appendChild(tdCompany);
+
+      // Job Title
+      const tdTitle = document.createElement("td");
+      tdTitle.textContent = currentTitle || "—";
+      tr.appendChild(tdTitle);
+
+      // Location
+      const tdLocation = document.createElement("td");
+      tdLocation.textContent = doc.personal_info?.location || "—";
+      tr.appendChild(tdLocation);
+
+      // Tags
+      const tdTags = document.createElement("td");
+      if (tags.length > 0) {
+        tags.slice(0, 3).forEach(tag => {
+          const badge = document.createElement("span");
+          badge.className = "badge badge-tagged";
+          badge.textContent = tag;
+          tdTags.appendChild(badge);
+        });
+        if (tags.length > 3) {
+          const more = document.createElement("span");
+          more.textContent = ` +${tags.length - 3}`;
+          more.style.color = "#666";
+          tdTags.appendChild(more);
+        }
       } else {
-        // All done, append table
-        console.log(`processBatch: Finished processing all ${documents.length} documents, appending table`);
-        table.appendChild(tbody);
-        if (tableContainer) {
-          tableContainer.appendChild(table);
-          console.log("processBatch: Table appended successfully");
-        } else {
-          console.error("processBatch: tableContainer not found when trying to append table");
-        }
+        tdTags.textContent = "—";
       }
+      tr.appendChild(tdTags);
+
+      // Actions
+      const tdActions = document.createElement("td");
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn-primary";
+      editBtn.textContent = "Edit";
+      editBtn.style.fontSize = "11px";
+      editBtn.style.padding = "4px 8px";
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        openEditModal(i);
+      };
+      tdActions.appendChild(editBtn);
+      tr.appendChild(tdActions);
+
+      tr.onclick = () => openEditModal(i);
+      return tr;
     }
     
-    // Start processing
-    processBatch();
+    if (useBatching) {
+      // Process documents in batches to prevent UI freeze
+      let index = 0;
+      
+      function processBatch() {
+        const end = Math.min(index + batchSize, documents.length);
+        
+        console.log(`processBatch: Processing rows ${index} to ${end - 1} of ${documents.length}`);
+        
+        for (let i = index; i < end; i++) {
+          const tr = renderRow(i, documents[i]);
+          if (tr) tbody.appendChild(tr);
+        }
+        
+        index = end;
+        
+        if (index < documents.length) {
+          // Process next batch asynchronously
+          setTimeout(processBatch, 0);
+        } else {
+          // All done, append table
+          console.log(`processBatch: Finished processing all ${documents.length} documents, appending table`);
+          table.appendChild(tbody);
+          if (tableContainer) {
+            tableContainer.appendChild(table);
+            console.log("processBatch: Table appended successfully");
+          } else {
+            console.error("processBatch: tableContainer not found when trying to append table");
+          }
+        }
+      }
+      
+      // Start processing
+      processBatch();
+    } else {
+      // Small number, render directly
+      console.log(`renderTable: Rendering ${documents.length} documents directly (no batching)`);
+      documents.forEach((doc, i) => {
+        const tr = renderRow(i, doc);
+        if (tr) tbody.appendChild(tr);
+      });
+      
+      table.appendChild(tbody);
+      if (tableContainer) {
+        tableContainer.appendChild(table);
+        console.log("renderTable: Table appended successfully");
+      } else {
+        console.error("renderTable: tableContainer not found when trying to append table");
+      }
+    }
   }
 
   function openEditModal(index) {
