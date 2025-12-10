@@ -111,7 +111,7 @@ export default async function JobDetailPage({
                   const parts = line.split(/(https?:\/\/[^\s]+)/g)
                   return (
                     <div key={idx}>
-                      {parts.map((part, partIdx) => {
+                      {parts.map((part: string, partIdx: number) => {
                         if (part.match(/^https?:\/\//)) {
                           return (
                             <a
@@ -139,14 +139,14 @@ export default async function JobDetailPage({
                   Requirements
                 </h2>
                 <div className="text-gray-700 whitespace-pre-wrap">
-                  {job.requirements.split('\n').map((line, idx) => {
+                  {job.requirements.split('\n').map((line: string, idx: number) => {
                     // Check if line contains a URL
                     const urlMatch = line.match(/https?:\/\/[^\s]+/g)
                     if (urlMatch) {
                       const parts = line.split(/(https?:\/\/[^\s]+)/g)
                       return (
                         <div key={idx}>
-                          {parts.map((part, partIdx) => {
+                          {parts.map((part: string, partIdx: number) => {
                             if (part.match(/^https?:\/\//)) {
                               return (
                                 <a
