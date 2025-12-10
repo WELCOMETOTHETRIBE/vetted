@@ -1,20 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Profile Manager: DOMContentLoaded fired");
-  
   const tableContainer = document.getElementById("table-container");
   const emptyState = document.getElementById("empty");
-  
-  if (!tableContainer) {
-    console.error("ERROR: table-container element not found!");
-    return;
-  }
-  
-  if (!emptyState) {
-    console.error("ERROR: empty element not found!");
-    return;
-  }
-  
-  console.log("Profile Manager: Elements found, initializing...");
   const modal = document.getElementById("profile-modal");
   const modalBody = document.getElementById("modal-body");
   const closeBtn = document.querySelector(".close");
@@ -68,20 +54,15 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   function renderTable(documents) {
-    if (!tableContainer) {
-      console.error("tableContainer not available");
-      return;
-    }
-
     tableContainer.innerHTML = "";
-    profileDocuments = documents || [];
+    profileDocuments = documents;
 
     if (!documents || documents.length === 0) {
-      if (emptyState) emptyState.style.display = "block";
+      emptyState.style.display = "block";
       return;
     }
 
-    if (emptyState) emptyState.style.display = "none";
+    emptyState.style.display = "none";
 
     const table = document.createElement("table");
     const thead = document.createElement("thead");
@@ -521,37 +502,92 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     doc._metadata.lastEdited = new Date().toISOString();
 
-    // Update profile in chrome.storage.local directly
-    chrome.storage.local.get(['profileDocuments'], (data) => {
+    // Process the profile for sending to Vetted
+    if (typeof ProfileProcessor === 'undefined') {
+      alert("Profile processor not available");
+      return;
+    }
+
+    const processed = ProfileProcessor.processProfileDocument(doc);
+    if (!processed) {
+      alert("Error processing profile");
+      return;
+    }
+
+    // Send directly to Vetted API instead of storing locally
+    chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], async (settings) => {
       if (chrome.runtime.lastError) {
-        alert("Error loading profiles: " + chrome.runtime.lastError.message);
+        console.error("Error loading settings:", chrome.runtime.lastError);
+        alert("Error loading settings: " + chrome.runtime.lastError.message);
         return;
       }
 
-      const profiles = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+      const apiUrl = settings.vettedApiUrl || "https://vetted-production.up.railway.app/api/candidates/upload";
       
-      if (currentEditingIndex < 0 || currentEditingIndex >= profiles.length) {
-        alert("Invalid profile index");
-        return;
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      if (settings.vettedApiKey) {
+        headers["Authorization"] = `Bearer ${settings.vettedApiKey}`;
       }
 
-      // Update the profile
-      profiles[currentEditingIndex] = doc;
-      
-      // Save back to storage
-      chrome.storage.local.set({ profileDocuments: profiles }, () => {
-        if (chrome.runtime.lastError) {
-          alert("Error saving profile: " + chrome.runtime.lastError.message);
-          return;
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: headers,
+          credentials: "include",
+          body: JSON.stringify([processed]),
+        });
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+            if (errorData.details) {
+              errorMessage += ` - ${JSON.stringify(errorData.details)}`;
+            }
+          } catch (e) {
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorMessage += ` - ${errorText.substring(0, 200)}`;
+              }
+            } catch (textError) {
+              console.error("Could not parse error response:", textError);
+            }
+          }
+          
+          if (response.status === 401) {
+            errorMessage = "Unauthorized: Please make sure you're logged into Vetted as an admin user";
+          } else if (response.status === 403) {
+            errorMessage = "Forbidden: You must be an admin user to upload candidates";
+          } else if (response.status === 404) {
+            errorMessage = "Not Found: Check that your API URL is correct (should end with /api/candidates/upload)";
+          }
+          
+          throw new Error(errorMessage);
         }
 
-        // Close modal
-        modal.style.display = "none";
-        currentEditingIndex = -1;
+        const result = await response.json();
         
-        // Refresh table
-        loadData();
-      });
+        // Close modal and show success
+        modal.style.display = "none";
+        alert(`Profile sent successfully to Vetted! ${result.created || 1} candidate(s) added.`);
+        
+        // Remove the sent profile from IndexedDB
+        try {
+          await VettedStorage.deleteProfileByIndex(currentEditingIndex);
+          loadData();
+        } catch (error) {
+          console.error("Error removing profile from IndexedDB:", error);
+          loadData(); // Still reload to refresh UI
+        }
+      } catch (error) {
+        console.error("Error sending to Vetted:", error);
+        alert(`Error sending to Vetted: ${error.message}`);
+      }
     });
   }
 
@@ -561,50 +597,56 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
-  function loadData() {
-    if (!tableContainer) {
-      console.error("tableContainer not found");
-      return;
-    }
-
-    // Simple, synchronous loading - no async/await complexity
+  async function loadData() {
     try {
-      chrome.storage.local.get(['profileDocuments'], (data) => {
-        if (chrome.runtime.lastError) {
-          console.error("Error loading profiles:", chrome.runtime.lastError);
-          if (tableContainer) {
-            renderTable([]);
-          }
-          return;
+      // Load profiles from IndexedDB
+      const documents = await VettedStorage.getAllProfiles();
+      
+      // Load queue from chrome.storage (small data)
+      const settings = await VettedStorage.SettingsStorage.get(["vettedQueue"]);
+      const queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
+      
+      console.log(`Loaded ${documents.length} saved profiles from IndexedDB, ${queueCount} queued for Vetted`);
+      
+      renderTable(documents);
+      
+      // Show queue status if there are queued profiles
+      if (queueCount > 0) {
+        const queueStatus = document.createElement("div");
+        queueStatus.id = "queue-status";
+        queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
+        queueStatus.innerHTML = `📤 ${queueCount} profile(s) queued for auto-send to Vetted. They will be sent automatically in batches.`;
+        const controls = document.getElementById("controls");
+        if (controls && !document.getElementById("queue-status")) {
+          controls.insertBefore(queueStatus, controls.firstChild);
         }
-
-        const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
-        console.log(`Loaded ${documents.length} profiles`);
-        if (tableContainer) {
-          renderTable(documents);
+      } else {
+        const queueStatus = document.getElementById("queue-status");
+        if (queueStatus) {
+          queueStatus.remove();
         }
-        
-        // Load queue info separately (non-blocking)
-        chrome.storage.local.get(['vettedQueue'], (queueData) => {
-          if (!chrome.runtime.lastError && Array.isArray(queueData.vettedQueue) && queueData.vettedQueue.length > 0) {
-            const controls = document.getElementById("controls");
-            if (controls) {
-              const queueStatus = document.createElement("div");
-              queueStatus.id = "queue-status";
-              queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
-              queueStatus.innerHTML = `📤 ${queueData.vettedQueue.length} profile(s) queued for auto-send to Vetted.`;
-              const existing = document.getElementById("queue-status");
-              if (existing) existing.remove();
-              controls.insertBefore(queueStatus, controls.firstChild);
-            }
-          }
-        });
-      });
-    } catch (error) {
-      console.error("Error in loadData:", error);
-      if (tableContainer) {
-        tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error: ${error.message}</div>`;
       }
+      
+      // Check storage usage (IndexedDB)
+      const storageInfo = await VettedStorage.getStorageSize();
+      console.log(`IndexedDB storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
+      
+      // Show storage info (no warnings needed since IndexedDB has much larger limits)
+      const storageInfoDiv = document.createElement("div");
+      storageInfoDiv.id = "storage-info";
+      storageInfoDiv.style.cssText = "background: #e8f5e9; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: #2e7d32;";
+      storageInfoDiv.innerHTML = `💾 IndexedDB: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored`;
+      const controls = document.getElementById("controls");
+      const existingInfo = document.getElementById("storage-info");
+      if (existingInfo) {
+        existingInfo.remove();
+      }
+      if (controls) {
+        controls.insertBefore(storageInfoDiv, controls.firstChild);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      renderTable([]);
     }
   }
 
@@ -729,17 +771,10 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: headers,
         credentials: "include", // Include cookies for session-based auth
         body: JSON.stringify(profiles),
-        mode: "cors", // Explicitly set CORS mode
       });
     } catch (fetchError) {
       console.error("Fetch error:", fetchError);
-      // Ignore LinkedIn page errors (they're not related to our extension)
-      if (fetchError.message && fetchError.message.includes("user-matching")) {
-        console.warn("LinkedIn page error (ignored):", fetchError.message);
-        // Continue - this is not our error
-      } else {
-        throw new Error(`Network error: ${fetchError.message}. Check your API URL and CORS settings.`);
-      }
+      throw new Error(`Network error: ${fetchError.message}. Check your API URL and CORS settings.`);
     }
 
     if (!response.ok) {
@@ -928,7 +963,7 @@ document.addEventListener("DOMContentLoaded", () => {
           await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
           
-          // Clear sent profiles from chrome.storage.local after successful send
+          // Clear sent profiles from IndexedDB after successful send
           const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
           try {
             const allProfiles = await VettedStorage.getAllProfiles();
@@ -941,7 +976,7 @@ document.addEventListener("DOMContentLoaded", () => {
               return !sentUrls.has(profileUrl);
             });
             
-            // Delete sent profiles from chrome.storage.local
+            // Delete sent profiles from IndexedDB
             const profilesToDelete = allProfiles.filter(profile => {
               const profileUrl = profile.extraction_metadata?.source_url || 
                                 profile.personal_info?.profile_url ||
@@ -965,7 +1000,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Clear queue from chrome.storage
             await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
             
-            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from chrome.storage.local`);
+            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from IndexedDB`);
             loadData(); // Refresh the table
           } catch (error) {
             console.error("Error clearing sent profiles:", error);
@@ -1010,7 +1045,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Get storage info before clearing
       const storageBefore = await VettedStorage.getStorageSize();
       
-      // Clear chrome.storage.local profiles
+      // Clear IndexedDB profiles
       await VettedStorage.clearAllProfiles();
       
       // Clear queue from chrome.storage
@@ -1024,22 +1059,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Reload data to refresh the UI
       loadData();
       
-      // Show success message (non-blocking)
-      console.log(`All profiles and queue cleared! Freed ${storageBefore.mb}MB of storage (${storageBefore.count} profiles).`);
-      // Show a non-blocking notification instead of alert
-      const notification = document.createElement("div");
-      notification.style.cssText = "position: fixed; top: 10px; right: 10px; background: #4caf50; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
-      notification.textContent = `Cleared ${storageBefore.count} profiles`;
-      document.body.appendChild(notification);
-      setTimeout(() => notification.remove(), 3000);
+      // Show success message
+      alert(`All profiles and queue cleared! Freed ${storageBefore.mb}MB of storage (${storageBefore.count} profiles).`);
     } catch (error) {
       console.error("Error clearing storage:", error);
-      // Show non-blocking error
-      const errorNotif = document.createElement("div");
-      errorNotif.style.cssText = "position: fixed; top: 10px; right: 10px; background: #e53935; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
-      errorNotif.textContent = "Error clearing storage";
-      document.body.appendChild(errorNotif);
-      setTimeout(() => errorNotif.remove(), 3000);
+      alert("Error clearing storage: " + error.message);
     }
   };
 
@@ -1049,26 +1073,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Listen for storage changes to auto-refresh when profiles are added
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes.profileDocuments) {
-      console.log("Profile storage changed, refreshing table...");
-      // Debounce rapid changes
-      clearTimeout(window.refreshTimeout);
-      window.refreshTimeout = setTimeout(() => {
-        loadData();
-      }, 300);
-    }
-  });
-
-  // Simple initialization - load immediately
-  try {
-    loadData();
-    loadSettings();
-  } catch (error) {
-    console.error("Error during initialization:", error);
-    if (tableContainer) {
-      tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Initialization error: ${error.message}</div>`;
-    }
-  }
+  loadData();
+  loadSettings();
 });
