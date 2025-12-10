@@ -91,7 +91,7 @@ export async function POST(req: Request) {
           previousTargetCompanyTenureMonths: candidateData["Previous target company Tenure Months"] || null,
           tenurePreviousTarget: candidateData["Tenure at previous target (Year start to year end)"] || null,
           previousTitles: candidateData["Previous title(s)"] || candidateData.previousTitles || null,
-          totalYearsExperience: candidateData["Total Years full time experience"] || null,
+          totalYearsExperience: candidateData["Total Years full time experience"] ? String(candidateData["Total Years full time experience"]) : null,
           universities: candidateData["Universities"] ? JSON.stringify(candidateData["Universities"]) : null,
           fieldsOfStudy: candidateData["Fields of Study"] ? JSON.stringify(candidateData["Fields of Study"]) : null,
           degrees: candidateData["Degrees"] || null,
