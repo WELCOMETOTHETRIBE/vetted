@@ -10,8 +10,9 @@ const updateCandidateSchema = z.object({
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: candidateId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
@@ -28,7 +29,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const candidateId = params.id
+    // candidateId already extracted from context.params above
     const body = await req.json()
     const data = updateCandidateSchema.parse(body)
 
@@ -41,7 +42,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       )
     }
@@ -55,8 +56,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: candidateId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
@@ -72,8 +74,6 @@ export async function DELETE(
     if (user?.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
-
-    const candidateId = params.id
 
     await prisma.candidate.delete({
       where: { id: candidateId },

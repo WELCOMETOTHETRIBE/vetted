@@ -65,14 +65,15 @@ async function getProfile(userIdOrHandle: string, currentUserId?: string) {
 export default async function ProfilePage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
-  const profileData = await getProfile(params.id, session.user.id)
+  const profileData = await getProfile(id, session.user.id)
 
   if (!profileData) {
     return (
@@ -128,7 +129,7 @@ export default async function ProfilePage({
         {user.experiences.length > 0 && (
           <ProfileSectionCard title="Experience">
             <div className="space-y-4">
-              {user.experiences.map((exp) => (
+              {user.experiences.map((exp: any) => (
                 <div key={exp.id} className="border-l-2 border-blue-600 pl-4">
                   <h4 className="font-semibold text-gray-900">{exp.title}</h4>
                   <p className="text-blue-600">
@@ -162,7 +163,7 @@ export default async function ProfilePage({
         {user.educations.length > 0 && (
           <ProfileSectionCard title="Education">
             <div className="space-y-4">
-              {user.educations.map((edu) => (
+              {user.educations.map((edu: any) => (
                 <div key={edu.id} className="border-l-2 border-green-600 pl-4">
                   <h4 className="font-semibold text-gray-900">{edu.school}</h4>
                   {edu.degree && (
@@ -196,7 +197,7 @@ export default async function ProfilePage({
         {user.skills.length > 0 && (
           <ProfileSectionCard title="Skills">
             <div className="flex flex-wrap gap-2">
-              {user.skills.map((userSkill) => (
+              {user.skills.map((userSkill: any) => (
                 <span
                   key={userSkill.id}
                   className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
@@ -212,7 +213,7 @@ export default async function ProfilePage({
         {user.posts.length > 0 && (
           <ProfileSectionCard title="Recent Activity">
             <div className="space-y-4">
-              {user.posts.map((post) => (
+              {user.posts.map((post: any) => (
                 <div key={post.id} className="border-b border-gray-200 pb-4 last:border-0">
                   <p className="text-gray-700">{post.content}</p>
                   <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">

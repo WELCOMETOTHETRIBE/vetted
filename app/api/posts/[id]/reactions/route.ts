@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: postId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
@@ -13,7 +14,6 @@ export async function POST(
     }
 
     const { type } = await req.json()
-    const postId = params.id
 
     // Check if reaction already exists
     const existing = await prisma.postReaction.findUnique({

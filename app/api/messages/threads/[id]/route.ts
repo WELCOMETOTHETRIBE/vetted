@@ -9,15 +9,14 @@ const sendMessageSchema = z.object({
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: threadId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const threadId = params.id
 
     // Verify user is part of thread
     const thread = await prisma.messageThread.findUnique({
@@ -68,15 +67,14 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: threadId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const threadId = params.id
     const body = await req.json()
     const { content } = sendMessageSchema.parse(body)
 
@@ -124,7 +122,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       )
     }

@@ -9,15 +9,14 @@ const updateConnectionSchema = z.object({
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: connectionId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const connectionId = params.id
     const body = await req.json()
     const { status } = updateConnectionSchema.parse(body)
 
@@ -56,7 +55,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       )
     }

@@ -4,15 +4,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: groupId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const groupId = params.id
 
     const membership = await prisma.groupMembership.findUnique({
       where: {

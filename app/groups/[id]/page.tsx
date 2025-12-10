@@ -40,14 +40,15 @@ async function getGroup(groupId: string, userId: string) {
 export default async function GroupPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
-  const group = await getGroup(params.id, session.user.id)
+  const group = await getGroup(id, session.user.id)
 
   if (!group) {
     return (
@@ -96,7 +97,7 @@ export default async function GroupPage({
               }}
             />
             <div className="space-y-4">
-              {group.groupPosts.map((post) => (
+              {group.groupPosts.map((post: any) => (
                 <div
                   key={post.id}
                   className="bg-white rounded-lg border border-gray-200 p-6"

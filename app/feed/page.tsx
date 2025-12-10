@@ -21,7 +21,7 @@ async function getFeed(userId: string) {
   })
 
   const connectedUserIds = new Set<string>([userId])
-  connections.forEach((conn) => {
+  connections.forEach((conn: { requesterId: string; receiverId: string }) => {
     connectedUserIds.add(conn.requesterId)
     connectedUserIds.add(conn.receiverId)
   })

@@ -4,15 +4,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: postId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const postId = params.id
     const { content } = await req.json().catch(() => ({ content: null }))
 
     // Check if already reposted

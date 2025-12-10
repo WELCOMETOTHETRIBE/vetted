@@ -40,14 +40,15 @@ async function getJob(jobId: string, userId?: string) {
 export default async function JobDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
-  const job = await getJob(params.id, session.user.id)
+  const job = await getJob(id, session.user.id)
 
   if (!job) {
     return (

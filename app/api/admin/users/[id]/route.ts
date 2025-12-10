@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
@@ -22,7 +23,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const userId = params.id
+    const userId = id
 
     // Deactivate user
     await prisma.user.update({

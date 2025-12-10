@@ -52,14 +52,15 @@ async function getCompany(slug: string) {
 export default async function CompanyPage({
   params,
 }: {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }) {
+  const { slug } = await params
   const session = await auth()
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
-  const company = await getCompany(params.slug)
+  const company = await getCompany(slug)
 
   if (!company) {
     return (
@@ -122,7 +123,7 @@ export default async function CompanyPage({
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Open Positions</h2>
             <div className="space-y-4">
-              {company.jobs.map((job) => (
+              {company.jobs.map((job: any) => (
                 <JobCard key={job.id} job={job} />
               ))}
             </div>
@@ -134,7 +135,7 @@ export default async function CompanyPage({
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Posts</h2>
             <div className="space-y-4">
-              {company.posts.map((post) => (
+              {company.posts.map((post: any) => (
                 <div
                   key={post.id}
                   className="bg-white rounded-lg border border-gray-200 p-6"

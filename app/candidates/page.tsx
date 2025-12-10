@@ -52,8 +52,9 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
 export default async function CandidatesPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined }
+  searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
+  const params = await searchParams
   const session = await auth()
   if (!session?.user) {
     redirect("/auth/signin")
@@ -69,7 +70,7 @@ export default async function CandidatesPage({
     redirect("/feed")
   }
 
-  const data = await getCandidates(searchParams)
+  const data = await getCandidates(params)
 
   return (
     <div className="min-h-screen bg-gray-50">

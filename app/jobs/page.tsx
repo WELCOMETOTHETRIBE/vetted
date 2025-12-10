@@ -6,28 +6,29 @@ import JobCard from "@/components/JobCard"
 import JobFilters from "@/components/JobFilters"
 
 async function getJobs(searchParams: { [key: string]: string | undefined }) {
+  const params = searchParams
   const where: any = {
     isActive: true,
   }
 
-  if (searchParams.search) {
+  if (params.search) {
     where.OR = [
-      { title: { contains: searchParams.search, mode: "insensitive" } },
-      { description: { contains: searchParams.search, mode: "insensitive" } },
-      { company: { name: { contains: searchParams.search, mode: "insensitive" } } },
+      { title: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" } },
+      { company: { name: { contains: params.search, mode: "insensitive" } } },
     ]
   }
 
-  if (searchParams.location) {
-    where.location = { contains: searchParams.location, mode: "insensitive" }
+  if (params.location) {
+    where.location = { contains: params.location, mode: "insensitive" }
   }
 
-  if (searchParams.remote === "true") {
+  if (params.remote === "true") {
     where.isRemote = true
   }
 
-  if (searchParams.employmentType) {
-    where.employmentType = searchParams.employmentType
+  if (params.employmentType) {
+    where.employmentType = params.employmentType
   }
 
   const jobs = await prisma.job.findMany({
@@ -55,14 +56,15 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | undefined }
+  searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
+  const params = await searchParams
   const session = await auth()
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
-  const jobs = await getJobs(searchParams)
+  const jobs = await getJobs(params)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,7 +82,7 @@ export default async function JobsPage({
                   <p className="text-gray-600">No jobs found. Try adjusting your filters.</p>
                 </div>
               ) : (
-                jobs.map((job) => <JobCard key={job.id} job={job} />)
+                jobs.map((job: any) => <JobCard key={job.id} job={job} />)
               )}
             </div>
           </main>

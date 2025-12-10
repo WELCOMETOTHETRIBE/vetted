@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       )
     }
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
       })
 
       const connectedUserIds = new Set<string>([session.user.id])
-      connections.forEach((conn) => {
+      connections.forEach((conn: { requesterId: string; receiverId: string }) => {
         connectedUserIds.add(conn.requesterId)
         connectedUserIds.add(conn.receiverId)
       })

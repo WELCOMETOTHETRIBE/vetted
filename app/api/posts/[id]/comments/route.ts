@@ -10,8 +10,9 @@ const createCommentSchema = z.object({
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: postId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
@@ -20,7 +21,6 @@ export async function POST(
 
     const body = await req.json()
     const data = createCommentSchema.parse(body)
-    const postId = params.id
 
     const comment = await prisma.comment.create({
       data: {
@@ -45,7 +45,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       )
     }
@@ -59,15 +59,14 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: postId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const postId = params.id
 
     const comments = await prisma.comment.findMany({
       where: {

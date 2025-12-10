@@ -6,15 +6,14 @@ import { join } from "path"
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id: jobId } = await context.params
   try {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const jobId = params.id
     const formData = await req.formData()
     const resume = formData.get("resume") as File
     const coverLetter = formData.get("coverLetter") as string | null

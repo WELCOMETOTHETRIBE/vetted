@@ -19,8 +19,11 @@ COPY . .
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL:-postgresql://placeholder:placeholder@localhost:5432/placeholder}
 
-# Generate Prisma Client (runs automatically via postinstall, but explicit is clearer)
+# Generate Prisma Client
 RUN npx prisma generate
+
+# Verify Prisma Client was generated
+RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
 # Build the application
 RUN npm run build
@@ -35,10 +38,19 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy Prisma Client (required for runtime)
+# Must copy before standalone to ensure it's available
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy Next.js build output (standalone includes minimal node_modules)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Ensure Prisma Client is accessible
+RUN test -d node_modules/.prisma/client && echo "Prisma client found" || echo "WARNING: Prisma client not found"
+COPY --from=builder /app/node_modules/.prisma/client ./node_modules/.prisma/client
 
 USER nextjs
 
