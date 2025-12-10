@@ -971,34 +971,35 @@ document.addEventListener("DOMContentLoaded", () => {
       sendToVettedBtn.disabled = true;
       sendToVettedBtn.textContent = "Sending...";
 
-      // Try to send to Vetted API first, fallback to Google Sheets if not configured
-      const vettedSettings = await new Promise((resolve) => {
-        chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], resolve);
-      });
+      try {
+        // Try to send to Vetted API first, fallback to Google Sheets if not configured
+        const vettedSettings = await new Promise((resolve) => {
+          chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], resolve);
+        });
 
-      if (vettedSettings.vettedApiUrl) {
-        try {
+        console.log("Vetted settings:", { 
+          hasUrl: !!vettedSettings.vettedApiUrl, 
+          hasKey: !!vettedSettings.vettedApiKey 
+        });
+
+        if (vettedSettings.vettedApiUrl) {
+          console.log("Calling sendToVetted...");
           await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
+          console.log("sendToVetted completed successfully");
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
-        } catch (vettedError) {
-          console.error("Vetted API error:", vettedError);
-          console.error("Error details:", {
-            message: vettedError.message,
-            stack: vettedError.stack,
-            name: vettedError.name,
-            url: vettedSettings.vettedApiUrl
+          
+          // Clear profiles from storage after successful send
+          chrome.storage.local.set({ profileDocuments: [] }, () => {
+            loadData();
           });
-          // Don't fallback to Google Sheets - just show the Vetted error
-          const errorMessage = vettedError.message || vettedError.toString() || "Unknown error";
-          throw new Error(`Vetted API: ${errorMessage}`);
+        } else {
+          // No Vetted URL configured
+          throw new Error("Vetted API URL not configured. Please configure it in Settings.");
         }
-      } else {
-        // No Vetted URL configured
-        throw new Error("Vetted API URL not configured. Please configure it in Settings.");
+      } finally {
+        sendToVettedBtn.disabled = false;
+        sendToVettedBtn.textContent = "Send to Vetted";
       }
-      
-      sendToVettedBtn.disabled = false;
-      sendToVettedBtn.textContent = "Send to Vetted";
     } catch (error) {
       console.error("Send to Vetted failed:", error);
       console.error("Error details:", {
