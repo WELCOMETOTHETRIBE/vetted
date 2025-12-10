@@ -564,14 +564,40 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Load profiles from chrome.storage.local (with timeout to prevent hanging)
-      const documents = await Promise.race([
-        VettedStorage.getAllProfiles(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Load timeout after 5s")), 5000))
-      ]);
-      console.log("Raw documents from chrome.storage.local:", documents);
+      console.log("Starting to load profiles...");
       
-      // Load queue from chrome.storage (non-blocking)
+      // Load profiles from chrome.storage.local (with timeout to prevent hanging)
+      let documents;
+      try {
+        documents = await Promise.race([
+          VettedStorage.getAllProfiles(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Load timeout after 5s")), 5000))
+        ]);
+        console.log("Raw documents from chrome.storage.local:", documents);
+      } catch (loadError) {
+        console.error("Error loading profiles:", loadError);
+        // Try direct chrome.storage access as fallback
+        documents = await new Promise((resolve) => {
+          chrome.storage.local.get(['profileDocuments'], (data) => {
+            if (chrome.runtime.lastError) {
+              console.error("Direct chrome.storage error:", chrome.runtime.lastError);
+              resolve([]);
+            } else {
+              resolve(Array.isArray(data.profileDocuments) ? data.profileDocuments : []);
+            }
+          });
+        });
+        console.log("Fallback: Loaded", documents.length, "profiles directly from chrome.storage");
+      }
+      
+      // Ensure documents is an array
+      const profilesArray = Array.isArray(documents) ? documents : [];
+      console.log(`Loaded ${profilesArray.length} profiles, rendering table...`);
+      
+      // Render table immediately (don't wait for queue info)
+      renderTable(profilesArray);
+      
+      // Load queue from chrome.storage (non-blocking, after rendering)
       let queueCount = 0;
       try {
         const settings = await Promise.race([
@@ -579,19 +605,11 @@ document.addEventListener("DOMContentLoaded", () => {
           new Promise((_, reject) => setTimeout(() => reject(new Error("Settings timeout")), 2000))
         ]);
         queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
+        console.log(`${queueCount} profiles queued for Vetted`);
       } catch (settingsError) {
         console.warn("Could not load queue:", settingsError);
         // Continue without queue info
       }
-      
-      console.log(`Loaded ${documents.length} saved profiles from chrome.storage.local, ${queueCount} queued for Vetted`);
-      
-      // Ensure documents is an array
-      const profilesArray = Array.isArray(documents) ? documents : [];
-      console.log(`Rendering ${profilesArray.length} profiles`);
-      
-      // Render table immediately
-      renderTable(profilesArray);
       
       // Show queue status if there are queued profiles
       if (queueCount > 0) {
