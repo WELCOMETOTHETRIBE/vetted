@@ -54,15 +54,17 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   function renderTable(documents) {
+    if (!tableContainer) return;
+    
     tableContainer.innerHTML = "";
-    profileDocuments = documents;
+    profileDocuments = documents || [];
 
     if (!documents || documents.length === 0) {
-      emptyState.style.display = "block";
+      if (emptyState) emptyState.style.display = "block";
       return;
     }
 
-    emptyState.style.display = "none";
+    if (emptyState) emptyState.style.display = "none";
 
     const table = document.createElement("table");
     const thead = document.createElement("thead");
@@ -79,7 +81,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const tbody = document.createElement("tbody");
 
-    documents.forEach((doc, index) => {
+    // Process documents in batches to prevent UI freeze
+    let index = 0;
+    const batchSize = 10;
+    
+    function processBatch() {
+      const end = Math.min(index + batchSize, documents.length);
+      
+      for (let i = index; i < end; i++) {
+        const doc = documents[i];
       const tr = document.createElement("tr");
       tr.dataset.index = index;
 
@@ -520,61 +530,75 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function loadData() {
-    chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
-      const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
-      const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
-      
-      console.log(`Loaded ${documents.length} saved profiles, ${queueCount} queued for Vetted`);
-      
-      renderTable(documents);
-      
-      // Show queue status if there are queued profiles
-      if (queueCount > 0) {
-        const queueStatus = document.createElement("div");
-        queueStatus.id = "queue-status";
-        queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
-        queueStatus.innerHTML = `📤 ${queueCount} profile(s) queued for auto-send to Vetted. They will be sent automatically in batches.`;
-        const controls = document.getElementById("controls");
-        if (controls && !document.getElementById("queue-status")) {
-          controls.insertBefore(queueStatus, controls.firstChild);
+    // Show loading state
+    if (tableContainer) {
+      tableContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Loading profiles...</div>';
+    }
+    if (emptyState) {
+      emptyState.style.display = "none";
+    }
+
+    // Use setTimeout to make it non-blocking
+    setTimeout(() => {
+      chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error loading:", chrome.runtime.lastError);
+          if (tableContainer) {
+            tableContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #e53935;">Error loading profiles</div>';
+          }
+          return;
         }
-      } else {
-        const queueStatus = document.getElementById("queue-status");
-        if (queueStatus) {
-          queueStatus.remove();
-        }
-      }
-      
-      // Check storage usage
-      chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
-        if (bytesInUse !== undefined) {
-          const mbUsed = (bytesInUse / (1024 * 1024)).toFixed(2);
-          const mbLimit = 10; // Chrome storage limit is ~10MB
-          const percentage = ((bytesInUse / (1024 * 1024 * mbLimit)) * 100).toFixed(1);
-          
-          // Show storage info in console and optionally in UI
-          console.log(`Storage usage: ${mbUsed}MB / ${mbLimit}MB (${percentage}%)`);
-          
-          if (percentage > 80) {
-            console.warn("Storage is getting full! Consider clearing old profiles.");
-            // Show warning in UI
-            const storageWarning = document.createElement("div");
-            storageWarning.style.cssText = "background: #fff3cd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px; color: #856404;";
-            storageWarning.innerHTML = `⚠️ Storage is ${percentage}% full. Consider clearing old profiles.`;
+
+        const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+        const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
+        
+        console.log(`Loaded ${documents.length} saved profiles, ${queueCount} queued for Vetted`);
+        
+        // Render table immediately
+        renderTable(documents);
+        
+        // Show queue status if there are queued profiles (non-blocking)
+        setTimeout(() => {
+          if (queueCount > 0) {
+            const queueStatus = document.createElement("div");
+            queueStatus.id = "queue-status";
+            queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
+            queueStatus.innerHTML = `📤 ${queueCount} profile(s) queued for auto-send to Vetted.`;
             const controls = document.getElementById("controls");
-            if (controls && !document.getElementById("storage-warning")) {
-              storageWarning.id = "storage-warning";
-              controls.insertBefore(storageWarning, controls.firstChild);
+            if (controls && !document.getElementById("queue-status")) {
+              controls.insertBefore(queueStatus, controls.firstChild);
             }
           } else {
-            const storageWarning = document.getElementById("storage-warning");
-            if (storageWarning) {
-              storageWarning.remove();
+            const queueStatus = document.getElementById("queue-status");
+            if (queueStatus) {
+              queueStatus.remove();
             }
           }
-        }
+        }, 0);
+        
+        // Check storage usage (non-blocking, don't wait for it)
+        chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
+          if (bytesInUse !== undefined) {
+            const mbUsed = (bytesInUse / (1024 * 1024)).toFixed(2);
+            const mbLimit = 10;
+            const percentage = ((bytesInUse / (1024 * 1024 * mbLimit)) * 100).toFixed(1);
+            
+            console.log(`Storage usage: ${mbUsed}MB / ${mbLimit}MB (${percentage}%)`);
+            
+            if (percentage > 80) {
+              const storageWarning = document.createElement("div");
+              storageWarning.style.cssText = "background: #fff3cd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px; color: #856404;";
+              storageWarning.innerHTML = `⚠️ Storage is ${percentage}% full.`;
+              storageWarning.id = "storage-warning";
+              const controls = document.getElementById("controls");
+              const existing = document.getElementById("storage-warning");
+              if (existing) existing.remove();
+              if (controls) controls.insertBefore(storageWarning, controls.firstChild);
+            }
+          }
+        });
       });
-    });
+    }, 0);
   }
 
   function loadSettings() {
@@ -924,6 +948,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  loadData();
-  loadSettings();
+  // Delay initialization slightly to ensure DOM is ready
+  setTimeout(() => {
+    loadData();
+    loadSettings();
+  }, 50);
 });
