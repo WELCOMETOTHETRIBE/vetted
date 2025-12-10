@@ -974,7 +974,9 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Processed profiles:", processed.length);
         
         if (!processed || processed.length === 0) {
-          alert("No valid profiles to send. Profiles may be invalid or corrupted.");
+          setTimeout(() => {
+            alert("No valid profiles to send. Profiles may be invalid or corrupted.");
+          }, 0);
           return;
         }
         
@@ -992,10 +994,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
 
-        sendToVettedBtn.disabled = true;
-        sendToVettedBtn.textContent = "Sending...";
-
-        // Get Vetted API settings
+        // Check API URL BEFORE disabling button
         const vettedSettings = await new Promise((resolve, reject) => {
           chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], (data) => {
             if (chrome.runtime.lastError) {
@@ -1012,24 +1011,46 @@ document.addEventListener("DOMContentLoaded", () => {
           hasKey: !!vettedSettings.vettedApiKey 
         });
 
-        if (!vettedSettings.vettedApiUrl) {
-          throw new Error("Vetted API URL not configured. Please configure it in Settings.");
+        if (!vettedSettings.vettedApiUrl || !vettedSettings.vettedApiUrl.trim()) {
+          // Show error without blocking - use setTimeout to prevent UI freeze
+          setTimeout(() => {
+            alert("Vetted API URL not configured.\n\nPlease:\n1. Click 'Settings' tab\n2. Enter your Vetted API URL\n3. Click 'Save Settings'\n4. Try again");
+          }, 0);
+          return;
         }
 
-        console.log("Calling sendToVetted with", processed.length, "profiles...");
-        await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
-        console.log("sendToVetted completed successfully");
-        
-        alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
-        
-        // Clear profiles from storage after successful send
-        chrome.storage.local.set({ profileDocuments: [] }, () => {
-          if (chrome.runtime.lastError) {
-            console.error("Error clearing profiles:", chrome.runtime.lastError);
-          } else {
-            loadData();
-          }
-        });
+        // Only disable button if we have a valid URL
+        sendToVettedBtn.disabled = true;
+        sendToVettedBtn.textContent = "Sending...";
+
+        try {
+          console.log("Calling sendToVetted with", processed.length, "profiles...");
+          await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
+          console.log("sendToVetted completed successfully");
+          
+          // Use setTimeout to prevent blocking
+          setTimeout(() => {
+            alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
+          }, 0);
+          
+          // Clear profiles from storage after successful send
+          chrome.storage.local.set({ profileDocuments: [] }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Error clearing profiles:", chrome.runtime.lastError);
+            } else {
+              loadData();
+            }
+          });
+        } catch (sendError) {
+          console.error("sendToVetted error:", sendError);
+          // Use setTimeout to prevent blocking
+          setTimeout(() => {
+            alert("Error sending to Vetted: " + (sendError.message || sendError.toString() || "Unknown error occurred"));
+          }, 0);
+        } finally {
+          sendToVettedBtn.disabled = false;
+          sendToVettedBtn.textContent = "Send to Vetted";
+        }
       } catch (error) {
         console.error("Send to Vetted failed:", error);
         console.error("Error details:", {
@@ -1037,8 +1058,11 @@ document.addEventListener("DOMContentLoaded", () => {
           stack: error.stack,
           name: error.name
         });
-        alert("Error: " + (error.message || error.toString() || "Unknown error occurred"));
-      } finally {
+        // Use setTimeout to prevent blocking
+        setTimeout(() => {
+          alert("Error: " + (error.message || error.toString() || "Unknown error occurred"));
+        }, 0);
+        // Ensure button is re-enabled even if error occurs
         sendToVettedBtn.disabled = false;
         sendToVettedBtn.textContent = "Send to Vetted";
       }
