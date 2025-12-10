@@ -417,6 +417,17 @@
     </div>
 
     <div class="settings-section">
+      <h3 style="font-size: 14px; margin: 12px 0 8px; color: #333;">Vetted API Settings</h3>
+      <label for="vetted-api-url">Vetted API URL:</label>
+      <input type="text" id="vetted-api-url" placeholder="https://your-vetted-domain.com/api/candidates/upload" />
+      <label for="vetted-api-key">API Key (optional):</label>
+      <input type="password" id="vetted-api-key" placeholder="Leave empty to use session-based auth" />
+      <label class="checkbox-label">
+        <input type="checkbox" id="auto-send-vetted-checkbox" />
+        Auto-send to Vetted when saving profiles
+      </label>
+      
+      <h3 style="font-size: 14px; margin: 16px 0 8px; color: #333;">Google Sheets Settings (Legacy)</h3>
       <label for="sheets-url">Google Sheets Web App URL:</label>
       <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" />
       <label class="checkbox-label">

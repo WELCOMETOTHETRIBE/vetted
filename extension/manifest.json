@@ -6,7 +6,9 @@
   "permissions": ["storage"],
   "host_permissions": [
     "https://script.google.com/*",
-    "https://script.googleusercontent.com/*"
+    "https://script.googleusercontent.com/*",
+    "http://localhost/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js"

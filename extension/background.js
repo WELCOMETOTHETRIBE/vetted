@@ -154,6 +154,70 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Keep the message channel open for async response
     return true;
   }
+
+  // Handle auto-send to Vetted
+  if (message.type === "AUTO_SEND_TO_VETTED" && typeof message.payload === "object" && message.payload !== null) {
+    sendProfileToVetted(message.payload).then((result) => {
+      sendResponse(result);
+    }).catch((error) => {
+      sendResponse({ success: false, error: error.message });
+    });
+
+    // Keep the message channel open for async response
+    return true;
+  }
 });
+
+// Function to send profile to Vetted API
+async function sendProfileToVetted(profileDoc) {
+  try {
+    // Get settings
+    const settings = await new Promise((resolve) => {
+      chrome.storage.local.get(["vettedApiUrl", "vettedApiKey", "autoSendToVetted"], resolve);
+    });
+
+    if (!settings.autoSendToVetted || !settings.vettedApiUrl) {
+      return { success: false, error: "Auto-send to Vetted not enabled or URL not configured" };
+    }
+
+    // Process the profile
+    if (typeof ProfileProcessor === 'undefined') {
+      return { success: false, error: "Profile processor not available" };
+    }
+
+    const processed = ProfileProcessor.processProfileDocument(profileDoc);
+    if (!processed) {
+      return { success: false, error: "Profile validation failed" };
+    }
+
+    // Prepare headers
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (settings.vettedApiKey) {
+      headers["Authorization"] = `Bearer ${settings.vettedApiKey}`;
+    }
+
+    // Send to Vetted API
+    const response = await fetch(settings.vettedApiUrl, {
+      method: "POST",
+      headers: headers,
+      credentials: "include", // Include cookies for session-based auth
+      body: JSON.stringify([processed]),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      return { success: false, error: errorData.error || `HTTP ${response.status}` };
+    }
+
+    const result = await response.json();
+    return { success: true, result };
+  } catch (error) {
+    console.error("Error sending to Vetted:", error);
+    return { success: false, error: error.message };
+  }
+}
 
 

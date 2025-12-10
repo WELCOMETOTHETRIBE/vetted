@@ -11,9 +11,15 @@ A Chrome Extension that extracts rich profile data from web pages (especially Li
   - Raw JSON (original extracted data)
   - Processed JSON (structured for database insertion)
   - CSV format (ready for spreadsheet/database import)
-- **Google Sheets Integration**: 
-  - Automatically send profiles to Google Sheets when saving (optional)
+- **Vetted Platform Integration** (NEW!):
+  - Direct API integration with Vetted platform
+  - Automatically send profiles to Vetted when saving (optional)
   - Manual "Send to Vetted" button to send all profiles
+  - Session-based or API key authentication
+  - See `VETTED_SETUP.md` for setup instructions
+- **Google Sheets Integration** (Legacy): 
+  - Automatically send profiles to Google Sheets when saving (optional)
+  - Manual "Send to Vetted" button also supports Google Sheets fallback
   - See `GOOGLE_SHEETS_SETUP.md` for setup instructions
 
 ## Files
@@ -134,14 +140,26 @@ INSERT INTO candidates (
 3. Click "Load unpacked"
 4. Select the extension directory
 
-## Google Sheets Integration
+## Vetted Platform Integration
+
+To enable sending profiles directly to your Vetted platform:
+
+1. Follow the setup guide in `VETTED_SETUP.md`
+2. Configure your Vetted API URL in the extension settings (e.g., `https://your-domain.com/api/candidates/upload`)
+3. Optionally enter an API key, or use session-based auth (must be logged into Vetted as admin)
+4. Optionally enable "Auto-send to Vetted when saving profiles"
+5. Use the "Send to Vetted" button to manually send all saved profiles
+
+**Note**: The extension will prioritize Vetted API if configured, and fall back to Google Sheets if Vetted is not available.
+
+## Google Sheets Integration (Legacy)
 
 To enable automatic sending of profiles to Google Sheets:
 
 1. Follow the setup guide in `GOOGLE_SHEETS_SETUP.md`
 2. Configure your Google Sheets Web App URL in the extension settings
 3. Optionally enable "Auto-send to Google Sheets when saving profiles"
-4. Use the "Send to Vetted" button to manually send all saved profiles
+4. Use the "Send to Vetted" button to manually send all saved profiles (will use Google Sheets if Vetted API not configured)
 
 ## Testing
 

@@ -74,9 +74,22 @@
 
             if (response.success) {
               // Check if auto-send is enabled and notify background script
-              chrome.storage.local.get(["autoSendToSheets"], (settings) => {
-                if (settings.autoSendToSheets) {
-                  // Request background script to auto-send
+              chrome.storage.local.get(["autoSendToVetted", "autoSendToSheets"], (settings) => {
+                if (settings.autoSendToVetted) {
+                  // Request background script to auto-send to Vetted
+                  chrome.runtime.sendMessage({
+                    type: "AUTO_SEND_TO_VETTED",
+                    payload: profileDoc
+                  }, (autoSendResponse) => {
+                    if (chrome.runtime.lastError) {
+                      console.error("Auto-send to Vetted error:", chrome.runtime.lastError);
+                    } else if (autoSendResponse && !autoSendResponse.success) {
+                      console.error("Vetted API error:", autoSendResponse.error);
+                    }
+                  });
+                  showToast(`Profile saved & sending to Vetted (#${response.count})`);
+                } else if (settings.autoSendToSheets) {
+                  // Request background script to auto-send to Google Sheets
                   chrome.runtime.sendMessage({
                     type: "AUTO_SEND_TO_SHEETS",
                     payload: profileDoc
@@ -85,7 +98,7 @@
                       console.error("Auto-send error:", chrome.runtime.lastError);
                     }
                   });
-                  showToast(`Profile saved & sending to Vetted (#${response.count})`);
+                  showToast(`Profile saved & sending to Google Sheets (#${response.count})`);
                 } else {
                   showToast(`Profile JSON saved (#${response.count})`);
                 }
@@ -722,8 +735,10 @@
     if (experienceSection) {
       const items = experienceSection.querySelectorAll("li, .pvs-list__paged-list-item, [data-view-name='profile-component-entity'], article, [role='listitem']");
       items.forEach(item => {
+        if (!item) return; // Skip null items
+        
         const itemData = extractElementData(item);
-        const itemText = getTextContent(item);
+        const itemText = getTextContent(item) || ""; // Ensure itemText is never null
         
         // Extract title - try multiple selectors
         const titleEl = item.querySelector("h3, .t-16.t-black.t-bold, span[aria-hidden='true'], [class*='title'], [class*='position'], .pvs-entity__summary-info-v2 h3");
@@ -829,7 +844,7 @@
         description = getTextContent(descEl);
 
         let expLocation = null;
-        if (itemText.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) || itemText.match(/[A-Z][a-z]+\s+[A-Z][a-z]+/)) {
+        if (itemText && (itemText.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) || itemText.match(/[A-Z][a-z]+\s+[A-Z][a-z]+/))) {
           expLocation = itemText.match(/([A-Z][a-z]+(?:,\s*[A-Z]{2})?)/)?.[0] || null;
         }
 

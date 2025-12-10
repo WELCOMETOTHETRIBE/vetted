@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const downloadCsvBtn = document.getElementById("download-csv-btn");
   const sendToVettedBtn = document.getElementById("send-to-vetted-btn");
   const clearBtn = document.getElementById("clear-btn");
+  const vettedApiUrlInput = document.getElementById("vetted-api-url");
+  const vettedApiKeyInput = document.getElementById("vetted-api-key");
+  const autoSendVettedCheckbox = document.getElementById("auto-send-vetted-checkbox");
   const sheetsUrlInput = document.getElementById("sheets-url");
   const autoSendCheckbox = document.getElementById("auto-send-checkbox");
   const saveSettingsBtn = document.getElementById("save-settings-btn");
@@ -540,7 +543,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function loadSettings() {
-    chrome.storage.local.get(["googleSheetsUrl", "autoSendToSheets"], (data) => {
+    chrome.storage.local.get([
+      "vettedApiUrl", 
+      "vettedApiKey", 
+      "autoSendToVetted",
+      "googleSheetsUrl", 
+      "autoSendToSheets"
+    ], (data) => {
+      if (data.vettedApiUrl) {
+        vettedApiUrlInput.value = data.vettedApiUrl;
+      }
+      if (data.vettedApiKey) {
+        vettedApiKeyInput.value = data.vettedApiKey;
+      }
+      if (data.autoSendToVetted !== undefined) {
+        autoSendVettedCheckbox.checked = data.autoSendToVetted;
+      }
       if (data.googleSheetsUrl) {
         sheetsUrlInput.value = data.googleSheetsUrl;
       }
@@ -548,39 +566,95 @@ document.addEventListener("DOMContentLoaded", () => {
         autoSendCheckbox.checked = data.autoSendToSheets;
       }
       
-      if (data.googleSheetsUrl) {
-        settingsStatus.textContent = "Settings loaded";
+      if (data.vettedApiUrl) {
+        settingsStatus.textContent = "Vetted API configured";
         settingsStatus.style.color = "#4caf50";
-      } else {
-        settingsStatus.textContent = "No Google Sheets URL configured";
+      } else if (data.googleSheetsUrl) {
+        settingsStatus.textContent = "Google Sheets configured (Vetted API not set)";
         settingsStatus.style.color = "#ff9800";
+      } else {
+        settingsStatus.textContent = "No API configured";
+        settingsStatus.style.color = "#e53935";
       }
     });
   }
 
   function saveSettings() {
-    const url = sheetsUrlInput.value.trim();
-    const autoSend = autoSendCheckbox.checked;
+    const vettedUrl = vettedApiUrlInput.value.trim();
+    const vettedKey = vettedApiKeyInput.value.trim();
+    const autoSendVetted = autoSendVettedCheckbox.checked;
+    const sheetsUrl = sheetsUrlInput.value.trim();
+    const autoSendSheets = autoSendCheckbox.checked;
 
-    if (!url) {
-      settingsStatus.textContent = "Please enter a Google Sheets URL";
+    // Validate Vetted API URL if provided
+    if (vettedUrl && !vettedUrl.startsWith("http://") && !vettedUrl.startsWith("https://")) {
+      settingsStatus.textContent = "Invalid Vetted API URL (must start with http:// or https://)";
       settingsStatus.style.color = "#e53935";
       return;
     }
 
-    if (!url.includes("script.google.com") && !url.includes("script.googleusercontent.com")) {
+    // Validate Google Sheets URL if provided
+    if (sheetsUrl && !sheetsUrl.includes("script.google.com") && !sheetsUrl.includes("script.googleusercontent.com")) {
       settingsStatus.textContent = "Invalid Google Apps Script URL";
       settingsStatus.style.color = "#e53935";
       return;
     }
 
-    chrome.storage.local.set({ 
-      googleSheetsUrl: url,
-      autoSendToSheets: autoSend
-    }, () => {
-      settingsStatus.textContent = "Settings saved!";
+    const settingsToSave = {
+      autoSendToSheets: autoSendSheets
+    };
+
+    if (vettedUrl) {
+      settingsToSave.vettedApiUrl = vettedUrl;
+      settingsToSave.autoSendToVetted = autoSendVetted;
+    }
+    if (vettedKey) {
+      settingsToSave.vettedApiKey = vettedKey;
+    }
+    if (sheetsUrl) {
+      settingsToSave.googleSheetsUrl = sheetsUrl;
+    }
+
+    chrome.storage.local.set(settingsToSave, () => {
+      if (vettedUrl) {
+        settingsStatus.textContent = "Vetted API settings saved!";
+      } else if (sheetsUrl) {
+        settingsStatus.textContent = "Google Sheets settings saved!";
+      } else {
+        settingsStatus.textContent = "Settings saved (no API configured)";
+      }
       settingsStatus.style.color = "#4caf50";
     });
+  }
+
+  async function sendToVetted(profiles, apiUrl, apiKey) {
+    if (!apiUrl) {
+      throw new Error("Vetted API URL not configured.");
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    // Add API key if provided
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: headers,
+      credentials: "include", // Include cookies for session-based auth
+      body: JSON.stringify(profiles),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
   }
 
   async function sendToGoogleSheets(profiles) {
@@ -710,8 +784,30 @@ document.addEventListener("DOMContentLoaded", () => {
       sendToVettedBtn.disabled = true;
       sendToVettedBtn.textContent = "Sending...";
 
-      await sendToGoogleSheets(processed);
-      alert(`Successfully sent ${processed.length} profile(s) to Google Sheets!`);
+      // Try to send to Vetted API first, fallback to Google Sheets if not configured
+      const vettedSettings = await new Promise((resolve) => {
+        chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], resolve);
+      });
+
+      if (vettedSettings.vettedApiUrl) {
+        try {
+          await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
+          alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
+        } catch (vettedError) {
+          console.error("Vetted API error:", vettedError);
+          // Fallback to Google Sheets if Vetted fails
+          try {
+            await sendToGoogleSheets(processed);
+            alert(`Vetted API failed. Sent ${processed.length} profile(s) to Google Sheets instead.`);
+          } catch (sheetsError) {
+            throw new Error(`Vetted API: ${vettedError.message}. Google Sheets: ${sheetsError.message}`);
+          }
+        }
+      } else {
+        // No Vetted URL configured, use Google Sheets
+        await sendToGoogleSheets(processed);
+        alert(`Vetted API not configured. Sent ${processed.length} profile(s) to Google Sheets.`);
+      }
       
       sendToVettedBtn.disabled = false;
       sendToVettedBtn.textContent = "Send to Vetted";
