@@ -25,35 +25,14 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
-# Create default.js that exports from @prisma/client with lazy loading
-# This breaks the circular dependency by using getters
+# Create default.js that exports from Prisma runtime
+# This breaks the circular dependency by using the runtime directly
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
-let _prismaClient = null;
-function getPrismaClient() {
-  if (!_prismaClient) {
-    const pc = require('@prisma/client');
-    _prismaClient = pc.PrismaClient;
-  }
-  return _prismaClient;
-}
+const runtime = require('@prisma/client/runtime/client');
+const { getPrismaClientClass } = runtime;
 module.exports = {
-  get PrismaClient() {
-    return getPrismaClient();
-  },
-  ...(() => {
-    try {
-      const pc = require('@prisma/client');
-      const exports = {};
-      for (const key in pc) {
-        if (key !== 'default' && key !== '__esModule') {
-          exports[key] = pc[key];
-        }
-      }
-      return exports;
-    } catch (e) {
-      return {};
-    }
-  })()
+  PrismaClient: getPrismaClientClass(),
+  ...runtime
 };
 EOFJS
 
