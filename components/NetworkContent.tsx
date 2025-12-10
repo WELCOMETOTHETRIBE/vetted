@@ -17,7 +17,7 @@ export default function NetworkContent({
   initialData,
   currentUserId,
 }: NetworkContentProps) {
-  const [activeTab, setActiveTab] = useState<"connections" | "pending">("connections")
+  const [activeTab, setActiveTab] = useState<"connections" | "pending" | "sent">("connections")
   const [connections, setConnections] = useState(initialData.connections)
   const [pendingReceived, setPendingReceived] = useState(initialData.pendingReceived)
 
