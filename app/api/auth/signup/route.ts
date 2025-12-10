@@ -60,8 +60,10 @@ export async function POST(req: Request) {
       )
     }
     console.error("Signup error:", error)
+    // Include error message in response for debugging (remove in production if needed)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     )
   }
