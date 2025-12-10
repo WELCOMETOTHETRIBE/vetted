@@ -8,6 +8,54 @@ const updateCandidateSchema = z.object({
   notes: z.string().optional(),
 })
 
+export async function GET(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id: candidateId } = await context.params
+  try {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    })
+
+    if (user?.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const candidate = await prisma.candidate.findUnique({
+      where: { id: candidateId },
+      include: {
+        addedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    if (!candidate) {
+      return NextResponse.json({ error: "Candidate not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(candidate)
+  } catch (error) {
+    console.error("Get candidate error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ id: string }> }
