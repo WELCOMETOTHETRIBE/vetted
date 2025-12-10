@@ -1032,8 +1032,10 @@
     if (educationSection) {
       const items = educationSection.querySelectorAll("li, .pvs-list__paged-list-item, [data-view-name='profile-component-entity'], article");
       items.forEach(item => {
+        if (!item) return; // Skip null items
+        
         const itemData = extractElementData(item);
-        const itemText = getTextContent(item);
+        const itemText = getTextContent(item) || ""; // Ensure itemText is never null
         
         const schoolEl = item.querySelector("h3, .t-16.t-black.t-bold, [class*='school'], [class*='university']");
         const school = getTextContent(schoolEl);
@@ -1068,7 +1070,7 @@
         const descEl = item.querySelector(".pvs-list__outer-container .t-14.t-normal, [class*='description']");
         description = getTextContent(descEl);
 
-        if (school || degree || itemText.length > 20) {
+        if (school || degree || (itemText && itemText.length > 20)) {
           structured.education.push({
             degree,
             school,
@@ -1088,6 +1090,8 @@
     if (skillsSection) {
       const skillItems = skillsSection.querySelectorAll("li, .pvs-list__paged-list-item, span[data-anonymize='skill-name'], [class*='skill']");
       skillItems.forEach(item => {
+        if (!item) return; // Skip null items
+        
         const itemData = extractElementData(item);
         const nameEl = item.querySelector("span, a, .t-16.t-black.t-bold, [class*='skill-name']");
         const name = getTextContent(nameEl);
@@ -1099,9 +1103,9 @@
           endorsements = parseInt(endorsementMatch[1], 10);
         }
 
-        if (name || item.textContent.trim().length > 2) {
+        if (name || (item.textContent && item.textContent.trim().length > 2)) {
           structured.skills.push({
-            name: name || item.textContent.trim(),
+            name: name || (item.textContent ? item.textContent.trim() : ""),
             endorsements,
             raw_html: itemData.html,
             element_data: itemData
@@ -1115,15 +1119,17 @@
     if (certSection) {
       const certItems = certSection.querySelectorAll("li, .pvs-list__paged-list-item, article");
       certItems.forEach(item => {
+        if (!item) return; // Skip null items
+        
         const itemData = extractElementData(item);
         structured.certifications.push({
-          name: getTextContent(item.querySelector("h3, [class*='title']")) || getTextContent(item),
+          name: getTextContent(item.querySelector("h3, [class*='title']")) || getTextContent(item) || "",
           issuer: getTextContent(item.querySelector("[class*='issuer'], [class*='organization']")),
           date: getTextContent(item.querySelector("[class*='date']")),
           credential_id: getTextContent(item.querySelector("[class*='credential'], [class*='id']")),
           credential_url: item.querySelector("a")?.href || null,
           raw_html: itemData.html,
-          raw_text: getTextContent(item),
+          raw_text: getTextContent(item) || "",
           element_data: itemData
         });
       });
@@ -1287,16 +1293,20 @@
     if (recommendationsSection) {
       const recItems = recommendationsSection.querySelectorAll("li, .pvs-list__paged-list-item, article");
       recItems.forEach(item => {
+        if (!item) return; // Skip null items
+        
         const itemData = extractElementData(item);
         const text = item.textContent || "";
+        const relationshipMatch = text.match(/worked\s+with[^.]*/i);
+        const dateMatch = text.match(/(\w+\s+\d{4})/);
         structured.recommendations.push({
           direction: text.toLowerCase().includes("received") ? "received" : 
                      text.toLowerCase().includes("given") ? "given" : null,
           from_name: getTextContent(item.querySelector("h3, .t-16.t-black.t-bold, [class*='name']")),
           from_title: getTextContent(item.querySelector(".t-14.t-black--light, [class*='title']")),
-          relationship: text.match(/worked\s+with[^.]*/i)?.[0] || null,
+          relationship: relationshipMatch ? relationshipMatch[0] : null,
           text: getTextContent(item.querySelector(".pvs-list__outer-container .t-14.t-normal, .inline-show-more-text, [class*='text']")),
-          date: text.match(/(\w+\s+\d{4})/)?.[1] || null,
+          date: dateMatch ? dateMatch[1] : null,
           raw_html: itemData.html,
           raw_text: text,
           element_data: itemData
