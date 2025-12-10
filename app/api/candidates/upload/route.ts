@@ -113,7 +113,10 @@ export async function POST(req: Request) {
           experienceCount: candidateData["Experience Count"] ? parseInt(String(candidateData["Experience Count"])) || null : null,
           educationCount: candidateData["Education Count"] ? parseInt(String(candidateData["Education Count"])) || null : null,
           companies: candidateData["Companies"] ? JSON.stringify(candidateData["Companies"]) : null,
-          rawData: candidateData["Raw Data"] || JSON.stringify(candidateData),
+          // Truncate rawData if it's too long (PostgreSQL TEXT has practical limits)
+          rawData: candidateData["Raw Data"] 
+            ? String(candidateData["Raw Data"]).substring(0, 1000000) // Limit to 1MB
+            : JSON.stringify(candidateData).substring(0, 1000000),
           addedById: session.user.id,
           status: "ACTIVE" as const,
         }
