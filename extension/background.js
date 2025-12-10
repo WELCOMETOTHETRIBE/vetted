@@ -211,16 +211,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Function to send batch of profiles to Vetted
 async function sendBatchToVetted() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(["vettedQueue", "vettedApiUrl", "vettedApiKey"], async (data) => {
+    // Hardcoded Vetted API URL
+    const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+    
+    chrome.storage.local.get(["vettedQueue", "vettedApiKey"], async (data) => {
       const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
       
       if (queue.length === 0) {
         resolve({ success: true, sent: 0, message: "No profiles in queue" });
-        return;
-      }
-
-      if (!data.vettedApiUrl) {
-        resolve({ success: false, error: "Vetted API URL not configured" });
         return;
       }
 
@@ -256,7 +254,7 @@ async function sendBatchToVetted() {
           headers["Authorization"] = `Bearer ${data.vettedApiKey}`;
         }
 
-        const response = await fetch(data.vettedApiUrl, {
+        const response = await fetch(VETTED_API_URL, {
           method: "POST",
           headers: headers,
           credentials: "include",
@@ -304,13 +302,16 @@ async function sendBatchToVetted() {
 // Function to send profile to Vetted API
 async function sendProfileToVetted(profileDoc) {
   try {
+    // Hardcoded Vetted API URL
+    const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+    
     // Get settings
     const settings = await new Promise((resolve) => {
-      chrome.storage.local.get(["vettedApiUrl", "vettedApiKey", "autoSendToVetted"], resolve);
+      chrome.storage.local.get(["vettedApiKey", "autoSendToVetted"], resolve);
     });
 
-    if (!settings.autoSendToVetted || !settings.vettedApiUrl) {
-      return { success: false, error: "Auto-send to Vetted not enabled or URL not configured" };
+    if (!settings.autoSendToVetted) {
+      return { success: false, error: "Auto-send to Vetted not enabled" };
     }
 
     // Process the profile
@@ -333,7 +334,7 @@ async function sendProfileToVetted(profileDoc) {
     }
 
     // Send to Vetted API
-    const response = await fetch(settings.vettedApiUrl, {
+    const response = await fetch(VETTED_API_URL, {
       method: "POST",
       headers: headers,
       credentials: "include", // Include cookies for session-based auth

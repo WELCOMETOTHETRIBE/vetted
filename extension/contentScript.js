@@ -532,15 +532,15 @@
     };
   }
 
-  // Comprehensive HTML element extractor - extracts ALL meaningful data from any element
+  // Comprehensive HTML element extractor - extracts meaningful data from any element
+  // HTML fields removed to reduce data size
   function extractElementData(element) {
     if (!element) return null;
     
     const data = {
       tag: element.tagName?.toLowerCase() || null,
       text: getTextContent(element),
-      html: element.outerHTML || null,
-      innerHTML: element.innerHTML || null,
+      // Removed html and innerHTML to reduce data size (was causing 5MB+ files)
       attributes: {},
       classes: element.className ? (typeof element.className === 'string' ? element.className.split(' ').filter(c => c) : []) : [],
       id: element.id || null,
@@ -1020,9 +1020,9 @@
             employment_type: companyInfo.employment_type,
             description,
             location: expLocation,
-            raw_html: itemData.html,
+            // Removed raw_html to reduce data size
             raw_text: itemText,
-            element_data: itemData
+            // Removed element_data to reduce data size
           });
         }
       });
@@ -1216,10 +1216,8 @@
             school,
             field_of_study: fieldOfStudy,
             date_range: dateRange,
-            description,
-            raw_html: itemData.html,
-            raw_text: itemText,
-            element_data: itemData
+            description
+            // Removed raw_html and element_data to reduce data size
           });
         }
       });
@@ -1247,8 +1245,7 @@
           structured.skills.push({
             name: name || (item.textContent ? item.textContent.trim() : ""),
             endorsements,
-            raw_html: itemData.html,
-            element_data: itemData
+            // Removed raw_html and element_data to reduce data size
           });
         }
       });
@@ -1268,9 +1265,8 @@
           date: getTextContent(item.querySelector("[class*='date']")),
           credential_id: getTextContent(item.querySelector("[class*='credential'], [class*='id']")),
           credential_url: item.querySelector("a")?.href || null,
-          raw_html: itemData.html,
-          raw_text: getTextContent(item) || "",
-          element_data: itemData
+          // Removed raw_html and element_data to reduce data size
+          raw_text: getTextContent(item) || ""
         });
       });
     }
@@ -1284,8 +1280,7 @@
         structured.languages.push({
           name: getTextContent(item.querySelector("h3, [class*='language']")) || getTextContent(item),
           proficiency: getTextContent(item.querySelector("[class*='proficiency']")),
-          raw_html: itemData.html,
-          element_data: itemData
+          // Removed raw_html and element_data to reduce data size
         });
       });
     }
@@ -1301,9 +1296,8 @@
           description: getTextContent(item.querySelector("[class*='description']")),
           url: item.querySelector("a")?.href || null,
           date: getTextContent(item.querySelector("[class*='date']")),
-          raw_html: itemData.html,
-          raw_text: getTextContent(item),
-          element_data: itemData
+            // Removed raw_html and element_data to reduce data size
+            raw_text: getTextContent(item)
         });
       });
     }
@@ -1319,9 +1313,8 @@
           publisher: getTextContent(item.querySelector("[class*='publisher']")),
           date: getTextContent(item.querySelector("[class*='date']")),
           url: item.querySelector("a")?.href || null,
-          raw_html: itemData.html,
-          raw_text: getTextContent(item),
-          element_data: itemData
+            // Removed raw_html and element_data to reduce data size
+            raw_text: getTextContent(item)
         });
       });
     }
@@ -1338,9 +1331,8 @@
           cause: getTextContent(item.querySelector("[class*='cause']")),
           date: getTextContent(item.querySelector("[class*='date']")),
           description: getTextContent(item.querySelector("[class*='description']")),
-          raw_html: itemData.html,
-          raw_text: getTextContent(item),
-          element_data: itemData
+            // Removed raw_html and element_data to reduce data size
+            raw_text: getTextContent(item)
         });
       });
     }
@@ -1354,8 +1346,7 @@
         structured.courses.push({
           name: getTextContent(item.querySelector("h3, [class*='title']")) || getTextContent(item),
           number: getTextContent(item.querySelector("[class*='number']")),
-          raw_html: itemData.html,
-          element_data: itemData
+          // Removed raw_html and element_data to reduce data size
         });
       });
     }
@@ -1371,9 +1362,8 @@
           issuer: getTextContent(item.querySelector("[class*='issuer']")),
           date: getTextContent(item.querySelector("[class*='date']")),
           description: getTextContent(item.querySelector("[class*='description']")),
-          raw_html: itemData.html,
-          raw_text: getTextContent(item),
-          element_data: itemData
+            // Removed raw_html and element_data to reduce data size
+            raw_text: getTextContent(item)
         });
       });
     }
@@ -1388,8 +1378,7 @@
           name: getTextContent(item.querySelector("h3, [class*='title']")) || getTextContent(item),
           role: getTextContent(item.querySelector("[class*='role']")),
           date: getTextContent(item.querySelector("[class*='date']")),
-          raw_html: itemData.html,
-          element_data: itemData
+          // Removed raw_html and element_data to reduce data size
         });
       });
     }
@@ -1405,9 +1394,8 @@
           patent_number: getTextContent(item.querySelector("[class*='number']")),
           date: getTextContent(item.querySelector("[class*='date']")),
           url: item.querySelector("a")?.href || null,
-          raw_html: itemData.html,
-          raw_text: getTextContent(item),
-          element_data: itemData
+            // Removed raw_html and element_data to reduce data size
+            raw_text: getTextContent(item)
         });
       });
     }
@@ -1422,8 +1410,7 @@
           name: getTextContent(item.querySelector("h3, [class*='title']")) || getTextContent(item),
           score: getTextContent(item.querySelector("[class*='score']")),
           date: getTextContent(item.querySelector("[class*='date']")),
-          raw_html: itemData.html,
-          element_data: itemData
+          // Removed raw_html and element_data to reduce data size
         });
       });
     }
@@ -1447,9 +1434,8 @@
           relationship: relationshipMatch ? relationshipMatch[0] : null,
           text: getTextContent(item.querySelector(".pvs-list__outer-container .t-14.t-normal, .inline-show-more-text, [class*='text']")),
           date: dateMatch ? dateMatch[1] : null,
-          raw_html: itemData.html,
-          raw_text: text,
-          element_data: itemData
+            // Removed raw_html and element_data to reduce data size
+            raw_text: text
         });
       });
     }
@@ -1463,8 +1449,8 @@
         if (name && name.length > 2) {
           structured.interests.companies.push({
             name: name,
-            url: item.href || null,
-            element_data: extractElementData(item)
+            url: item.href || null
+            // Removed element_data to reduce data size
           });
         }
       });
@@ -1479,8 +1465,8 @@
         if (name && name.length > 2) {
           structured.interests.groups.push({
             name: name,
-            url: item.href || null,
-            element_data: extractElementData(item)
+            url: item.href || null
+            // Removed element_data to reduce data size
           });
         }
       });
@@ -1495,8 +1481,8 @@
         if (name && name.length > 2) {
           structured.interests.causes.push({
             name: name,
-            url: item.href || null,
-            element_data: extractElementData(item)
+            url: item.href || null
+            // Removed element_data to reduce data size
           });
         }
       });
@@ -1533,9 +1519,9 @@
   function buildProfileDocument() {
     try {
       const url = window.location.href;
-      // Truncate raw HTML to save storage (keep first 500KB)
-      const fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-      const rawHtml = fullHtml.length > 500000 ? fullHtml.substring(0, 500000) + "\n... (truncated)" : fullHtml;
+      // Removed full HTML extraction to reduce data size (was causing 5MB+ files)
+      // Only keep a minimal HTML snippet for reference
+      const rawHtml = "<!DOCTYPE html>\n<!-- HTML removed to reduce data size -->";
       const rawText = document.body ? document.body.innerText : "";
       const now = new Date().toISOString();
 

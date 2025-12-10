@@ -11,13 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const downloadCsvBtn = document.getElementById("download-csv-btn");
   const sendToVettedBtn = document.getElementById("send-to-vetted-btn");
   const clearBtn = document.getElementById("clear-btn");
-  const vettedApiUrlInput = document.getElementById("vetted-api-url");
-  const vettedApiKeyInput = document.getElementById("vetted-api-key");
-  const autoSendVettedCheckbox = document.getElementById("auto-send-vetted-checkbox");
-  const sheetsUrlInput = document.getElementById("sheets-url");
-  const autoSendCheckbox = document.getElementById("auto-send-checkbox");
-  const saveSettingsBtn = document.getElementById("save-settings-btn");
-  const settingsStatus = document.getElementById("settings-status");
+  // Settings UI removed - API URL is now hardcoded
 
   let currentEditingIndex = -1;
   let profileDocuments = [];
@@ -703,90 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 0);
   }
 
-  function loadSettings() {
-    chrome.storage.local.get([
-      "vettedApiUrl", 
-      "vettedApiKey", 
-      "autoSendToVetted",
-      "googleSheetsUrl", 
-      "autoSendToSheets"
-    ], (data) => {
-      if (data.vettedApiUrl) {
-        vettedApiUrlInput.value = data.vettedApiUrl;
-      }
-      if (data.vettedApiKey) {
-        vettedApiKeyInput.value = data.vettedApiKey;
-      }
-      if (data.autoSendToVetted !== undefined) {
-        autoSendVettedCheckbox.checked = data.autoSendToVetted;
-      }
-      if (data.googleSheetsUrl) {
-        sheetsUrlInput.value = data.googleSheetsUrl;
-      }
-      if (data.autoSendToSheets !== undefined) {
-        autoSendCheckbox.checked = data.autoSendToSheets;
-      }
-      
-      if (data.vettedApiUrl) {
-        settingsStatus.textContent = "Vetted API configured";
-        settingsStatus.style.color = "#4caf50";
-      } else if (data.googleSheetsUrl) {
-        settingsStatus.textContent = "Google Sheets configured (Vetted API not set)";
-        settingsStatus.style.color = "#ff9800";
-      } else {
-        settingsStatus.textContent = "No API configured";
-        settingsStatus.style.color = "#e53935";
-      }
-    });
-  }
-
-  function saveSettings() {
-    const vettedUrl = vettedApiUrlInput.value.trim();
-    const vettedKey = vettedApiKeyInput.value.trim();
-    const autoSendVetted = autoSendVettedCheckbox.checked;
-    const sheetsUrl = sheetsUrlInput.value.trim();
-    const autoSendSheets = autoSendCheckbox.checked;
-
-    // Validate Vetted API URL if provided
-    if (vettedUrl && !vettedUrl.startsWith("http://") && !vettedUrl.startsWith("https://")) {
-      settingsStatus.textContent = "Invalid Vetted API URL (must start with http:// or https://)";
-      settingsStatus.style.color = "#e53935";
-      return;
-    }
-
-    // Validate Google Sheets URL if provided
-    if (sheetsUrl && !sheetsUrl.includes("script.google.com") && !sheetsUrl.includes("script.googleusercontent.com")) {
-      settingsStatus.textContent = "Invalid Google Apps Script URL";
-      settingsStatus.style.color = "#e53935";
-      return;
-    }
-
-    const settingsToSave = {
-      autoSendToSheets: autoSendSheets
-    };
-
-    if (vettedUrl) {
-      settingsToSave.vettedApiUrl = vettedUrl;
-      settingsToSave.autoSendToVetted = autoSendVetted;
-    }
-    if (vettedKey) {
-      settingsToSave.vettedApiKey = vettedKey;
-    }
-    if (sheetsUrl) {
-      settingsToSave.googleSheetsUrl = sheetsUrl;
-    }
-
-    chrome.storage.local.set(settingsToSave, () => {
-      if (vettedUrl) {
-        settingsStatus.textContent = "Vetted API settings saved!";
-      } else if (sheetsUrl) {
-        settingsStatus.textContent = "Google Sheets settings saved!";
-      } else {
-        settingsStatus.textContent = "Settings saved (no API configured)";
-      }
-      settingsStatus.style.color = "#4caf50";
-    });
-  }
+  // Settings functions removed - API URL is now hardcoded
 
   async function sendToVetted(profiles, apiUrl, apiKey) {
     if (!apiUrl) {
@@ -944,7 +855,6 @@ document.addEventListener("DOMContentLoaded", () => {
   cancelBtn.onclick = () => modal.style.display = "none";
   saveProfileBtn.onclick = saveProfile;
   refreshBtn.onclick = loadData;
-  saveSettingsBtn.onclick = saveSettings;
 
   copyCsvBtn.onclick = () => {
     try {
@@ -1036,9 +946,12 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
 
-        // Check API URL BEFORE disabling button
+        // Hardcoded Vetted API URL
+        const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+        
+        // Get API key if configured
         const vettedSettings = await new Promise((resolve, reject) => {
-          chrome.storage.local.get(["vettedApiUrl", "vettedApiKey"], (data) => {
+          chrome.storage.local.get(["vettedApiKey"], (data) => {
             if (chrome.runtime.lastError) {
               reject(chrome.runtime.lastError);
               return;
@@ -1047,27 +960,13 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         });
 
-        console.log("Vetted settings:", { 
-          hasUrl: !!vettedSettings.vettedApiUrl, 
-          url: vettedSettings.vettedApiUrl,
-          hasKey: !!vettedSettings.vettedApiKey 
-        });
-
-        if (!vettedSettings.vettedApiUrl || !vettedSettings.vettedApiUrl.trim()) {
-          // Show error without blocking - use setTimeout to prevent UI freeze
-          setTimeout(() => {
-            alert("Vetted API URL not configured.\n\nPlease:\n1. Click 'Settings' tab\n2. Enter your Vetted API URL\n3. Click 'Save Settings'\n4. Try again");
-          }, 0);
-          return;
-        }
-
         // Only disable button if we have a valid URL
         sendToVettedBtn.disabled = true;
         sendToVettedBtn.textContent = "Sending...";
 
         try {
           console.log("Calling sendToVetted with", processed.length, "profiles...");
-          await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
+          await sendToVetted(processed, VETTED_API_URL, vettedSettings.vettedApiKey);
           console.log("sendToVetted completed successfully");
           
           // Use setTimeout to prevent blocking
@@ -1147,7 +1046,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Delay initialization slightly to ensure DOM is ready
   setTimeout(() => {
     loadData();
-    loadSettings();
   }, 50);
 
   // Listen for storage changes to auto-refresh when profiles are saved
