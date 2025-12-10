@@ -168,8 +168,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.storage.local.set({ vettedQueue: queue }, () => {
         sendResponse({ success: true, queuedCount: queue.length });
         
-        // Auto-send batch if queue reaches 5 profiles or after 10 seconds
-        if (queue.length >= 5) {
+        // Auto-send batch if queue reaches 10 profiles or after 10 seconds
+        if (queue.length >= 10) {
           sendBatchToVetted();
         } else if (queue.length === 1) {
           // Start timer for first item in queue

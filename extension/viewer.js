@@ -912,9 +912,20 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   clearBtn.onclick = () => {
-    if (!confirm("Clear all logged profile documents?")) return;
-    chrome.storage.local.set({ profileDocuments: [] }, () => {
-      loadData();
+    if (!confirm("Clear all logged profile documents? This will also clear the send queue.")) return;
+    // Clear both profileDocuments and queue
+    chrome.storage.local.set({ 
+      profileDocuments: [],
+      vettedQueue: []
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Error clearing storage:", chrome.runtime.lastError);
+        alert("Error clearing storage: " + chrome.runtime.lastError.message);
+      } else {
+        console.log("Storage cleared successfully");
+        loadData();
+        alert("All profiles and queue cleared!");
+      }
     });
   };
 
