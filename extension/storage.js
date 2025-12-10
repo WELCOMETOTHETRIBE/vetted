@@ -263,10 +263,17 @@ const VettedStorage = {
 // Export for window context (popup)
 if (typeof window !== 'undefined') {
   window.VettedStorage = VettedStorage;
+  console.log("VettedStorage initialized in window context");
 }
 
 // Export for service worker context
 if (typeof self !== 'undefined' && typeof importScripts !== 'undefined') {
   self.VettedStorage = VettedStorage;
+  console.log("VettedStorage initialized in service worker context");
+}
+
+// Also make available globally without window/self prefix for compatibility
+if (typeof globalThis !== 'undefined') {
+  globalThis.VettedStorage = VettedStorage;
 }
 

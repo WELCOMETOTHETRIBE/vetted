@@ -599,8 +599,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadData() {
     try {
+      // Check if VettedStorage is available
+      if (typeof VettedStorage === 'undefined') {
+        console.error("VettedStorage is not available! Make sure storage.js is loaded.");
+        alert("Storage system not loaded. Please reload the extension.");
+        renderTable([]);
+        return;
+      }
+
+      // Initialize IndexedDB if needed
+      if (typeof VettedStorage.initDB === 'function') {
+        try {
+          await VettedStorage.initDB();
+        } catch (initError) {
+          console.error("Error initializing IndexedDB:", initError);
+        }
+      }
+
       // Load profiles from IndexedDB
       const documents = await VettedStorage.getAllProfiles();
+      console.log("Raw documents from IndexedDB:", documents);
       
       // Load queue from chrome.storage (small data)
       const settings = await VettedStorage.SettingsStorage.get(["vettedQueue"]);
@@ -608,7 +626,11 @@ document.addEventListener("DOMContentLoaded", () => {
       
       console.log(`Loaded ${documents.length} saved profiles from IndexedDB, ${queueCount} queued for Vetted`);
       
-      renderTable(documents);
+      // Ensure documents is an array
+      const profilesArray = Array.isArray(documents) ? documents : [];
+      console.log(`Rendering ${profilesArray.length} profiles`);
+      
+      renderTable(profilesArray);
       
       // Show queue status if there are queued profiles
       if (queueCount > 0) {

@@ -1,0 +1,129 @@
+// NOTE: This extension performs local-only DOM scraping. Users are responsible
+// for complying with site terms of service (e.g., LinkedIn ToS) and applicable laws.
+// This is intended for internal/testing use only.
+
+// Import profile processor functions
+importScripts('profileProcessor.js');
+importScripts('storage.js');
+
+// Initialize storage on install
+chrome.runtime.onInstalled.addListener(async () => {
+  // Initialize IndexedDB (no need to check profileDocuments - IndexedDB handles it)
+  try {
+    await VettedStorage.initDB();
+    console.log("IndexedDB initialized");
+  } catch (error) {
+    console.error("Error initializing IndexedDB:", error);
+  }
+  
+  // Set default Vetted API URL if not already configured (use chrome.storage for settings)
+  chrome.storage.local.get(["vettedApiUrl"], (data) => {
+    if (!data.vettedApiUrl) {
+      const defaultVettedApiUrl = "https://vetted-production.up.railway.app/api/candidates/upload";
+      chrome.storage.local.set({ vettedApiUrl: defaultVettedApiUrl }, () => {
+        console.log("Default Vetted API URL set on install:", defaultVettedApiUrl);
+      });
+    }
+  });
+});
+
+// Function to send profile to Google Sheets
+async function sendProfileToSheets(profileDoc) {
+  try {
+    // Get settings
+    const settings = await new Promise((resolve) => {
+      chrome.storage.local.get(["googleSheetsUrl", "autoSendToSheets"], resolve);
+    });
+
+    if (!settings.autoSendToSheets || !settings.googleSheetsUrl) {
+      return { success: false, error: "Auto-send not enabled or URL not configured" };
+    }
+
+    // Process the profile
+    if (typeof ProfileProcessor === 'undefined') {
+      return { success: false, error: "Profile processor not available" };
+    }
+
+    const processed = ProfileProcessor.processProfileDocument(profileDoc);
+    if (!processed) {
+      return { success: false, error: "Profile validation failed" };
+    }
+
+    // Send to Google Sheets
+    const response = await fetch(settings.googleSheetsUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([processed]),
+    });
+
+    // With no-cors, we can't read response, but assume success
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending to Google Sheets:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Helper function to estimate storage size
+function estimateStorageSize(obj) {
+  return new Blob([JSON.stringify(obj)]).size;
+}
+
+// Listen for messages from the content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
+    // Use async function to handle IndexedDB
+    (async () => {
+      try {
+        // Get current profiles from IndexedDB
+        const currentList = await VettedStorage.getAllProfiles();
+
+        // Check if profile already exists (by URL) to avoid duplicates
+        const profileUrl = message.payload.extraction_metadata?.source_url || 
+                          message.payload.personal_info?.profile_url ||
+                          message.payload.comprehensive_data?.find(item => 
+                            item.category === 'metadata' && item.data?.source_url
+                          )?.data?.source_url;
+
+        // Check for duplicate by URL in IndexedDB
+        const isDuplicate = profileUrl && currentList.some(existing => {
+          const existingUrl = existing.extraction_metadata?.source_url || 
+                            existing.personal_info?.profile_url ||
+                            existing.comprehensive_data?.find(item => 
+                              item.category === 'metadata' && item.data?.source_url
+                            )?.data?.source_url;
+          return existingUrl === profileUrl;
+        });
+
+        if (isDuplicate) {
+          sendResponse({ 
+            success: false, 
+            error: "Profile already exists",
+            count: currentList.length 
+          });
+          return;
+        }
+
+        // Add profile to IndexedDB (no size limit concerns with IndexedDB)
+        await VettedStorage.addProfile(message.payload);
+        
+        const newCount = currentList.length + 1;
+        sendResponse({ 
+          success: true, 
+          count: newCount 
+        });
+      } catch (error) {
+        console.error("Error in SAVE_PROFILE_DOCUMENT handler:", error);
+        sendResponse({ 
+          success: false, 
+          error: error.message || "Unknown error",
+          count: 0
+        });
+      }
+    })();
+    return true; // Keep the message channel open for async response
+  }
+
