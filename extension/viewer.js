@@ -90,90 +90,102 @@ document.addEventListener("DOMContentLoaded", () => {
       
       for (let i = index; i < end; i++) {
         const doc = documents[i];
-      const tr = document.createElement("tr");
-      tr.dataset.index = index;
+        const tr = document.createElement("tr");
+        tr.dataset.index = i;
 
-      // Process the document to get current company and title
-      let currentCompany = "";
-      let currentTitle = "";
-      let tags = [];
+        // Skip ProfileProcessor for table rendering to speed things up
+        // Just use basic fields
+        let currentCompany = "";
+        let currentTitle = "";
+        let tags = [];
 
-      if (typeof ProfileProcessor !== 'undefined') {
-        try {
-          const processed = ProfileProcessor.processProfileDocument(doc);
-          if (processed) {
-            currentCompany = processed["Current Company"] || "";
-            currentTitle = processed["Job title"] || "";
-          }
-        } catch (e) {
-          console.error("Error processing:", e);
+        if (doc.personal_info) {
+          currentCompany = doc.personal_info.current_employer || "";
+          currentTitle = doc.personal_info.headline || "";
         }
+
+        // Get tags from document metadata
+        if (doc._metadata && doc._metadata.tags) {
+          tags = [...(doc._metadata.tags.coreRoles || []), ...(doc._metadata.tags.domains || [])];
+        }
+
+        // #
+        const tdIndex = document.createElement("td");
+        tdIndex.textContent = (i + 1).toString();
+        tr.appendChild(tdIndex);
+
+        // Name
+        const tdName = document.createElement("td");
+        tdName.textContent = doc.personal_info?.name || "—";
+        tr.appendChild(tdName);
+
+        // Current Company
+        const tdCompany = document.createElement("td");
+        tdCompany.textContent = currentCompany || "—";
+        tr.appendChild(tdCompany);
+
+        // Job Title
+        const tdTitle = document.createElement("td");
+        tdTitle.textContent = currentTitle || "—";
+        tr.appendChild(tdTitle);
+
+        // Location
+        const tdLocation = document.createElement("td");
+        tdLocation.textContent = doc.personal_info?.location || "—";
+        tr.appendChild(tdLocation);
+
+        // Tags
+        const tdTags = document.createElement("td");
+        if (tags.length > 0) {
+          tags.slice(0, 3).forEach(tag => {
+            const badge = document.createElement("span");
+            badge.className = "badge badge-tagged";
+            badge.textContent = tag;
+            tdTags.appendChild(badge);
+          });
+          if (tags.length > 3) {
+            const more = document.createElement("span");
+            more.textContent = ` +${tags.length - 3}`;
+            more.style.color = "#666";
+            tdTags.appendChild(more);
+          }
+        } else {
+          tdTags.textContent = "—";
+        }
+        tr.appendChild(tdTags);
+
+        // Actions
+        const tdActions = document.createElement("td");
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn-primary";
+        editBtn.textContent = "Edit";
+        editBtn.style.fontSize = "11px";
+        editBtn.style.padding = "4px 8px";
+        editBtn.onclick = (e) => {
+          e.stopPropagation();
+          openEditModal(i);
+        };
+        tdActions.appendChild(editBtn);
+        tr.appendChild(tdActions);
+
+        tr.onclick = () => openEditModal(i);
+        tbody.appendChild(tr);
       }
-
-      // Get tags from document metadata
-      if (doc._metadata) {
-        tags = doc._metadata.tags || [];
-      }
-
-      // #
-      const tdIndex = document.createElement("td");
-      tdIndex.textContent = (index + 1).toString();
-      tr.appendChild(tdIndex);
-
-      // Name
-      const tdName = document.createElement("td");
-      tdName.textContent = doc.personal_info?.name || "—";
-      tr.appendChild(tdName);
-
-      // Current Company
-      const tdCompany = document.createElement("td");
-      tdCompany.textContent = currentCompany || "—";
-      tr.appendChild(tdCompany);
-
-      // Job Title
-      const tdTitle = document.createElement("td");
-      tdTitle.textContent = currentTitle || "—";
-      tr.appendChild(tdTitle);
-
-      // Location
-      const tdLocation = document.createElement("td");
-      tdLocation.textContent = doc.personal_info?.location || "—";
-      tr.appendChild(tdLocation);
-
-      // Tags
-      const tdTags = document.createElement("td");
-      if (tags.length > 0) {
-        tags.forEach(tag => {
-          const badge = document.createElement("span");
-          badge.className = "badge badge-tagged";
-          badge.textContent = tag;
-          tdTags.appendChild(badge);
-        });
+      
+      index = end;
+      
+      if (index < documents.length) {
+        // Process next batch asynchronously
+        setTimeout(processBatch, 0);
       } else {
-        tdTags.textContent = "—";
+        // All done, append table
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
       }
-      tr.appendChild(tdTags);
-
-      // Actions
-      const tdActions = document.createElement("td");
-      const editBtn = document.createElement("button");
-      editBtn.className = "btn-primary";
-      editBtn.textContent = "Edit";
-      editBtn.style.fontSize = "11px";
-      editBtn.style.padding = "4px 8px";
-      editBtn.onclick = (e) => {
-        e.stopPropagation();
-        openEditModal(index);
-      };
-      tdActions.appendChild(editBtn);
-      tr.appendChild(tdActions);
-
-      tr.onclick = () => openEditModal(index);
-      tbody.appendChild(tr);
-    });
-
-    table.appendChild(tbody);
-    tableContainer.appendChild(table);
+    }
+    
+    // Start processing
+    processBatch();
   }
 
   function openEditModal(index) {
