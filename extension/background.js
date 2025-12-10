@@ -75,37 +75,37 @@ function estimateStorageSize(obj) {
 // Listen for messages from the content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
-    try {
-      // Get current profiles
-      chrome.storage.local.get(["profileDocuments"], (data) => {
-        try {
-          const currentList = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+    // Use async function to handle IndexedDB
+    (async () => {
+      try {
+        // Get current profiles from IndexedDB
+        const currentList = await VettedStorage.getAllProfiles();
 
-          // Check if profile already exists (by URL) to avoid duplicates
-          const profileUrl = message.payload.extraction_metadata?.source_url || 
-                            message.payload.personal_info?.profile_url ||
-                            message.payload.comprehensive_data?.find(item => 
+        // Check if profile already exists (by URL) to avoid duplicates
+        const profileUrl = message.payload.extraction_metadata?.source_url || 
+                          message.payload.personal_info?.profile_url ||
+                          message.payload.comprehensive_data?.find(item => 
+                            item.category === 'metadata' && item.data?.source_url
+                          )?.data?.source_url;
+
+        // Check for duplicate by URL in IndexedDB
+        const isDuplicate = profileUrl && currentList.some(existing => {
+          const existingUrl = existing.extraction_metadata?.source_url || 
+                            existing.personal_info?.profile_url ||
+                            existing.comprehensive_data?.find(item => 
                               item.category === 'metadata' && item.data?.source_url
                             )?.data?.source_url;
+          return existingUrl === profileUrl;
+        });
 
-          // Check for duplicate by URL
-          const isDuplicate = profileUrl && currentList.some(existing => {
-            const existingUrl = existing.extraction_metadata?.source_url || 
-                              existing.personal_info?.profile_url ||
-                              existing.comprehensive_data?.find(item => 
-                                item.category === 'metadata' && item.data?.source_url
-                              )?.data?.source_url;
-            return existingUrl === profileUrl;
+        if (isDuplicate) {
+          sendResponse({ 
+            success: false, 
+            error: "Profile already exists",
+            count: currentList.length 
           });
-
-          if (isDuplicate) {
-            sendResponse({ 
-              success: false, 
-              error: "Profile already exists",
-              count: currentList.length 
-            });
-            return;
-          }
+          return;
+        }
 
           // Estimate size of new profile
           const newProfileSize = estimateStorageSize(message.payload);
