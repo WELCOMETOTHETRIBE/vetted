@@ -56,28 +56,28 @@ export async function POST(req: Request) {
       // We'll use a workaround: execute prisma db push via Node's child_process
       // but with explicit schema content passed via stdin or environment
       
-      // Create a temporary schema file in /tmp with DATABASE_URL embedded
+      // Create a temporary schema file in /tmp WITHOUT url (Prisma 7 requirement)
       const schemaPath = join(process.cwd(), 'prisma', 'schema.prisma')
       const originalSchema = readFileSync(schemaPath, 'utf-8')
       
-      // Create temp schema with explicit DATABASE_URL
+      // Remove url from datasource (Prisma 7 doesn't allow it in schema)
       const tempSchemaPath = '/tmp/schema.migrate.prisma'
       const tempSchema = originalSchema.replace(
         /datasource db \{[^}]*\}/,
         `datasource db {
   provider = "postgresql"
-  url      = "${dbUrl.replace(/"/g, '\\"')}"
 }`
       )
       
       writeFileSync(tempSchemaPath, tempSchema)
 
-      // Create a minimal dummy config file in /tmp to satisfy Prisma
+      // Create a proper config file in /tmp with the URL (Prisma 7 requirement)
       const tempConfigPath = '/tmp/prisma.config.ts'
-      const dummyConfig = `export default {
+      // Use CommonJS format to avoid module resolution issues
+      const dummyConfig = `module.exports = {
   schema: "${tempSchemaPath}",
   datasource: {
-    url: "${dbUrl.replace(/"/g, '\\"')}",
+    url: "${dbUrl.replace(/"/g, '\\"').replace(/\$/g, '\\$')}",
   },
 };`
       writeFileSync(tempConfigPath, dummyConfig)
