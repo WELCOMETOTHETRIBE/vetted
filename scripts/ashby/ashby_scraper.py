@@ -471,16 +471,41 @@ def main():
         # Determine output path
         output_path = Path(OUTPUT_FILE)
         if not output_path.is_absolute():
-            # If relative, make it relative to project root
+            # If relative, try to write to project root, but fallback to /tmp if permission denied
             project_root = Path(__file__).parent.parent.parent
             output_path = project_root / OUTPUT_FILE
+            
+            # Try to create parent directory if it doesn't exist
+            try:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+            except PermissionError:
+                # If we can't write to project root, use /tmp
+                output_path = Path("/tmp") / OUTPUT_FILE
+                print(f"[output] Cannot write to project root, using {output_path}")
+
+        # Ensure parent directory exists and is writable
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            # Test write permissions
+            test_file = output_path.parent / ".test_write"
+            try:
+                test_file.touch()
+                test_file.unlink()
+            except PermissionError:
+                # Fallback to /tmp if current location is not writable
+                output_path = Path("/tmp") / OUTPUT_FILE
+                print(f"[output] Current location not writable, using {output_path}")
+        except Exception as e:
+            # Fallback to /tmp on any error
+            output_path = Path("/tmp") / OUTPUT_FILE
+            print(f"[output] Error with output path, using {output_path}: {e}")
 
         print(f"[output] Writing {len(jobs)} jobs to {output_path}")
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(jobs, f, ensure_ascii=False, indent=2)
 
-        print(f"[output] Successfully saved {len(jobs)} jobs")
+        print(f"[output] Successfully saved {len(jobs)} jobs to {output_path}")
         return 0
 
     except Exception as e:

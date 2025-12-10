@@ -46,7 +46,10 @@ export async function GET(req: Request) {
     const skipExisting = searchParams.get("skipExisting") !== "false" // Default to true
 
     const outputFile = process.env.ASHBY_OUTPUT_FILE || "ashby_jobs.json"
-    const outputPath = join(process.cwd(), outputFile)
+    // Try project root first, fallback to /tmp if permission denied
+    let outputPath = join(process.cwd(), outputFile)
+    // Also check /tmp as fallback
+    const tmpPath = join("/tmp", outputFile)
 
     // Check if cached file exists and force is not set
     if (!force) {
@@ -196,9 +199,26 @@ export async function GET(req: Request) {
       console.log("[ashby-jobs] Scraper stdout:", stdout.substring(0, 500))
     }
 
-    // Read the output file
+    // Read the output file (try project root first, then /tmp)
+    let data: string
     try {
-      const data = await readFile(outputPath, "utf-8")
+      data = await readFile(outputPath, "utf-8")
+    } catch (error: any) {
+      // If file not found in project root, try /tmp
+      if (error.code === "ENOENT") {
+        try {
+          data = await readFile(tmpPath, "utf-8")
+          outputPath = tmpPath
+          console.log(`[ashby-jobs] Found output file in /tmp: ${tmpPath}`)
+        } catch (tmpError) {
+          throw error // Throw original error
+        }
+      } else {
+        throw error
+      }
+    }
+    
+    try {
       let jobs = JSON.parse(data)
 
       // Filter out jobs that already exist in database if skipExisting is true
