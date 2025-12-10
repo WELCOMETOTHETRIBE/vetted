@@ -33,7 +33,19 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
 
   const jobs = await prisma.job.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      isRemote: true,
+      isHybrid: true,
+      employmentType: true,
+      salaryMin: true,
+      salaryMax: true,
+      salaryCurrency: true,
+      createdAt: true,
+      views: true,
       company: {
         select: {
           id: true,

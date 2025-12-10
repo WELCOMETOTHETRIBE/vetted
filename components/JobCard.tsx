@@ -6,6 +6,7 @@ interface JobCardProps {
   job: {
     id: string
     title: string
+    description?: string | null
     company: {
       id: string
       name: string
@@ -69,6 +70,16 @@ const JobCard = ({ job }: JobCardProps) => {
             </>
           )}
         </div>
+
+        {job.description && (
+          <div className="mb-3">
+            <p className="text-sm text-gray-600 line-clamp-2">
+              {job.description.length > 150 
+                ? `${job.description.substring(0, 150)}...` 
+                : job.description}
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between text-xs text-gray-500">
           <span>

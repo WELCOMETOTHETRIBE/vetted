@@ -103,14 +103,70 @@ export default async function JobDetailPage({
 
           <div className="prose max-w-none mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Description</h2>
-            <div className="text-gray-700 whitespace-pre-wrap">{job.description}</div>
+            <div className="text-gray-700 whitespace-pre-wrap">
+              {job.description?.split('\n').map((line, idx) => {
+                // Check if line contains a URL
+                const urlMatch = line.match(/https?:\/\/[^\s]+/g)
+                if (urlMatch) {
+                  const parts = line.split(/(https?:\/\/[^\s]+)/g)
+                  return (
+                    <div key={idx}>
+                      {parts.map((part, partIdx) => {
+                        if (part.match(/^https?:\/\//)) {
+                          return (
+                            <a
+                              key={partIdx}
+                              href={part}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              {part}
+                            </a>
+                          )
+                        }
+                        return <span key={partIdx}>{part}</span>
+                      })}
+                    </div>
+                  )
+                }
+                return <div key={idx}>{line}</div>
+              })}
+            </div>
             {job.requirements && (
               <>
                 <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-4">
                   Requirements
                 </h2>
                 <div className="text-gray-700 whitespace-pre-wrap">
-                  {job.requirements}
+                  {job.requirements.split('\n').map((line, idx) => {
+                    // Check if line contains a URL
+                    const urlMatch = line.match(/https?:\/\/[^\s]+/g)
+                    if (urlMatch) {
+                      const parts = line.split(/(https?:\/\/[^\s]+)/g)
+                      return (
+                        <div key={idx}>
+                          {parts.map((part, partIdx) => {
+                            if (part.match(/^https?:\/\//)) {
+                              return (
+                                <a
+                                  key={partIdx}
+                                  href={part}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline font-medium"
+                                >
+                                  {part}
+                                </a>
+                              )
+                            }
+                            return <span key={partIdx}>{part}</span>
+                          })}
+                        </div>
+                      )
+                    }
+                    return <div key={idx}>{line}</div>
+                  })}
                 </div>
               </>
             )}
