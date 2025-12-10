@@ -29,8 +29,11 @@ RUN test -d node_modules/.prisma/client && echo "Prisma client generated success
 RUN npm install --save-dev typescript
 
 # Compile TypeScript client files to JavaScript for Next.js page data collection
+# Create a minimal tsconfig.json for compilation
 RUN cd node_modules/.prisma/client && \
-    npx tsc client.ts --module commonjs --target es2020 --esModuleInterop --skipLibCheck --moduleResolution node --resolveJsonModule --outDir . 2>&1 || echo "TypeScript compilation had warnings"
+    echo '{"compilerOptions":{"module":"commonjs","target":"es2020","esModuleInterop":true,"skipLibCheck":true,"moduleResolution":"node","resolveJsonModule":true,"outDir":".","declaration":false},"include":["client.ts","**/*.ts"],"exclude":["node_modules"]}' > tsconfig.json && \
+    npx tsc --project tsconfig.json 2>&1 && \
+    echo "TypeScript compilation completed" || (echo "TypeScript compilation failed, will use runtime fallback" && rm -f client.js)
 
 # Create default.js that tries compiled client.js first, then constructs from runtime
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
