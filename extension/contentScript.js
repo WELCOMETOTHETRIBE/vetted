@@ -6,6 +6,50 @@
   // Avoid injecting multiple buttons if the content script runs more than once
   if (document.getElementById("profile-json-floating-btn")) return;
 
+  // Helper function to check if extension context is valid
+  function isExtensionContextValid() {
+    try {
+      // Try to access chrome.runtime.id - this will throw if context is invalidated
+      return chrome.runtime && chrome.runtime.id !== undefined;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Helper function to show extension reload message
+  function showExtensionReloadMessage() {
+    const existingMsg = document.getElementById("extension-reload-message");
+    if (existingMsg) return;
+
+    const msg = document.createElement("div");
+    msg.id = "extension-reload-message";
+    msg.textContent = "⚠️ Extension was reloaded. Please refresh this page to continue.";
+    Object.assign(msg.style, {
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      zIndex: "2147483647",
+      padding: "12px 16px",
+      backgroundColor: "#ff9800",
+      color: "white",
+      borderRadius: "8px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+      fontSize: "14px",
+      fontWeight: "500",
+      maxWidth: "300px",
+      cursor: "pointer"
+    });
+    msg.onclick = () => window.location.reload();
+    document.body.appendChild(msg);
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (msg.parentNode) {
+        msg.parentNode.removeChild(msg);
+      }
+    }, 10000);
+  }
+
   function injectButton() {
     // Check if button already exists
     if (document.getElementById("profile-json-floating-btn")) return;
@@ -56,12 +100,30 @@
           return;
         }
 
+        // Check if extension context is valid before sending message
+        if (!isExtensionContextValid()) {
+          console.error("Extension context invalidated - extension was reloaded");
+          showExtensionReloadMessage();
+          showToast("Extension was reloaded. Please refresh this page.", true);
+          return;
+        }
+
         chrome.runtime.sendMessage(
           { type: "SAVE_PROFILE_DOCUMENT", payload: profileDoc },
           (response) => {
             if (chrome.runtime.lastError) {
               const errorMsg = chrome.runtime.lastError.message || "Error saving profile JSON";
               console.error("Runtime error:", chrome.runtime.lastError);
+              
+              // Check if it's an invalidated context error
+              if (errorMsg.includes("Extension context invalidated") || 
+                  errorMsg.includes("message port closed") ||
+                  chrome.runtime.lastError.message === "Extension context invalidated.") {
+                showExtensionReloadMessage();
+                showToast("Extension was reloaded. Please refresh this page.", true);
+                return;
+              }
+              
               showToast(`Error: ${errorMsg}`);
               return;
             }
@@ -82,6 +144,13 @@
                 }
                 
                 if (settings.autoSendToVetted) {
+                  // Check extension context before queuing
+                  if (!isExtensionContextValid()) {
+                    showExtensionReloadMessage();
+                    showToast("Extension was reloaded. Please refresh this page.", true);
+                    return;
+                  }
+
                   // Queue profile for batch auto-send to Vetted
                   chrome.runtime.sendMessage({
                     type: "QUEUE_FOR_VETTED",
@@ -89,7 +158,17 @@
                   }, (queueResponse) => {
                     if (chrome.runtime.lastError) {
                       console.error("Queue error:", chrome.runtime.lastError);
-                      showToast(`Profile saved but queue failed: ${chrome.runtime.lastError.message}`, true);
+                      const errorMsg = chrome.runtime.lastError.message || "Unknown error";
+                      
+                      // Check if it's an invalidated context error
+                      if (errorMsg.includes("Extension context invalidated") || 
+                          errorMsg.includes("message port closed")) {
+                        showExtensionReloadMessage();
+                        showToast("Extension was reloaded. Please refresh this page.", true);
+                        return;
+                      }
+                      
+                      showToast(`Profile saved but queue failed: ${errorMsg}`, true);
                     } else if (queueResponse && !queueResponse.success) {
                       showToast(`Queue failed: ${queueResponse.error || "Unknown error"}`, true);
                     } else {
@@ -98,6 +177,13 @@
                     }
                   });
                 } else if (settings.autoSendToSheets) {
+                  // Check extension context before sending
+                  if (!isExtensionContextValid()) {
+                    showExtensionReloadMessage();
+                    showToast("Extension was reloaded. Please refresh this page.", true);
+                    return;
+                  }
+
                   // Request background script to auto-send to Google Sheets
                   chrome.runtime.sendMessage({
                     type: "AUTO_SEND_TO_SHEETS",
@@ -105,7 +191,17 @@
                   }, (autoSendResponse) => {
                     if (chrome.runtime.lastError) {
                       console.error("Auto-send error:", chrome.runtime.lastError);
-                      showToast(`Profile saved but auto-send failed: ${chrome.runtime.lastError.message}`, true);
+                      const errorMsg = chrome.runtime.lastError.message || "Unknown error";
+                      
+                      // Check if it's an invalidated context error
+                      if (errorMsg.includes("Extension context invalidated") || 
+                          errorMsg.includes("message port closed")) {
+                        showExtensionReloadMessage();
+                        showToast("Extension was reloaded. Please refresh this page.", true);
+                        return;
+                      }
+                      
+                      showToast(`Profile saved but auto-send failed: ${errorMsg}`, true);
                     }
                   });
                   showToast(`Profile saved & sending to Google Sheets (#${response.count})`);
