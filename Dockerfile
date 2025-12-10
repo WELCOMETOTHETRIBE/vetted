@@ -150,12 +150,20 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy Next.js build output (standalone includes minimal node_modules)
+# The standalone output structure is: .next/standalone/{server.js, node_modules, ...}
+# We need to copy the contents of standalone to the root
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy Prisma Client into the standalone node_modules (standalone has its own node_modules)
+# The standalone build should already have @prisma/client, but we need .prisma/client
+RUN mkdir -p node_modules/.prisma && \
+    cp -r /app/node_modules/.prisma/client node_modules/.prisma/client 2>/dev/null || \
+    (echo "Copying Prisma client from builder..." && \
+     cp -r /app/node_modules/.prisma/client node_modules/.prisma/client || true)
+
 # Ensure Prisma Client is accessible
 RUN test -d node_modules/.prisma/client && echo "Prisma client found" || echo "WARNING: Prisma client not found"
-COPY --from=builder /app/node_modules/.prisma/client ./node_modules/.prisma/client
 
 USER nextjs
 
