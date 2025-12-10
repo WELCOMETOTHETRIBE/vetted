@@ -30,6 +30,11 @@ In your `vetted` service, add these environment variables in the **"Variables"**
    - Or use: `5dMeJJwjI71E/56Kf91SRwscJQc7vall7VRZWhfmj9g=`
    - This is required for NextAuth authentication
 
+2. **`AUTH_URL`** (or `NEXTAUTH_URL`)
+   - Set this to your Railway domain: `https://vetted-production.up.railway.app`
+   - This tells NextAuth what domain to trust
+   - **Required** to fix "UntrustedHost" errors
+
 2. **`DATABASE_URL`** 
    - Should be automatically set from the PostgreSQL service
    - Format: `postgresql://postgres:password@hostname:port/railway`

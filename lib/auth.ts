@@ -8,6 +8,8 @@ import bcrypt from "bcryptjs"
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   adapter: PrismaAdapter(prisma),
+  trustHost: true, // Trust Railway's proxy
+  url: process.env.AUTH_URL || process.env.NEXTAUTH_URL, // Set this to your Railway domain
   providers: [
     // Only add Google provider if credentials are provided
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
