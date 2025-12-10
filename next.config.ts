@@ -20,13 +20,18 @@ const nextConfig: NextConfig = {
       // The .prisma/client path needs to resolve from @prisma/client location
       const prismaClientPath = path.resolve(process.cwd(), "node_modules/.prisma/client");
       // Create a proper module resolution for .prisma/client/default
+      // Point directly to the client.ts file which webpack will compile
       config.resolve.alias = {
         ...config.resolve.alias,
         ".prisma/client": prismaClientPath,
-        ".prisma/client/default": path.join(prismaClientPath, "client.ts"),
+        ".prisma/client/default": path.join(prismaClientPath, "client"),
       };
-      // Next.js already handles TypeScript files, so we just need to ensure
-      // the alias points to the TypeScript file and webpack will compile it
+      // Ensure .ts extensions are resolved
+      config.resolve.extensions = [
+        ...(config.resolve.extensions || []),
+        ".ts",
+        ".tsx",
+      ];
     }
     return config;
   },

@@ -25,10 +25,8 @@ RUN npx prisma generate
 # Verify Prisma Client was generated
 RUN test -d node_modules/.prisma/client && echo "Prisma client generated successfully" || (echo "ERROR: Prisma client not found" && exit 1)
 
-# Create default.js entry point for Prisma Client (required for module resolution)
-# This allows @prisma/client/default.js to resolve .prisma/client/default
-# Re-export from @prisma/client which webpack will resolve correctly
-RUN echo "module.exports = require('@prisma/client');" > node_modules/.prisma/client/default.js
+# Note: We don't create default.js here - webpack will resolve .prisma/client/default
+# directly to the client.ts file via the alias in next.config.ts
 
 # Build the application
 RUN npm run build
