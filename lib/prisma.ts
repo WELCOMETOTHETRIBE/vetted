@@ -9,14 +9,23 @@ if (typeof window === 'undefined') {
     prisma: typeof PrismaClient | undefined
   }
 
-  // Prisma 7: DATABASE_URL is read from environment variable
-  // The schema no longer has url, it's configured in prisma.config.ts for migrations
-  // Prisma 7 uses client engine by default, but should use binary engine when DATABASE_URL is set
-  // and no adapter/accelerateUrl is provided
-  prisma = globalForPrisma.prisma ?? new PrismaClient({
-    // Don't provide adapter or accelerateUrl - this should use binary engine
-    // Prisma will read DATABASE_URL from environment
-  })
+  // Prisma 7: Uses client engine by default which requires adapter
+  // We'll use @prisma/adapter-pg for PostgreSQL connection
+  // But only if DATABASE_URL is available (not during build)
+  let adapter = undefined;
+  if (process.env.DATABASE_URL && typeof process.env.DATABASE_URL === 'string' && !process.env.DATABASE_URL.includes('placeholder')) {
+    try {
+      const { PrismaPg } = require('@prisma/adapter-pg');
+      const { Pool } = require('pg');
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      adapter = new PrismaPg(pool);
+    } catch (e) {
+      // Adapter not available or DATABASE_URL invalid - will fail at runtime
+      adapter = undefined;
+    }
+  }
+  
+  prisma = globalForPrisma.prisma ?? new PrismaClient(adapter ? { adapter } : {})
 
   if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 } else {
