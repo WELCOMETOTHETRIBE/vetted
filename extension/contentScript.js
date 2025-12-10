@@ -72,7 +72,7 @@
               return;
             }
 
-            if (response.success) { {
+            if (response.success) {
               // Check if auto-send is enabled and notify background script
               chrome.storage.local.get(["autoSendToVetted", "autoSendToSheets"], (settings) => {
                 if (settings.autoSendToVetted) {
