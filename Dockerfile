@@ -163,9 +163,11 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Ensure Python and Playwright are available in production
-# Note: We need to copy the venv from builder stage or recreate it
-RUN apk add --no-cache python3 py3-pip
+# Ensure Python is available in production
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/public ./public
 
