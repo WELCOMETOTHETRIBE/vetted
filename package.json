@@ -14,7 +14,6 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:deploy": "prisma db push",
     "db:check": "node scripts/check-db.js",
-    "postinstall": "prisma generate",
     "test": "vitest",
     "test:e2e": "playwright test"
   },
