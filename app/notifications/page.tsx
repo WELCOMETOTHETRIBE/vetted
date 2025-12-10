@@ -38,7 +38,7 @@ async function getNotifications(userId: string) {
     if (notification.type === "CONNECTION_REQUEST") {
       // Find matching connection request
       const connection = connectionRequests.find(
-        (conn) => notification.message.includes(conn.requester.name || "")
+        (conn: any) => notification.message.includes(conn.requester.name || "")
       )
       return {
         ...notification,
