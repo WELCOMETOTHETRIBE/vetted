@@ -1,7 +1,17 @@
 FROM node:20-alpine AS base
 
 # Install Python and dependencies for Ashby scraper
-RUN apk add --no-cache python3 py3-pip
+# Playwright on Alpine requires additional dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -12,12 +22,17 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Install Python dependencies for Ashby scraper
+# Note: On Alpine, we use system chromium instead of Playwright's bundled browser
 COPY requirements.txt ./
-RUN python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --upgrade pip && \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt && \
-    /opt/venv/bin/python3 -m playwright install chromium && \
-    /opt/venv/bin/python3 -m playwright install-deps chromium
+RUN apk add --no-cache \
+    python3-dev \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    && python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip setuptools wheel && \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Rebuild the source code only when needed
 FROM base AS builder

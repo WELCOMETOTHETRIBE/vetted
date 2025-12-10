@@ -426,7 +426,16 @@ async def scrape_jobs(urls: list[str]) -> list[dict]:
     jobs: list[dict] = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        # On Alpine Linux, use system chromium if available
+        chromium_path = os.getenv("PLAYWRIGHT_CHROMIUM_PATH") or "/usr/bin/chromium"
+        launch_options = {
+            "headless": True,
+        }
+        # Use system chromium if it exists (Alpine Linux)
+        if os.path.exists(chromium_path):
+            launch_options["executable_path"] = chromium_path
+        
+        browser = await p.chromium.launch(**launch_options)
         page = await browser.new_page()
 
         for i, url in enumerate(urls, start=1):
