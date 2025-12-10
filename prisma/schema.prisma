@@ -65,48 +65,45 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // NextAuth relations
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
   // Profile relations
-  profile       UserProfile?
-  experiences   Experience[]
-  educations    Education[]
-  skills        UserSkill[]
-  
+  profile     UserProfile?
+  experiences Experience[]
+  educations  Education[]
+  skills      UserSkill[]
+
   // Social relations
   connectionsAsRequester Connection[] @relation("ConnectionRequester")
   connectionsAsReceiver  Connection[] @relation("ConnectionReceiver")
-  
+
   // Content relations
   posts         Post[]
   postReactions PostReaction[]
   comments      Comment[]
   reposts       Repost[]
-  
+
   // Job relations
-  jobsPosted    Job[]
-  applications  JobApplication[]
-  
-  // Company relations (through Experience)
-  companies     Company[] @relation("CompanyEmployees")
-  
+  jobsPosted   Job[]
+  applications JobApplication[]
+
   // Group relations
-  groupsOwned   Group[]
+  groupsOwned      Group[]
   groupMemberships GroupMembership[]
-  groupPosts    GroupPost[]
-  
+  groupPosts       GroupPost[]
+
   // Messaging
   messageThreadsAsUser1 MessageThread[] @relation("ThreadUser1")
   messageThreadsAsUser2 MessageThread[] @relation("ThreadUser2")
-  messages      Message[]
-  
+  messages              Message[]
+
   // Notifications
   notifications Notification[]
-  
+
   // Candidates (added by admin)
   candidatesAdded Candidate[]
-  
+
   @@index([email])
   @@index([handle])
 }
@@ -118,14 +115,14 @@ enum UserRole {
 
 // User Profile (extended profile info)
 model UserProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  headline  String?
-  location  String?
-  about     String?  @db.Text
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  headline    String?
+  location    String?
+  about       String?  @db.Text
   bannerImage String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -138,7 +135,7 @@ model Experience {
   companyId   String?
   companyName String? // For non-company entries
   location    String?
-  description String?  @db.Text
+  description String?   @db.Text
   startDate   DateTime
   endDate     DateTime?
   isCurrent   Boolean   @default(false)
@@ -146,7 +143,7 @@ model Experience {
   updatedAt   DateTime  @updatedAt
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  company Company? @relation("CompanyEmployees", fields: [companyId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([companyId])
@@ -154,16 +151,16 @@ model Experience {
 
 // Education
 model Education {
-  id          String    @id @default(cuid())
-  userId      String
-  school      String
-  degree      String?
+  id           String    @id @default(cuid())
+  userId       String
+  school       String
+  degree       String?
   fieldOfStudy String?
-  startDate   DateTime?
-  endDate     DateTime?
-  description String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  startDate    DateTime?
+  endDate      DateTime?
+  description  String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -195,12 +192,12 @@ model UserSkill {
 
 // Connections (Network)
 model Connection {
-  id        String           @id @default(cuid())
+  id          String           @id @default(cuid())
   requesterId String
   receiverId  String
   status      ConnectionStatus @default(PENDING)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   requester User @relation("ConnectionRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   receiver  User @relation("ConnectionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
@@ -219,26 +216,26 @@ enum ConnectionStatus {
 
 // Posts
 model Post {
-  id          String   @id @default(cuid())
-  authorId    String
-  content     String   @db.Text
-  imageUrl    String?
-  linkUrl     String?
-  linkTitle   String?
-  linkDescription String? @db.Text
-  linkImage   String?
-  groupId     String? // If posted in a group
-  companyId   String? // If tagged to a company
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isActive    Boolean  @default(true)
+  id              String   @id @default(cuid())
+  authorId        String
+  content         String   @db.Text
+  imageUrl        String?
+  linkUrl         String?
+  linkTitle       String?
+  linkDescription String?  @db.Text
+  linkImage       String?
+  groupId         String? // If posted in a group
+  companyId       String? // If tagged to a company
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  isActive        Boolean  @default(true)
 
-  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  group       Group?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  reactions   PostReaction[]
-  comments    Comment[]
-  reposts     Repost[]
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  group     Group?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  company   Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  reactions PostReaction[]
+  comments  Comment[]
+  reposts   Repost[]
 
   @@index([authorId])
   @@index([groupId])
@@ -248,11 +245,11 @@ model Post {
 
 // Post Reactions (Likes)
 model PostReaction {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   postId    String
   userId    String
   type      ReactionType @default(LIKE)
-  createdAt DateTime @default(now())
+  createdAt DateTime     @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -273,19 +270,19 @@ enum ReactionType {
 
 // Comments
 model Comment {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   postId    String
   authorId  String
-  content   String    @db.Text
+  content   String   @db.Text
   parentId  String? // For nested comments (replies)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  isActive  Boolean   @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
 
-  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies  Comment[] @relation("CommentReplies")
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
 
   @@index([postId])
   @@index([authorId])
@@ -294,11 +291,11 @@ model Comment {
 
 // Reposts
 model Repost {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   postId    String
-  content   String?   @db.Text // Optional commentary
-  createdAt DateTime  @default(now())
+  content   String?  @db.Text // Optional commentary
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -310,23 +307,23 @@ model Repost {
 
 // Companies
 model Company {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  logo        String?
-  banner      String?
-  industry    String?
-  size        String? // e.g., "1-10", "11-50", "51-200", etc.
-  location    String?
-  website     String?
-  about       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isActive    Boolean  @default(true)
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  banner    String?
+  industry  String?
+  size      String? // e.g., "1-10", "11-50", "51-200", etc.
+  location  String?
+  website   String?
+  about     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
 
-  employees   Experience[] @relation("CompanyEmployees")
-  jobs        Job[]
-  posts       Post[]
+  employees Experience[] @relation("CompanyEmployees")
+  jobs      Job[]
+  posts     Post[]
 
   @@index([slug])
   @@index([name])
@@ -334,28 +331,28 @@ model Company {
 
 // Jobs
 model Job {
-  id            String         @id @default(cuid())
-  title         String
-  companyId     String
-  postedById    String
-  location      String?
-  isRemote      Boolean        @default(false)
-  isHybrid      Boolean        @default(false)
+  id             String         @id @default(cuid())
+  title          String
+  companyId      String
+  postedById     String
+  location       String?
+  isRemote       Boolean        @default(false)
+  isHybrid       Boolean        @default(false)
   employmentType EmploymentType
-  salaryMin     Int?
-  salaryMax     Int?
-  salaryCurrency String?       @default("USD")
-  description   String         @db.Text
-  requirements  String?        @db.Text
-  views         Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  expiresAt     DateTime?
-  isActive      Boolean        @default(true)
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String?        @default("USD")
+  description    String         @db.Text
+  requirements   String?        @db.Text
+  views          Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  expiresAt      DateTime?
+  isActive       Boolean        @default(true)
 
-  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  postedBy      User           @relation(fields: [postedById], references: [id], onDelete: Cascade)
-  applications  JobApplication[]
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  postedBy     User             @relation(fields: [postedById], references: [id], onDelete: Cascade)
+  applications JobApplication[]
 
   @@index([companyId])
   @@index([postedById])
@@ -373,18 +370,18 @@ enum EmploymentType {
 
 // Job Applications
 model JobApplication {
-  id          String             @id @default(cuid())
+  id          String            @id @default(cuid())
   jobId       String
   applicantId String
   resumeUrl   String?
-  coverLetter String?            @db.Text
-  status      ApplicationStatus  @default(APPLIED)
-  notes       String?            @db.Text // For recruiter notes
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  coverLetter String?           @db.Text
+  status      ApplicationStatus @default(APPLIED)
+  notes       String?           @db.Text // For recruiter notes
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
-  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  applicant User   @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  job       Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicant User @relation(fields: [applicantId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, applicantId])
   @@index([jobId])
@@ -413,21 +410,21 @@ model Group {
   updatedAt   DateTime @updatedAt
   isActive    Boolean  @default(true)
 
-  owner         User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  memberships   GroupMembership[]
-  posts         Post[]
-  groupPosts    GroupPost[]
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  memberships GroupMembership[]
+  posts       Post[]
+  groupPosts  GroupPost[]
 
   @@index([slug])
   @@index([ownerId])
 }
 
 model GroupMembership {
-  id        String   @id @default(cuid())
-  groupId   String
-  userId    String
-  role      GroupRole @default(MEMBER)
-  joinedAt  DateTime @default(now())
+  id       String    @id @default(cuid())
+  groupId  String
+  userId   String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -454,8 +451,8 @@ model GroupPost {
   updatedAt DateTime @updatedAt
   isActive  Boolean  @default(true)
 
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([groupId])
   @@index([authorId])
@@ -480,13 +477,13 @@ model MessageThread {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  threadId  String
-  senderId  String
-  content   String   @db.Text
+  id            String   @id @default(cuid())
+  threadId      String
+  senderId      String
+  content       String   @db.Text
   attachmentUrl String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
   sender User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
@@ -527,51 +524,51 @@ enum NotificationType {
 
 // Candidates (scraped from LinkedIn via extension)
 model Candidate {
-  id                        String   @id @default(cuid())
-  linkedinUrl               String   @unique
-  fullName                  String
-  currentCompany            String?
-  currentCompanyStartDate   String?
-  currentCompanyEndDate     String?
-  currentCompanyTenureYears String?
-  currentCompanyTenureMonths String?
-  jobTitle                  String?
-  location                  String?
-  previousTargetCompany     String?
-  previousTargetCompanyStartDate String?
-  previousTargetCompanyEndDate String?
-  previousTargetCompanyTenureYears String?
+  id                                String          @id @default(cuid())
+  linkedinUrl                       String          @unique
+  fullName                          String
+  currentCompany                    String?
+  currentCompanyStartDate           String?
+  currentCompanyEndDate             String?
+  currentCompanyTenureYears         String?
+  currentCompanyTenureMonths        String?
+  jobTitle                          String?
+  location                          String?
+  previousTargetCompany             String?
+  previousTargetCompanyStartDate    String?
+  previousTargetCompanyEndDate      String?
+  previousTargetCompanyTenureYears  String?
   previousTargetCompanyTenureMonths String?
-  tenurePreviousTarget      String?
-  previousTitles            String?  @db.Text
-  totalYearsExperience      String?
-  universities              String?  @db.Text // JSON array as string
-  fieldsOfStudy             String?  @db.Text // JSON array as string
-  degrees                   String?
-  undergradGraduationYear   String?
-  certifications            String?  @db.Text
-  languages                 String?  @db.Text
-  projects                  String?  @db.Text
-  publications              String?  @db.Text
-  volunteerOrganizations    String?  @db.Text
-  courses                   String?  @db.Text
-  honorsAwards              String?  @db.Text
-  organizations             String?  @db.Text
-  patents                   String?  @db.Text
-  testScores                String?  @db.Text
-  emails                    String?  @db.Text
-  phones                    String?  @db.Text
-  socialLinks               String?  @db.Text
-  skillsCount               Int?
-  experienceCount           Int?
-  educationCount            Int?
-  companies                 String?  @db.Text // JSON array as string
-  rawData                   String?  @db.Text // Full original JSON
-  addedById                 String? // Admin who added this candidate
-  status                    CandidateStatus @default(ACTIVE)
-  notes                     String?  @db.Text // Admin notes
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  tenurePreviousTarget              String?
+  previousTitles                    String?         @db.Text
+  totalYearsExperience              String?
+  universities                      String?         @db.Text // JSON array as string
+  fieldsOfStudy                     String?         @db.Text // JSON array as string
+  degrees                           String?
+  undergradGraduationYear           String?
+  certifications                    String?         @db.Text
+  languages                         String?         @db.Text
+  projects                          String?         @db.Text
+  publications                      String?         @db.Text
+  volunteerOrganizations            String?         @db.Text
+  courses                           String?         @db.Text
+  honorsAwards                      String?         @db.Text
+  organizations                     String?         @db.Text
+  patents                           String?         @db.Text
+  testScores                        String?         @db.Text
+  emails                            String?         @db.Text
+  phones                            String?         @db.Text
+  socialLinks                       String?         @db.Text
+  skillsCount                       Int?
+  experienceCount                   Int?
+  educationCount                    Int?
+  companies                         String?         @db.Text // JSON array as string
+  rawData                           String?         @db.Text // Full original JSON
+  addedById                         String? // Admin who added this candidate
+  status                            CandidateStatus @default(ACTIVE)
+  notes                             String?         @db.Text // Admin notes
+  createdAt                         DateTime        @default(now())
+  updatedAt                         DateTime        @updatedAt
 
   addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
 
