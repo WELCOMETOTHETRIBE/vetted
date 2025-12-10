@@ -284,8 +284,30 @@ async function sendBatchToVetted() {
 
         const result = await response.json();
         
-        // Clear queue after successful send
-        chrome.storage.local.set({ vettedQueue: [] });
+        // Clear sent profiles from storage after successful send
+        // This prevents storage from filling up
+        chrome.storage.local.get(["profileDocuments"], (data) => {
+          const allProfiles = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+          
+          // Remove sent profiles from storage (match by LinkedIn URL)
+          const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
+          const remainingProfiles = allProfiles.filter(profile => {
+            const profileUrl = profile.extraction_metadata?.source_url || 
+                              profile.personal_info?.profile_url ||
+                              profile.comprehensive_data?.find(item => 
+                                item.category === 'metadata' && item.data?.source_url
+                              )?.data?.source_url;
+            return !sentUrls.has(profileUrl);
+          });
+          
+          // Clear queue and remove sent profiles from storage
+          chrome.storage.local.set({ 
+            vettedQueue: [],
+            profileDocuments: remainingProfiles
+          }, () => {
+            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+          });
+        });
         
         resolve({ 
           success: true, 

@@ -877,8 +877,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (vettedSettings.vettedApiUrl) {
         try {
+          // Send all profiles in batch
           await sendToVetted(processed, vettedSettings.vettedApiUrl, vettedSettings.vettedApiKey);
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
+          
+          // Clear sent profiles from storage after successful send
+          const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
+          chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
+            const allProfiles = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+            const remainingProfiles = allProfiles.filter(profile => {
+              const profileUrl = profile.extraction_metadata?.source_url || 
+                                profile.personal_info?.profile_url ||
+                                profile.comprehensive_data?.find(item => 
+                                  item.category === 'metadata' && item.data?.source_url
+                                )?.data?.source_url;
+              return !sentUrls.has(profileUrl);
+            });
+            
+            chrome.storage.local.set({ 
+              profileDocuments: remainingProfiles,
+              vettedQueue: []
+            }, () => {
+              console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+              loadData(); // Refresh the table
+            });
+          });
         } catch (vettedError) {
           console.error("Vetted API error:", vettedError);
           console.error("Error details:", {
