@@ -107,110 +107,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-          // Estimate size of new profile
-          const newProfileSize = estimateStorageSize(message.payload);
-          const currentListSize = estimateStorageSize(currentList);
-          const estimatedNewSize = currentListSize + newProfileSize;
-          
-          // Chrome storage limit is ~10MB
-          const STORAGE_LIMIT = 10 * 1024 * 1024; // 10MB
-          const STORAGE_WARNING_THRESHOLD = STORAGE_LIMIT * 0.85; // 85% threshold
-          
-          // Check storage before attempting to save
-          chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
-            const currentUsage = bytesInUse || 0;
-            const wouldExceed = (currentUsage + newProfileSize) > STORAGE_LIMIT;
-            
-            if (wouldExceed) {
-              const mbUsed = (currentUsage / (1024 * 1024)).toFixed(2);
-              const mbLimit = (STORAGE_LIMIT / (1024 * 1024)).toFixed(0);
-              const errorMsg = `Storage full (${mbUsed}MB / ${mbLimit}MB). Please clear some profiles using the extension popup.`;
-              console.warn("Storage would exceed limit:", {
-                currentUsage: currentUsage,
-                newProfileSize: newProfileSize,
-                wouldExceed: wouldExceed
-              });
-              sendResponse({ 
-                success: false, 
-                error: errorMsg,
-                count: currentList.length,
-                storageInfo: {
-                  used: currentUsage,
-                  limit: STORAGE_LIMIT,
-                  percentage: ((currentUsage / STORAGE_LIMIT) * 100).toFixed(1)
-                }
-              });
-              return;
-            }
-            
-            // Warn if approaching limit
-            if (estimatedNewSize > STORAGE_WARNING_THRESHOLD) {
-              console.warn("Storage approaching limit:", {
-                estimatedSize: estimatedNewSize,
-                percentage: ((estimatedNewSize / STORAGE_LIMIT) * 100).toFixed(1) + "%"
-              });
-            }
-
-            currentList.push(message.payload);
-
-            // Try to save with error handling
-            chrome.storage.local.set({ profileDocuments: currentList }, () => {
-              if (chrome.runtime.lastError) {
-                const errorMsg = chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.";
-                
-                // Get updated storage usage for accurate reporting
-                chrome.storage.local.getBytesInUse(null, (bytesAfterError) => {
-                  const finalUsage = bytesAfterError || currentUsage;
-                  const storageInfo = {
-                    used: finalUsage,
-                    limit: STORAGE_LIMIT,
-                    percentage: ((finalUsage / STORAGE_LIMIT) * 100).toFixed(1)
-                  };
-                  
-                  console.error("Storage error:", {
-                    error: chrome.runtime.lastError,
-                    currentListSize: currentList.length,
-                    estimatedSize: estimatedNewSize,
-                    storageInfo: {
-                      used: `${(storageInfo.used / (1024 * 1024)).toFixed(2)}MB`,
-                      limit: `${(storageInfo.limit / (1024 * 1024)).toFixed(0)}MB`,
-                      percentage: `${storageInfo.percentage}%`
-                    }
-                  });
-                  
-                  sendResponse({ 
-                    success: false, 
-                    error: errorMsg,
-                    count: currentList.length - 1, // Don't count the failed one
-                    storageInfo: storageInfo
-                  });
-                });
-                return;
-              }
-              
-              sendResponse({ success: true, count: currentList.length });
-            });
-          });
-        } catch (error) {
-          console.error("Error processing profile save:", error);
-          sendResponse({ 
-            success: false, 
-            error: error.message || "Unknown error saving profile",
-            count: 0
-          });
-        }
-      });
-    } catch (error) {
-      console.error("Error in message handler:", error);
-      sendResponse({ 
-        success: false, 
-        error: error.message || "Unknown error",
-        count: 0
-      });
-    }
-
-    // Keep the message channel open for async response
-    return true;
+        // Add profile to IndexedDB (no size limit concerns with IndexedDB)
+        await VettedStorage.addProfile(message.payload);
+        
+        const newCount = currentList.length + 1;
+        sendResponse({ 
+          success: true, 
+          count: newCount 
+        });
+      } catch (error) {
+        console.error("Error in SAVE_PROFILE_DOCUMENT handler:", error);
+        sendResponse({ 
+          success: false, 
+          error: error.message || "Unknown error",
+          count: 0
+        });
+      }
+    })();
+    return true; // Keep the message channel open for async response
   }
 
   // Handle auto-send request
