@@ -1,0 +1,94 @@
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
+import Navbar from "@/components/Navbar"
+import CandidatesContent from "@/components/CandidatesContent"
+
+async function getCandidates(searchParams: { [key: string]: string | undefined }) {
+  const search = searchParams.search
+  const status = searchParams.status
+  const page = parseInt(searchParams.page || "1")
+  const limit = parseInt(searchParams.limit || "50")
+  const skip = (page - 1) * limit
+
+  const where: any = {}
+
+  if (search) {
+    where.OR = [
+      { fullName: { contains: search, mode: "insensitive" } },
+      { currentCompany: { contains: search, mode: "insensitive" } },
+      { jobTitle: { contains: search, mode: "insensitive" } },
+      { location: { contains: search, mode: "insensitive" } },
+      { linkedinUrl: { contains: search, mode: "insensitive" } },
+    ]
+  }
+
+  if (status) {
+    where.status = status
+  }
+
+  const [candidates, total] = await Promise.all([
+    prisma.candidate.findMany({
+      where,
+      include: {
+        addedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.candidate.count({ where }),
+  ])
+
+  return { candidates, total, page, limit }
+}
+
+export default async function CandidatesPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined }
+}) {
+  const session = await auth()
+  if (!session?.user) {
+    redirect("/auth/signin")
+  }
+
+  // Check if user is admin
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+
+  if (user?.role !== "ADMIN") {
+    redirect("/feed")
+  }
+
+  const data = await getCandidates(searchParams)
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Candidates</h1>
+          <div className="text-sm text-gray-600">
+            Total: {data.total} candidates
+          </div>
+        </div>
+        <CandidatesContent
+          initialCandidates={data.candidates}
+          initialTotal={data.total}
+          initialPage={data.page}
+          initialLimit={data.limit}
+        />
+      </div>
+    </div>
+  )
+}
+

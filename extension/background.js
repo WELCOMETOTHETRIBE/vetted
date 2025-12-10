@@ -1,0 +1,159 @@
+// NOTE: This extension performs local-only DOM scraping. Users are responsible
+// for complying with site terms of service (e.g., LinkedIn ToS) and applicable laws.
+// This is intended for internal/testing use only.
+
+// Import profile processor functions
+importScripts('profileProcessor.js');
+
+// Initialize storage on install
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.get(["profileDocuments"], (data) => {
+    if (!Array.isArray(data.profileDocuments)) {
+      chrome.storage.local.set({ profileDocuments: [] });
+    }
+  });
+});
+
+// Function to send profile to Google Sheets
+async function sendProfileToSheets(profileDoc) {
+  try {
+    // Get settings
+    const settings = await new Promise((resolve) => {
+      chrome.storage.local.get(["googleSheetsUrl", "autoSendToSheets"], resolve);
+    });
+
+    if (!settings.autoSendToSheets || !settings.googleSheetsUrl) {
+      return { success: false, error: "Auto-send not enabled or URL not configured" };
+    }
+
+    // Process the profile
+    if (typeof ProfileProcessor === 'undefined') {
+      return { success: false, error: "Profile processor not available" };
+    }
+
+    const processed = ProfileProcessor.processProfileDocument(profileDoc);
+    if (!processed) {
+      return { success: false, error: "Profile validation failed" };
+    }
+
+    // Send to Google Sheets
+    const response = await fetch(settings.googleSheetsUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([processed]),
+    });
+
+    // With no-cors, we can't read response, but assume success
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending to Google Sheets:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Helper function to estimate storage size
+function estimateStorageSize(obj) {
+  return new Blob([JSON.stringify(obj)]).size;
+}
+
+// Listen for messages from the content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
+    try {
+      // Get current profiles
+      chrome.storage.local.get(["profileDocuments"], (data) => {
+        try {
+          const currentList = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+
+          // Check if profile already exists (by URL) to avoid duplicates
+          const profileUrl = message.payload.extraction_metadata?.source_url || 
+                            message.payload.personal_info?.profile_url ||
+                            message.payload.comprehensive_data?.find(item => 
+                              item.category === 'metadata' && item.data?.source_url
+                            )?.data?.source_url;
+
+          // Check for duplicate by URL
+          const isDuplicate = profileUrl && currentList.some(existing => {
+            const existingUrl = existing.extraction_metadata?.source_url || 
+                              existing.personal_info?.profile_url ||
+                              existing.comprehensive_data?.find(item => 
+                                item.category === 'metadata' && item.data?.source_url
+                              )?.data?.source_url;
+            return existingUrl === profileUrl;
+          });
+
+          if (isDuplicate) {
+            sendResponse({ 
+              success: false, 
+              error: "Profile already exists",
+              count: currentList.length 
+            });
+            return;
+          }
+
+          // Estimate size of new profile
+          const newProfileSize = estimateStorageSize(message.payload);
+          const currentListSize = estimateStorageSize(currentList);
+          const estimatedNewSize = currentListSize + newProfileSize;
+          
+          // Chrome storage limit is ~10MB, warn if approaching limit
+          const STORAGE_LIMIT = 10 * 1024 * 1024; // 10MB
+          if (estimatedNewSize > STORAGE_LIMIT * 0.9) {
+            console.warn("Storage approaching limit:", estimatedNewSize, "bytes");
+          }
+
+          currentList.push(message.payload);
+
+          // Try to save with error handling
+          chrome.storage.local.set({ profileDocuments: currentList }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Storage error:", chrome.runtime.lastError);
+              sendResponse({ 
+                success: false, 
+                error: chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.",
+                count: currentList.length - 1 // Don't count the failed one
+              });
+              return;
+            }
+            
+            sendResponse({ success: true, count: currentList.length });
+          });
+        } catch (error) {
+          console.error("Error processing profile save:", error);
+          sendResponse({ 
+            success: false, 
+            error: error.message || "Unknown error saving profile",
+            count: 0
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Error in message handler:", error);
+      sendResponse({ 
+        success: false, 
+        error: error.message || "Unknown error",
+        count: 0
+      });
+    }
+
+    // Keep the message channel open for async response
+    return true;
+  }
+
+  // Handle auto-send request
+  if (message.type === "AUTO_SEND_TO_SHEETS" && typeof message.payload === "object" && message.payload !== null) {
+    sendProfileToSheets(message.payload).then((result) => {
+      sendResponse(result);
+    }).catch((error) => {
+      sendResponse({ success: false, error: error.message });
+    });
+
+    // Keep the message channel open for async response
+    return true;
+  }
+});
+
+

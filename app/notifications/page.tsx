@@ -1,0 +1,41 @@
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
+import Navbar from "@/components/Navbar"
+import NotificationsContent from "@/components/NotificationsContent"
+
+async function getNotifications(userId: string) {
+  const notifications = await prisma.notification.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  })
+
+  // Mark as read
+  await prisma.notification.updateMany({
+    where: { userId, isRead: false },
+    data: { isRead: true },
+  })
+
+  return notifications
+}
+
+export default async function NotificationsPage() {
+  const session = await auth()
+  if (!session?.user) {
+    redirect("/auth/signin")
+  }
+
+  const notifications = await getNotifications(session.user.id)
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Notifications</h1>
+        <NotificationsContent initialNotifications={notifications} />
+      </div>
+    </div>
+  )
+}
+

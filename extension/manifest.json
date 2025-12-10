@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Profile JSON Logger",
+  "version": "1.0.0",
+  "description": "Floating button that logs rich profile JSON (URL, HTML, structured contents) for each page.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "View logged profiles",
+    "default_popup": "viewer.html"
+  }
+}
+
+
