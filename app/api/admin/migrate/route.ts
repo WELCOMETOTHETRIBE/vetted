@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { execSync } from "child_process"
-import { existsSync, renameSync } from "fs"
+import { existsSync, unlinkSync, writeFileSync } from "fs"
 
 export async function POST(req: Request) {
   try {
@@ -54,18 +54,22 @@ export async function POST(req: Request) {
         )
       }
 
-      // Temporarily rename config file to avoid loading issues
+      // Temporarily delete config file to avoid loading issues
+      // Prisma 7 will try to load it even with --schema flag
       const configPath = './prisma.config.ts'
-      const configBackupPath = './prisma.config.ts.backup'
-      let configRenamed = false
+      let configDeleted = false
+      let configContent = ''
 
       try {
         if (existsSync(configPath)) {
-          renameSync(configPath, configBackupPath)
-          configRenamed = true
+          // Read content to restore later
+          const fs = require('fs')
+          configContent = fs.readFileSync(configPath, 'utf-8')
+          unlinkSync(configPath)
+          configDeleted = true
         }
       } catch (e) {
-        // Ignore rename errors
+        // Ignore delete errors
       }
 
       try {
@@ -77,16 +81,18 @@ export async function POST(req: Request) {
             env: { 
               ...process.env,
               DATABASE_URL: dbUrl,
-              // Unset any config-related env vars
-              PRISMA_CONFIG_PATH: undefined,
             },
             shell: "/bin/sh",
           }
         )
 
         // Restore config file
-        if (configRenamed && existsSync(configBackupPath)) {
-          renameSync(configBackupPath, configPath)
+        if (configDeleted && configContent) {
+          try {
+            writeFileSync(configPath, configContent, 'utf-8')
+          } catch (e) {
+            // Ignore restore errors
+          }
         }
 
         return NextResponse.json({
@@ -97,9 +103,9 @@ export async function POST(req: Request) {
         })
       } catch (error: any) {
         // Restore config file even on error
-        if (configRenamed && existsSync(configBackupPath)) {
+        if (configDeleted && configContent) {
           try {
-            renameSync(configBackupPath, configPath)
+            writeFileSync(configPath, configContent, 'utf-8')
           } catch (e) {
             // Ignore restore errors
           }
