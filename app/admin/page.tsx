@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import AdminContent from "@/components/AdminContent"
+import PopulateJobsButton from "@/components/PopulateJobsButton"
 import Link from "next/link"
 
 async function getAdminData() {
@@ -74,12 +75,15 @@ export default async function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <Link
-            href="/candidates"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            View Candidates
-          </Link>
+          <div className="flex gap-3">
+            <PopulateJobsButton />
+            <Link
+              href="/candidates"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              View Candidates
+            </Link>
+          </div>
         </div>
         <AdminContent initialData={adminData} />
       </div>
