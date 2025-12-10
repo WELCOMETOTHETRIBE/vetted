@@ -151,20 +151,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             chrome.storage.local.set({ profileDocuments: currentList }, () => {
               if (chrome.runtime.lastError) {
                 const errorMsg = chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.";
-                console.error("Storage error:", {
-                  error: chrome.runtime.lastError,
-                  currentListSize: currentList.length,
-                  estimatedSize: estimatedNewSize
-                });
-                sendResponse({ 
-                  success: false, 
-                  error: errorMsg,
-                  count: currentList.length - 1, // Don't count the failed one
-                  storageInfo: {
-                    used: currentUsage,
+                
+                // Get updated storage usage for accurate reporting
+                chrome.storage.local.getBytesInUse(null, (bytesAfterError) => {
+                  const finalUsage = bytesAfterError || currentUsage;
+                  const storageInfo = {
+                    used: finalUsage,
                     limit: STORAGE_LIMIT,
-                    percentage: ((currentUsage / STORAGE_LIMIT) * 100).toFixed(1)
-                  }
+                    percentage: ((finalUsage / STORAGE_LIMIT) * 100).toFixed(1)
+                  };
+                  
+                  console.error("Storage error:", {
+                    error: chrome.runtime.lastError,
+                    currentListSize: currentList.length,
+                    estimatedSize: estimatedNewSize,
+                    storageInfo: {
+                      used: `${(storageInfo.used / (1024 * 1024)).toFixed(2)}MB`,
+                      limit: `${(storageInfo.limit / (1024 * 1024)).toFixed(0)}MB`,
+                      percentage: `${storageInfo.percentage}%`
+                    }
+                  });
+                  
+                  sendResponse({ 
+                    success: false, 
+                    error: errorMsg,
+                    count: currentList.length - 1, // Don't count the failed one
+                    storageInfo: storageInfo
+                  });
                 });
                 return;
               }
