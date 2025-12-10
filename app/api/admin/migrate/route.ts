@@ -95,41 +95,21 @@ export async function POST(req: Request) {
         }
       }
 
-        return NextResponse.json({
-          success: true,
-          message: "Migrations completed successfully",
-          output: output.split("\n").slice(-10),
-          isFirstSetup,
-        })
-      } catch (error: any) {
-        // Restore config file
-        if (configDeleted && configContent) {
-          try {
-            writeFileSync(configPath, configContent, 'utf-8')
-          } catch (e) {
-            // Ignore
-          }
-        }
-        // Clean up temp schema
-        if (existsSync(tempSchemaPath)) {
-          try {
-            unlinkSync(tempSchemaPath)
-          } catch (e) {
-            // Ignore
-          }
-        }
-        throw error
-      } finally {
-        // Clean up temp schema even on error
-        if (existsSync(tempSchemaPath)) {
-          try {
-            unlinkSync(tempSchemaPath)
-          } catch (e) {
-            // Ignore cleanup errors
-          }
+      return NextResponse.json({
+        success: true,
+        message: "Migrations completed successfully",
+        output: output.split("\n").slice(-10),
+        isFirstSetup,
+      })
+    } catch (error: any) {
+      // Clean up temp schema even on error
+      if (existsSync(tempSchemaPath)) {
+        try {
+          unlinkSync(tempSchemaPath)
+        } catch (e) {
+          // Ignore cleanup errors
         }
       }
-    } catch (error: any) {
       return NextResponse.json(
         {
           error: "Migration failed",
