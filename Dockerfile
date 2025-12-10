@@ -53,8 +53,7 @@ RUN cd node_modules/.prisma/client && \
       echo "Warning: client.js not found after TypeScript compilation"; \
     fi
 
-# Create default.js that constructs PrismaClient with binary engine
-# getPrismaClientClass() creates client engine, so we construct it directly with binary engine config
+# Create default.js that constructs PrismaClient without compilerWasm to force binary engine
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
 const fs = require('fs');
@@ -79,6 +78,7 @@ try {
   }
   
   const { getPrismaClient } = runtime;
+  // Don't provide compilerWasm - this should force binary engine
   const ClientClass = getPrismaClient({
     previewFeatures: [],
     clientVersion: "7.1.0",
