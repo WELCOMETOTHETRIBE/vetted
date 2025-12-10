@@ -259,6 +259,7 @@ async function sendBatchToVetted() {
           headers: headers,
           credentials: "include",
           body: JSON.stringify(processed),
+          mode: "cors", // Explicitly set CORS mode
         });
 
         if (!response.ok) {
@@ -368,6 +369,7 @@ async function sendProfileToVetted(profileDoc) {
       headers: headers,
       credentials: "include", // Include cookies for session-based auth
       body: JSON.stringify([processed]),
+      mode: "cors", // Explicitly set CORS mode
     });
 
     if (!response.ok) {

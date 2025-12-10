@@ -812,10 +812,17 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: headers,
         credentials: "include", // Include cookies for session-based auth
         body: JSON.stringify(profiles),
+        mode: "cors", // Explicitly set CORS mode
       });
     } catch (fetchError) {
       console.error("Fetch error:", fetchError);
-      throw new Error(`Network error: ${fetchError.message}. Check your API URL and CORS settings.`);
+      // Ignore LinkedIn page errors (they're not related to our extension)
+      if (fetchError.message && fetchError.message.includes("user-matching")) {
+        console.warn("LinkedIn page error (ignored):", fetchError.message);
+        // Continue - this is not our error
+      } else {
+        throw new Error(`Network error: ${fetchError.message}. Check your API URL and CORS settings.`);
+      }
     }
 
     if (!response.ok) {
