@@ -248,14 +248,25 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
-// Make available globally
-window.VettedStorage = {
+// Make available globally (for both window and service worker contexts)
+const VettedStorage = {
   getAllProfiles,
   addProfile,
   updateProfileByIndex,
   deleteProfileByIndex,
   clearAllProfiles,
   getStorageSize,
-  SettingsStorage
+  SettingsStorage,
+  initDB // Export initDB for initialization
 };
+
+// Export for window context (popup)
+if (typeof window !== 'undefined') {
+  window.VettedStorage = VettedStorage;
+}
+
+// Export for service worker context
+if (typeof self !== 'undefined' && typeof importScripts !== 'undefined') {
+  self.VettedStorage = VettedStorage;
+}
 
