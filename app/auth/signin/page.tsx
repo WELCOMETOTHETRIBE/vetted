@@ -28,8 +28,8 @@ export default function SignInPage() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
-        router.push("/feed")
-        router.refresh()
+        // Use window.location for a full page reload to avoid headers() error
+        window.location.href = "/feed"
       }
     } catch (err) {
       setError("An error occurred. Please try again.")

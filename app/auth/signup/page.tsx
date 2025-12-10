@@ -43,8 +43,8 @@ export default function SignUpPage() {
       if (result?.error) {
         setError("Account created but sign in failed. Please try signing in.")
       } else {
-        router.push("/onboarding")
-        router.refresh()
+        // Use window.location for a full page reload to avoid headers() error
+        window.location.href = "/onboarding"
       }
     } catch (err) {
       setError("An error occurred. Please try again.")
