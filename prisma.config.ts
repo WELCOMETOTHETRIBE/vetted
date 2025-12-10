@@ -7,7 +7,7 @@ try {
   // dotenv not available - that's fine, environment variables should be set directly
 }
 
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 // DATABASE_URL is only needed at runtime, not during prisma generate
 // Use a placeholder during build if not set to avoid config errors

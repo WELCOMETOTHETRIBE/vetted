@@ -8,8 +8,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // URL can also be configured in prisma.config.ts for Prisma 7+, but env() works too
+  // URL is configured in prisma.config.ts for Prisma 7+
 }
 
 // NextAuth required models
