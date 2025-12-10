@@ -111,9 +111,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           chrome.storage.local.set({ profileDocuments: currentList }, () => {
             if (chrome.runtime.lastError) {
               console.error("Storage error:", chrome.runtime.lastError);
+              const errorMsg = chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.";
               sendResponse({ 
                 success: false, 
-                error: chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.",
+                error: errorMsg,
                 count: currentList.length - 1 // Don't count the failed one
               });
               return;
@@ -166,6 +167,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
       // Save queue
       chrome.storage.local.set({ vettedQueue: queue }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving queue:", chrome.runtime.lastError);
+          sendResponse({ 
+            success: false, 
+            error: chrome.runtime.lastError.message || "Failed to save queue",
+            queuedCount: queue.length - 1
+          });
+          return;
+        }
+        
         sendResponse({ success: true, queuedCount: queue.length });
         
         // Auto-send batch if queue reaches 10 profiles or after 10 seconds
@@ -242,7 +253,11 @@ async function sendBatchToVetted() {
 
         if (processed.length === 0) {
           // Clear queue if all failed
-          chrome.storage.local.set({ vettedQueue: [] });
+          chrome.storage.local.set({ vettedQueue: [] }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Error clearing queue:", chrome.runtime.lastError);
+            }
+          });
           resolve({ success: false, error: "No valid profiles to send" });
           return;
         }
@@ -305,7 +320,11 @@ async function sendBatchToVetted() {
             vettedQueue: [],
             profileDocuments: remainingProfiles
           }, () => {
-            console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+            if (chrome.runtime.lastError) {
+              console.error("Error clearing sent profiles from storage:", chrome.runtime.lastError);
+            } else {
+              console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+            }
           });
         });
         

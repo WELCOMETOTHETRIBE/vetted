@@ -504,9 +504,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Update in storage
     chrome.storage.local.get(["profileDocuments"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading profiles for edit:", chrome.runtime.lastError);
+        alert("Error loading profile: " + chrome.runtime.lastError.message);
+        return;
+      }
+      
       const docs = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
       docs[currentEditingIndex] = doc;
       chrome.storage.local.set({ profileDocuments: docs }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving edited profile:", chrome.runtime.lastError);
+          alert("Error saving profile: " + chrome.runtime.lastError.message);
+          return;
+        }
         modal.style.display = "none";
         loadData();
       });
@@ -521,6 +532,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function loadData() {
     chrome.storage.local.get(["profileDocuments", "vettedQueue"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading data:", chrome.runtime.lastError);
+        // Still try to render empty state
+        renderTable([]);
+        return;
+      }
+      
       const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
       const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
       
@@ -898,7 +916,11 @@ document.addEventListener("DOMContentLoaded", () => {
               profileDocuments: remainingProfiles,
               vettedQueue: []
             }, () => {
-              console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+              if (chrome.runtime.lastError) {
+                console.error("Error clearing sent profiles:", chrome.runtime.lastError);
+              } else {
+                console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+              }
               loadData(); // Refresh the table
             });
           });
