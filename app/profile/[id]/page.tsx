@@ -47,15 +47,19 @@ async function getProfile(userIdOrHandle: string, currentUserId?: string) {
           { requesterId: user.id, receiverId: currentUserId },
         ],
       },
+      orderBy: { updatedAt: "desc" }, // Get the most recent connection if multiple exist
     })
 
     if (connection) {
-      connectionStatus =
-        connection.status === "ACCEPTED"
-          ? "CONNECTED"
-          : connection.status === "PENDING"
-          ? "PENDING"
-          : "NONE"
+      if (connection.status === "ACCEPTED") {
+        connectionStatus = "CONNECTED"
+      } else if (connection.status === "PENDING") {
+        // Check if current user is the requester (sent) or receiver (received)
+        const isRequester = connection.requesterId === currentUserId
+        connectionStatus = "PENDING" // Show pending for both sent and received
+      } else {
+        connectionStatus = "NONE"
+      }
     }
   }
 
