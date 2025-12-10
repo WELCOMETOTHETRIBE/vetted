@@ -30,7 +30,9 @@ export async function GET(req: Request) {
           OR: [
             { name: { contains: query, mode: "insensitive" } },
             { email: { contains: query, mode: "insensitive" } },
+            { handle: { contains: query, mode: "insensitive" } },
             { profile: { headline: { contains: query, mode: "insensitive" } } },
+            { profile: { location: { contains: query, mode: "insensitive" } } },
           ],
           isActive: true,
         },
@@ -39,13 +41,15 @@ export async function GET(req: Request) {
           name: true,
           image: true,
           handle: true,
+          email: true,
           profile: {
             select: {
               headline: true,
+              location: true,
             },
           },
         },
-        take: 10,
+        take: 20,
       })
     }
 
