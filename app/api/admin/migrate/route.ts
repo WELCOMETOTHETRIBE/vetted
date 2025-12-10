@@ -5,23 +5,41 @@ import { execSync } from "child_process"
 
 export async function POST(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // For first-time setup, check if database tables exist
+    let isFirstSetup = false
+    let isAdmin = false
+
+    try {
+      // Try to check if User table exists and count users
+      const userCount = await prisma.user.count()
+      isFirstSetup = userCount === 0
+    } catch (error: any) {
+      // If query fails, tables probably don't exist - this is first setup
+      if (error.message?.includes("does not exist") || error.message?.includes("relation")) {
+        isFirstSetup = true
+      } else {
+        // Some other error - rethrow it
+        throw error
+      }
     }
 
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    })
+    // If not first setup, require admin authentication
+    if (!isFirstSetup) {
+      const session = await auth()
+      if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
 
-    // For first-time setup, allow if no users exist yet
-    const userCount = await prisma.user.count()
-    const isFirstSetup = userCount === 0
+      // Check if user is admin
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true },
+      })
 
-    if (!isFirstSetup && user?.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 })
+      if (user?.role !== "ADMIN") {
+        return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 })
+      }
+      isAdmin = true
     }
 
     try {
@@ -36,6 +54,7 @@ export async function POST(req: Request) {
         success: true,
         message: "Migrations completed successfully",
         output: output.split("\n").slice(-10), // Last 10 lines
+        isFirstSetup,
       })
     } catch (error: any) {
       return NextResponse.json(
