@@ -73,6 +73,7 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                 <span className="sm:hidden">{item.icon}</span>
               </Link>
             ))}
+            {/* Admin tab - separate from main nav items */}
             {isAdmin && (
               <Link
                 href="/admin"
