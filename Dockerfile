@@ -29,9 +29,9 @@ RUN test -d node_modules/.prisma/client && echo "Prisma client generated success
 # This breaks the circular dependency by using the runtime directly
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
-const { getPrismaClientClass } = runtime;
+const { getPrismaClient } = runtime;
 module.exports = {
-  PrismaClient: getPrismaClientClass(),
+  getPrismaClient,
   ...runtime
 };
 EOFJS
