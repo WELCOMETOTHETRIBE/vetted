@@ -54,12 +54,18 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   function renderTable(documents) {
-    if (!tableContainer) return;
+    if (!tableContainer) {
+      console.error("renderTable: tableContainer not found");
+      return;
+    }
+    
+    console.log(`renderTable: Rendering ${documents ? documents.length : 0} documents`);
     
     tableContainer.innerHTML = "";
     profileDocuments = documents || [];
 
     if (!documents || documents.length === 0) {
+      console.log("renderTable: No documents, showing empty state");
       if (emptyState) emptyState.style.display = "block";
       return;
     }
@@ -88,8 +94,15 @@ document.addEventListener("DOMContentLoaded", () => {
     function processBatch() {
       const end = Math.min(index + batchSize, documents.length);
       
+      console.log(`processBatch: Processing rows ${index} to ${end - 1} of ${documents.length}`);
+      
       for (let i = index; i < end; i++) {
         const doc = documents[i];
+        if (!doc) {
+          console.warn(`processBatch: Document at index ${i} is undefined`);
+          continue;
+        }
+        
         const tr = document.createElement("tr");
         tr.dataset.index = i;
 
@@ -179,8 +192,14 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(processBatch, 0);
       } else {
         // All done, append table
+        console.log(`processBatch: Finished processing all ${documents.length} documents, appending table`);
         table.appendChild(tbody);
-        tableContainer.appendChild(table);
+        if (tableContainer) {
+          tableContainer.appendChild(table);
+          console.log("processBatch: Table appended successfully");
+        } else {
+          console.error("processBatch: tableContainer not found when trying to append table");
+        }
       }
     }
     
@@ -565,9 +584,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const queueCount = Array.isArray(data.vettedQueue) ? data.vettedQueue.length : 0;
         
         console.log(`Loaded ${documents.length} saved profiles, ${queueCount} queued for Vetted`);
+        console.log("Documents:", documents);
         
         // Render table immediately
-        renderTable(documents);
+        if (documents.length > 0) {
+          console.log("Calling renderTable with", documents.length, "documents");
+          renderTable(documents);
+        } else {
+          console.log("No documents to render, showing empty state");
+          renderTable([]);
+        }
         
         // Show queue status if there are queued profiles (non-blocking)
         setTimeout(() => {
