@@ -14,7 +14,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client (doesn't require DATABASE_URL, but config file might)
+# Set a dummy DATABASE_URL if not provided to avoid config errors during build
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL:-postgresql://placeholder:placeholder@localhost:5432/placeholder}
+
+# Generate Prisma Client (runs automatically via postinstall, but explicit is clearer)
 RUN npx prisma generate
 
 # Build the application

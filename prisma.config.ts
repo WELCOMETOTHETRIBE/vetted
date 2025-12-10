@@ -3,12 +3,16 @@
 import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 
+// DATABASE_URL is only needed at runtime, not during prisma generate
+// Use a placeholder during build if not set to avoid config errors
+const databaseUrl = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    url: databaseUrl,
   },
 });
