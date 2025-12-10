@@ -1100,11 +1100,22 @@ document.addEventListener("DOMContentLoaded", () => {
       // Reload data to refresh the UI
       loadData();
       
-      // Show success message
-      alert(`All profiles and queue cleared! Freed ${storageBefore.mb}MB of storage (${storageBefore.count} profiles).`);
+      // Show success message (non-blocking)
+      console.log(`All profiles and queue cleared! Freed ${storageBefore.mb}MB of storage (${storageBefore.count} profiles).`);
+      // Show a non-blocking notification instead of alert
+      const notification = document.createElement("div");
+      notification.style.cssText = "position: fixed; top: 10px; right: 10px; background: #4caf50; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
+      notification.textContent = `Cleared ${storageBefore.count} profiles`;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
     } catch (error) {
       console.error("Error clearing storage:", error);
-      alert("Error clearing storage: " + error.message);
+      // Show non-blocking error
+      const errorNotif = document.createElement("div");
+      errorNotif.style.cssText = "position: fixed; top: 10px; right: 10px; background: #e53935; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
+      errorNotif.textContent = "Error clearing storage";
+      document.body.appendChild(errorNotif);
+      setTimeout(() => errorNotif.remove(), 3000);
     }
   };
 
