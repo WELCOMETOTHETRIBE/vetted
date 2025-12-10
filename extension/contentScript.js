@@ -75,6 +75,12 @@
             if (response.success) {
               // Check if auto-send is enabled and queue for batch send
               chrome.storage.local.get(["autoSendToVetted", "autoSendToSheets"], (settings) => {
+                if (chrome.runtime.lastError) {
+                  console.error("Error loading settings:", chrome.runtime.lastError);
+                  showToast(`Profile saved (#${response.count})`, false);
+                  return;
+                }
+                
                 if (settings.autoSendToVetted) {
                   // Queue profile for batch auto-send to Vetted
                   chrome.runtime.sendMessage({
@@ -83,6 +89,9 @@
                   }, (queueResponse) => {
                     if (chrome.runtime.lastError) {
                       console.error("Queue error:", chrome.runtime.lastError);
+                      showToast(`Profile saved but queue failed: ${chrome.runtime.lastError.message}`, true);
+                    } else if (queueResponse && !queueResponse.success) {
+                      showToast(`Queue failed: ${queueResponse.error || "Unknown error"}`, true);
                     } else {
                       const queuedCount = queueResponse?.queuedCount || 0;
                       showToast(`Profile saved & queued for Vetted (${queuedCount} in queue)`);
@@ -96,6 +105,7 @@
                   }, (autoSendResponse) => {
                     if (chrome.runtime.lastError) {
                       console.error("Auto-send error:", chrome.runtime.lastError);
+                      showToast(`Profile saved but auto-send failed: ${chrome.runtime.lastError.message}`, true);
                     }
                   });
                   showToast(`Profile saved & sending to Google Sheets (#${response.count})`);
@@ -109,7 +119,7 @@
               showToast(`Error: ${errorMsg}`, true);
               
               // If storage quota error, provide helpful message
-              if (errorMsg.includes("quota") || errorMsg.includes("Storage")) {
+              if (errorMsg.includes("quota") || errorMsg.includes("Storage") || errorMsg.includes("QUOTA_BYTES")) {
                 showToast("Storage full! Open extension popup and click 'Clear All' or delete individual profiles.", true);
               }
             }
