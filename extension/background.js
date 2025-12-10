@@ -368,34 +368,40 @@ async function sendBatchToVetted() {
 
         const result = await response.json();
         
-        // Clear sent profiles from storage after successful send
+        // Clear sent profiles from IndexedDB after successful send
         // This prevents storage from filling up
-        chrome.storage.local.get(["profileDocuments"], (data) => {
-          const allProfiles = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+        try {
+          const allProfiles = await VettedStorage.getAllProfiles();
           
-          // Remove sent profiles from storage (match by LinkedIn URL)
+          // Remove sent profiles from IndexedDB (match by LinkedIn URL)
           const sentUrls = new Set(processed.map(p => p["Linkedin URL"] || p.linkedinUrl).filter(Boolean));
-          const remainingProfiles = allProfiles.filter(profile => {
+          
+          // Delete each sent profile from IndexedDB (iterate backwards to maintain indices)
+          for (let i = allProfiles.length - 1; i >= 0; i--) {
+            const profile = allProfiles[i];
             const profileUrl = profile.extraction_metadata?.source_url || 
                               profile.personal_info?.profile_url ||
                               profile.comprehensive_data?.find(item => 
                                 item.category === 'metadata' && item.data?.source_url
                               )?.data?.source_url;
-            return !sentUrls.has(profileUrl);
-          });
-          
-          // Clear queue and remove sent profiles from storage
-          chrome.storage.local.set({ 
-            vettedQueue: [],
-            profileDocuments: remainingProfiles
-          }, () => {
-            if (chrome.runtime.lastError) {
-              console.error("Error clearing sent profiles from storage:", chrome.runtime.lastError);
-            } else {
-              console.log(`Cleared ${allProfiles.length - remainingProfiles.length} sent profiles from storage`);
+            if (sentUrls.has(profileUrl)) {
+              await VettedStorage.deleteProfileByIndex(i);
             }
-          });
-        });
+          }
+          
+          // Clear queue from chrome.storage
+          await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
+          
+          console.log(`Cleared sent profiles from IndexedDB`);
+        } catch (error) {
+          console.error("Error clearing profiles from IndexedDB:", error);
+          // Still clear queue
+          try {
+            await VettedStorage.SettingsStorage.set({ vettedQueue: [] });
+          } catch (queueError) {
+            console.error("Error clearing queue:", queueError);
+          }
+        }
         
         resolve({ 
           success: true, 
