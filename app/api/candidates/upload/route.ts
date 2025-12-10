@@ -55,9 +55,16 @@ export async function POST(req: Request) {
 
     for (const candidateData of candidates) {
       try {
+        console.log("Processing candidate data:", {
+          keys: Object.keys(candidateData),
+          linkedinUrl: candidateData["Linkedin URL"] || candidateData.linkedinUrl,
+          fullName: candidateData["Full Name"] || candidateData.fullName
+        })
+        
         const linkedinUrl = candidateData["Linkedin URL"] || candidateData.linkedinUrl
 
         if (!linkedinUrl) {
+          console.error("Missing LinkedIn URL in candidate data:", candidateData)
           errors.push({ candidate: candidateData, error: "Missing LinkedIn URL" })
           continue
         }
@@ -130,6 +137,12 @@ export async function POST(req: Request) {
           created.push(newCandidate)
         }
       } catch (error: any) {
+        console.error("Error processing candidate:", {
+          linkedinUrl: candidateData["Linkedin URL"] || candidateData.linkedinUrl,
+          error: error.message,
+          stack: error.stack,
+          errorName: error.name
+        })
         errors.push({
           candidate: candidateData,
           error: error.message || "Unknown error",
