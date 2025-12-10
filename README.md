@@ -54,8 +54,9 @@ cp .env.example .env
 
 Edit `.env` and fill in your configuration:
 - `DATABASE_URL`: Your PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Generate a random secret (e.g., `openssl rand -base64 32`)
-- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: For Google OAuth (optional)
+- `AUTH_SECRET` or `NEXTAUTH_SECRET`: Generate a random secret (e.g., `openssl rand -base64 32`)
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: For Google OAuth (optional, but required if you want Google sign-in)
+- `VETTED_API_KEY`: API key for browser extension (optional, for admin users)
 
 4. Set up the database:
 
