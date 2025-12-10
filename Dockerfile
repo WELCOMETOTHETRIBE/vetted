@@ -37,8 +37,13 @@ RUN cd node_modules/.prisma/client && \
     # Fix require paths to include .js extensions (Alpine sed syntax)
     sed -i 's/require("\.\/\([^"]*\)")/require(".\/\1.js")/g' client.js && \
     sed -i "s/require('\.\/\([^']*\)')/require('.\/\1.js')/g" client.js && \
-    # Fix import.meta.url which doesn't work in CommonJS
+    # Remove ALL import.meta references (they don't work in CommonJS)
+    # Replace any import.meta.url with __dirname
+    sed -i 's/import\.meta\.url/__dirname/g' client.js && \
+    sed -i 's/import\.meta/__dirname/g' client.js && \
+    # Fix any code that tries to use import.meta for __dirname
     sed -i 's/globalThis\[.__dirname.\] = path\.dirname((0, node_url_1\.fileURLToPath)(import\.meta\.url);/\/\/ __dirname is available in CommonJS/g' client.js && \
+    sed -i 's/globalThis\[.__dirname.\] = path\.dirname((0, node_url_1\.fileURLToPath)(__dirname);/\/\/ __dirname is available in CommonJS/g' client.js && \
     # Remove unused imports if they're only used for import.meta
     sed -i '/^const node_url_1 = require("node:url");$/d' client.js && \
     # Ensure "use strict" is at the top for CommonJS (Alpine sed syntax)
