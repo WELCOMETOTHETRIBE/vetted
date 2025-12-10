@@ -6,21 +6,21 @@ import { prisma } from "@/lib/prisma"
  * This endpoint accepts processed profile JSON from the extension
  * The extension should send data in the format from profileProcessor.js
  */
+// CORS headers helper
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Credentials": "true",
+}
+
 export async function POST(req: Request) {
   try {
-    // Add CORS headers for browser extension
-    const headers = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-    }
-
     const session = await auth()
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized: Please log in to Vetted as an admin user" },
-        { status: 401, headers }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     if (user?.role !== "ADMIN") {
       return NextResponse.json(
         { error: "Forbidden: Admin access required" },
-        { status: 403, headers }
+        { status: 403, headers: corsHeaders }
       )
     }
 
@@ -132,13 +132,13 @@ export async function POST(req: Request) {
         candidates: created,
         errorDetails: errors,
       },
-      { status: 201, headers }
+      { status: 201, headers: corsHeaders }
     )
   } catch (error: any) {
     console.error("Upload candidates error:", error)
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
-      { status: 500, headers }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
@@ -147,12 +147,7 @@ export async function POST(req: Request) {
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-    },
+    headers: corsHeaders,
   })
 }
 
