@@ -14,6 +14,10 @@ const corsHeaders = {
   "Access-Control-Allow-Credentials": "true",
 }
 
+// Export route config to ensure proper handling
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 export async function POST(req: Request) {
   try {
     const session = await auth()
@@ -144,7 +148,7 @@ export async function POST(req: Request) {
 }
 
 // Handle OPTIONS request for CORS preflight
-export async function OPTIONS() {
+export async function OPTIONS(req: Request) {
   return new NextResponse(null, {
     status: 200,
     headers: corsHeaders,

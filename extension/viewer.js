@@ -823,18 +823,12 @@ document.addEventListener("DOMContentLoaded", () => {
           alert(`Successfully sent ${processed.length} profile(s) to Vetted!`);
         } catch (vettedError) {
           console.error("Vetted API error:", vettedError);
-          // Fallback to Google Sheets if Vetted fails
-          try {
-            await sendToGoogleSheets(processed);
-            alert(`Vetted API failed. Sent ${processed.length} profile(s) to Google Sheets instead.`);
-          } catch (sheetsError) {
-            throw new Error(`Vetted API: ${vettedError.message}. Google Sheets: ${sheetsError.message}`);
-          }
+          // Don't fallback to Google Sheets - just show the Vetted error
+          throw new Error(`Vetted API: ${vettedError.message}`);
         }
       } else {
-        // No Vetted URL configured, use Google Sheets
-        await sendToGoogleSheets(processed);
-        alert(`Vetted API not configured. Sent ${processed.length} profile(s) to Google Sheets.`);
+        // No Vetted URL configured
+        throw new Error("Vetted API URL not configured. Please configure it in Settings.");
       }
       
       sendToVettedBtn.disabled = false;
