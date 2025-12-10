@@ -18,6 +18,8 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
     { href: "/network", label: "Network", icon: "👥" },
     { href: "/messages", label: "Messages", icon: "💬" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
+    // Add Candidates tab for admins (will be filtered below)
+    ...(isAdmin ? [{ href: "/candidates", label: "Candidates", icon: "🎯" }] : []),
   ]
 
   return (
@@ -68,19 +70,6 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                 <span className="sm:hidden">{item.icon}</span>
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                href="/candidates"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === "/candidates"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <span className="hidden sm:inline">Candidates</span>
-                <span className="sm:hidden">👤</span>
-              </Link>
-            )}
             {isAdmin && (
               <Link
                 href="/admin"
