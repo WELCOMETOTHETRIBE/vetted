@@ -169,7 +169,7 @@ export async function POST(req: Request) {
 
           // Check if any job has a normalized title that matches
           existingJob = allCompanyJobs.find(
-            (job) => job.title.trim().toLowerCase() === normalizedTitle
+            (job: { id: string; title: string }) => job.title.trim().toLowerCase() === normalizedTitle
           ) as any
         }
 
