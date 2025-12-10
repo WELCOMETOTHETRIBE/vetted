@@ -598,25 +598,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadData() {
+    // Show loading state immediately
+    tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #666;">Loading profiles...</div>`;
+    emptyState.style.display = "none";
+
     try {
       // Check if VettedStorage is available
       if (typeof VettedStorage === 'undefined') {
         console.error("VettedStorage is not available! Make sure storage.js is loaded.");
+        tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error: Storage system not loaded. Please reload the extension.</div>`;
         renderTable([]);
         return;
       }
 
-      // Load profiles from chrome.storage.local
-      const documents = await VettedStorage.getAllProfiles();
+      // Load profiles from chrome.storage.local (with timeout to prevent hanging)
+      const documents = await Promise.race([
+        VettedStorage.getAllProfiles(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Load timeout after 5s")), 5000))
+      ]);
       console.log("Raw documents from chrome.storage.local:", documents);
       
-      // Load queue from chrome.storage
+      // Load queue from chrome.storage (non-blocking)
       let queueCount = 0;
       try {
-        const settings = await VettedStorage.SettingsStorage.get(["vettedQueue"]);
+        const settings = await Promise.race([
+          VettedStorage.SettingsStorage.get(["vettedQueue"]),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Settings timeout")), 2000))
+        ]);
         queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
       } catch (settingsError) {
         console.warn("Could not load queue:", settingsError);
+        // Continue without queue info
       }
       
       console.log(`Loaded ${documents.length} saved profiles from chrome.storage.local, ${queueCount} queued for Vetted`);
@@ -625,6 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const profilesArray = Array.isArray(documents) ? documents : [];
       console.log(`Rendering ${profilesArray.length} profiles`);
       
+      // Render table immediately
       renderTable(profilesArray);
       
       // Show queue status if there are queued profiles
@@ -644,31 +657,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       
-        // Check storage usage (chrome.storage.local)
-        VettedStorage.getStorageSize().then(storageInfo => {
-          console.log(`Chrome storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
-          
-          // Show storage info with warning if approaching limit
-          const storageInfoDiv = document.createElement("div");
-          storageInfoDiv.id = "storage-info";
-          const mbUsed = parseFloat(storageInfo.mb);
-          const isNearLimit = mbUsed > 8; // Warn if over 8MB (10MB is Chrome's limit)
-          storageInfoDiv.style.cssText = `background: ${isNearLimit ? '#fff3cd' : '#e8f5e9'}; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: ${isNearLimit ? '#856404' : '#2e7d32'};`;
-          storageInfoDiv.innerHTML = `💾 Chrome Storage: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored${isNearLimit ? ' (near 10MB limit)' : ''}`;
-          const controls = document.getElementById("controls");
-          const existingInfo = document.getElementById("storage-info");
-          if (existingInfo) {
-            existingInfo.remove();
-          }
-          if (controls) {
-            controls.insertBefore(storageInfoDiv, controls.firstChild);
-          }
-        }).catch(err => {
-          console.warn("Could not get storage size:", err);
-        });
+      // Check storage usage (chrome.storage.local) - non-blocking
+      VettedStorage.getStorageSize().then(storageInfo => {
+        console.log(`Chrome storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
+        
+        // Show storage info with warning if approaching limit
+        const storageInfoDiv = document.createElement("div");
+        storageInfoDiv.id = "storage-info";
+        const mbUsed = parseFloat(storageInfo.mb);
+        const isNearLimit = mbUsed > 8; // Warn if over 8MB (10MB is Chrome's limit)
+        storageInfoDiv.style.cssText = `background: ${isNearLimit ? '#fff3cd' : '#e8f5e9'}; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: ${isNearLimit ? '#856404' : '#2e7d32'};`;
+        storageInfoDiv.innerHTML = `💾 Chrome Storage: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored${isNearLimit ? ' (near 10MB limit)' : ''}`;
+        const controls = document.getElementById("controls");
+        const existingInfo = document.getElementById("storage-info");
+        if (existingInfo) {
+          existingInfo.remove();
+        }
+        if (controls) {
+          controls.insertBefore(storageInfoDiv, controls.firstChild);
+        }
+      }).catch(err => {
+        console.warn("Could not get storage size:", err);
+        // Don't block UI on storage size errors
+      });
     } catch (error) {
       console.error("Error loading data:", error);
-      tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error loading profiles: ${error.message}</div>`;
+      const errorMsg = error.message || "Unknown error";
+      tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error loading profiles: ${errorMsg}<br/><button onclick="location.reload()" style="margin-top: 10px; padding: 6px 12px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">Reload</button></div>`;
       renderTable([]);
     }
   }
@@ -1113,6 +1128,20 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.style.display = "none";
     }
   };
+
+  // Listen for storage changes to auto-refresh when profiles are added
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.profileDocuments) {
+      console.log("Profile storage changed, refreshing table...");
+      // Debounce rapid changes
+      clearTimeout(window.refreshTimeout);
+      window.refreshTimeout = setTimeout(() => {
+        loadData().catch(err => {
+          console.error("Error refreshing data:", err);
+        });
+      }, 300);
+    }
+  });
 
   // Simple initialization - don't wait, just try to load
   // If VettedStorage isn't ready, show empty state
