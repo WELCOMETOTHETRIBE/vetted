@@ -10,8 +10,8 @@ export default function ProfileSectionCard({
   className = "",
 }: ProfileSectionCardProps) {
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-6 mb-4 ${className}`}>
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">{title}</h2>
+    <div className={`bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-sm ${className}`}>
+      <h2 className="text-xl font-bold text-gray-900 mb-5 pb-3 border-b border-gray-100">{title}</h2>
       {children}
     </div>
   )
