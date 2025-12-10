@@ -449,7 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   };
 
-  async function saveProfile() {
+  function saveProfile() {
     if (currentEditingIndex === -1) return;
 
     const doc = profileDocuments[currentEditingIndex];
@@ -502,46 +502,38 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     doc._metadata.lastEdited = new Date().toISOString();
 
-    // Disable save button to prevent double-clicks
-    saveProfileBtn.disabled = true;
-    saveProfileBtn.textContent = "Saving...";
+    // Update profile in chrome.storage.local directly
+    chrome.storage.local.get(['profileDocuments'], (data) => {
+      if (chrome.runtime.lastError) {
+        alert("Error loading profiles: " + chrome.runtime.lastError.message);
+        return;
+      }
 
-    try {
-      // Update the profile in storage (don't send to Vetted yet)
-      await VettedStorage.updateProfileByIndex(currentEditingIndex, doc);
+      const profiles = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
       
-      // Close modal immediately
-      modal.style.display = "none";
-      currentEditingIndex = -1;
+      if (currentEditingIndex < 0 || currentEditingIndex >= profiles.length) {
+        alert("Invalid profile index");
+        return;
+      }
+
+      // Update the profile
+      profiles[currentEditingIndex] = doc;
       
-      // Show success notification (non-blocking)
-      const successNotif = document.createElement("div");
-      successNotif.style.cssText = "position: fixed; top: 10px; right: 10px; background: #4caf50; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
-      successNotif.textContent = "Profile saved! Use 'Send to Vetted' to upload.";
-      document.body.appendChild(successNotif);
-      setTimeout(() => successNotif.remove(), 3000);
-      
-      // Refresh the table (will happen automatically via storage listener, but do it explicitly)
-      setTimeout(() => {
-        loadData().catch(err => {
-          console.error("Error refreshing after save:", err);
-        });
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      
-      // Show error notification (non-blocking)
-      const errorNotif = document.createElement("div");
-      errorNotif.style.cssText = "position: fixed; top: 10px; right: 10px; background: #e53935; color: white; padding: 12px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);";
-      errorNotif.textContent = `Error saving: ${error.message || "Unknown error"}`;
-      document.body.appendChild(errorNotif);
-      setTimeout(() => errorNotif.remove(), 5000);
-    } finally {
-      // Re-enable save button
-      saveProfileBtn.disabled = false;
-      saveProfileBtn.textContent = "Save Changes";
-    }
+      // Save back to storage
+      chrome.storage.local.set({ profileDocuments: profiles }, () => {
+        if (chrome.runtime.lastError) {
+          alert("Error saving profile: " + chrome.runtime.lastError.message);
+          return;
+        }
+
+        // Close modal
+        modal.style.display = "none";
+        currentEditingIndex = -1;
+        
+        // Refresh table
+        loadData();
+      });
+    });
   }
 
   function escapeHtml(text) {
@@ -550,113 +542,33 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
-  async function loadData() {
-    // Show loading state immediately
-    tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #666;">Loading profiles...</div>`;
-    emptyState.style.display = "none";
-
-    try {
-      // Check if VettedStorage is available
-      if (typeof VettedStorage === 'undefined') {
-        console.error("VettedStorage is not available! Make sure storage.js is loaded.");
-        tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error: Storage system not loaded. Please reload the extension.</div>`;
+  function loadData() {
+    // Simple, synchronous loading - no async/await complexity
+    chrome.storage.local.get(['profileDocuments'], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading profiles:", chrome.runtime.lastError);
         renderTable([]);
         return;
       }
 
-      console.log("Starting to load profiles...");
+      const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+      console.log(`Loaded ${documents.length} profiles`);
+      renderTable(documents);
       
-      // Load profiles from chrome.storage.local (with timeout to prevent hanging)
-      let documents;
-      try {
-        documents = await Promise.race([
-          VettedStorage.getAllProfiles(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Load timeout after 5s")), 5000))
-        ]);
-        console.log("Raw documents from chrome.storage.local:", documents);
-      } catch (loadError) {
-        console.error("Error loading profiles:", loadError);
-        // Try direct chrome.storage access as fallback
-        documents = await new Promise((resolve) => {
-          chrome.storage.local.get(['profileDocuments'], (data) => {
-            if (chrome.runtime.lastError) {
-              console.error("Direct chrome.storage error:", chrome.runtime.lastError);
-              resolve([]);
-            } else {
-              resolve(Array.isArray(data.profileDocuments) ? data.profileDocuments : []);
-            }
-          });
-        });
-        console.log("Fallback: Loaded", documents.length, "profiles directly from chrome.storage");
-      }
-      
-      // Ensure documents is an array
-      const profilesArray = Array.isArray(documents) ? documents : [];
-      console.log(`Loaded ${profilesArray.length} profiles, rendering table...`);
-      
-      // Render table immediately (don't wait for queue info)
-      renderTable(profilesArray);
-      
-      // Load queue from chrome.storage (non-blocking, after rendering)
-      let queueCount = 0;
-      try {
-        const settings = await Promise.race([
-          VettedStorage.SettingsStorage.get(["vettedQueue"]),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Settings timeout")), 2000))
-        ]);
-        queueCount = Array.isArray(settings.vettedQueue) ? settings.vettedQueue.length : 0;
-        console.log(`${queueCount} profiles queued for Vetted`);
-      } catch (settingsError) {
-        console.warn("Could not load queue:", settingsError);
-        // Continue without queue info
-      }
-      
-      // Show queue status if there are queued profiles
-      if (queueCount > 0) {
-        const queueStatus = document.createElement("div");
-        queueStatus.id = "queue-status";
-        queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
-        queueStatus.innerHTML = `📤 ${queueCount} profile(s) queued for auto-send to Vetted. They will be sent automatically in batches.`;
-        const controls = document.getElementById("controls");
-        if (controls && !document.getElementById("queue-status")) {
-          controls.insertBefore(queueStatus, controls.firstChild);
+      // Load queue info separately (non-blocking)
+      chrome.storage.local.get(['vettedQueue'], (queueData) => {
+        if (!chrome.runtime.lastError && Array.isArray(queueData.vettedQueue) && queueData.vettedQueue.length > 0) {
+          const queueStatus = document.createElement("div");
+          queueStatus.id = "queue-status";
+          queueStatus.style.cssText = "background: #e3f2fd; padding: 8px; margin-bottom: 12px; border-radius: 4px; font-size: 12px;";
+          queueStatus.innerHTML = `📤 ${queueData.vettedQueue.length} profile(s) queued for auto-send to Vetted.`;
+          const controls = document.getElementById("controls");
+          const existing = document.getElementById("queue-status");
+          if (existing) existing.remove();
+          if (controls) controls.insertBefore(queueStatus, controls.firstChild);
         }
-      } else {
-        const queueStatus = document.getElementById("queue-status");
-        if (queueStatus) {
-          queueStatus.remove();
-        }
-      }
-      
-      // Check storage usage (chrome.storage.local) - non-blocking
-      VettedStorage.getStorageSize().then(storageInfo => {
-        console.log(`Chrome storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
-        
-        // Show storage info with warning if approaching limit
-        const storageInfoDiv = document.createElement("div");
-        storageInfoDiv.id = "storage-info";
-        const mbUsed = parseFloat(storageInfo.mb);
-        const isNearLimit = mbUsed > 8; // Warn if over 8MB (10MB is Chrome's limit)
-        storageInfoDiv.style.cssText = `background: ${isNearLimit ? '#fff3cd' : '#e8f5e9'}; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: ${isNearLimit ? '#856404' : '#2e7d32'};`;
-        storageInfoDiv.innerHTML = `💾 Chrome Storage: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored${isNearLimit ? ' (near 10MB limit)' : ''}`;
-        const controls = document.getElementById("controls");
-        const existingInfo = document.getElementById("storage-info");
-        if (existingInfo) {
-          existingInfo.remove();
-        }
-        if (controls) {
-          controls.insertBefore(storageInfoDiv, controls.firstChild);
-        }
-      }).catch(err => {
-        console.warn("Could not get storage size:", err);
-        // Don't block UI on storage size errors
       });
-    } catch (error) {
-      console.error("Error loading data:", error);
-      const errorMsg = error.message || "Unknown error";
-      tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error loading profiles: ${errorMsg}<br/><button onclick="location.reload()" style="margin-top: 10px; padding: 6px 12px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">Reload</button></div>`;
-      renderTable([]);
-    }
+    });
   }
 
   function loadSettings() {
@@ -1107,27 +1019,12 @@ document.addEventListener("DOMContentLoaded", () => {
       // Debounce rapid changes
       clearTimeout(window.refreshTimeout);
       window.refreshTimeout = setTimeout(() => {
-        loadData().catch(err => {
-          console.error("Error refreshing data:", err);
-        });
+        loadData();
       }, 300);
     }
   });
 
-  // Simple initialization - don't wait, just try to load
-  // If VettedStorage isn't ready, show empty state
-  setTimeout(() => {
-    if (typeof VettedStorage !== 'undefined') {
-      console.log("VettedStorage is available, loading data...");
-      loadData().catch(err => {
-        console.error("Error loading data:", err);
-        renderTable([]);
-      });
-      loadSettings();
-    } else {
-      console.warn("VettedStorage not available, showing empty state");
-      renderTable([]);
-      loadSettings(); // Settings can still load from chrome.storage
-    }
-  }, 100); // Small delay to let scripts load
+  // Simple initialization - load immediately
+  loadData();
+  loadSettings();
 });

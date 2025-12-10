@@ -5,22 +5,12 @@ const STORAGE_KEY = 'profileDocuments';
 
 // Get all profiles from chrome.storage.local
 async function getAllProfiles() {
-  return new Promise((resolve, reject) => {
-    try {
-      chrome.storage.local.get([STORAGE_KEY], (data) => {
-        if (chrome.runtime.lastError) {
-          console.error('Chrome storage getAllProfiles error:', chrome.runtime.lastError);
-          reject(chrome.runtime.lastError);
-          return;
-        }
-        const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
-        console.log(`Chrome storage getAllProfiles: Found ${profiles.length} profiles`);
-        resolve(profiles);
-      });
-    } catch (error) {
-      console.error('Error in getAllProfiles:', error);
-      reject(error);
-    }
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY], (data) => {
+      const profiles = Array.isArray(data[STORAGE_KEY]) ? data[STORAGE_KEY] : [];
+      console.log(`Chrome storage getAllProfiles: Found ${profiles.length} profiles`);
+      resolve(profiles);
+    });
   });
 }
 
