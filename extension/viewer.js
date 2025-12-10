@@ -649,25 +649,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       
-      // Check storage usage (IndexedDB)
-      const storageInfo = await VettedStorage.getStorageSize();
-      console.log(`IndexedDB storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
-      
-      // Show storage info (no warnings needed since IndexedDB has much larger limits)
-      const storageInfoDiv = document.createElement("div");
-      storageInfoDiv.id = "storage-info";
-      storageInfoDiv.style.cssText = "background: #e8f5e9; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: #2e7d32;";
-      storageInfoDiv.innerHTML = `💾 IndexedDB: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored`;
-      const controls = document.getElementById("controls");
-      const existingInfo = document.getElementById("storage-info");
-      if (existingInfo) {
-        existingInfo.remove();
-      }
-      if (controls) {
-        controls.insertBefore(storageInfoDiv, controls.firstChild);
-      }
+      // Check storage usage (IndexedDB) - don't block UI on this
+      VettedStorage.getStorageSize().then(storageInfo => {
+        console.log(`IndexedDB storage: ${storageInfo.mb}MB, ${storageInfo.count} profiles`);
+        
+        // Show storage info (no warnings needed since IndexedDB has much larger limits)
+        const storageInfoDiv = document.createElement("div");
+        storageInfoDiv.id = "storage-info";
+        storageInfoDiv.style.cssText = "background: #e8f5e9; padding: 6px; margin-bottom: 12px; border-radius: 4px; font-size: 11px; color: #2e7d32;";
+        storageInfoDiv.innerHTML = `💾 IndexedDB: ${storageInfo.mb}MB used, ${storageInfo.count} profiles stored`;
+        const controls = document.getElementById("controls");
+        const existingInfo = document.getElementById("storage-info");
+        if (existingInfo) {
+          existingInfo.remove();
+        }
+        if (controls) {
+          controls.insertBefore(storageInfoDiv, controls.firstChild);
+        }
+      }).catch(err => {
+        console.warn("Could not get storage size:", err);
+        // Don't show error to user - not critical
+      });
     } catch (error) {
       console.error("Error loading data:", error);
+      tableContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #e53935;">Error loading profiles: ${error.message}</div>`;
       renderTable([]);
     }
   }
@@ -1095,17 +1100,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Wait for VettedStorage to be available before loading data
+  // Wait for VettedStorage to be available before loading data (with timeout)
+  let initAttempts = 0;
+  const MAX_INIT_ATTEMPTS = 50; // 5 seconds max wait
+  
   const initLoad = () => {
+    initAttempts++;
+    
     if (typeof VettedStorage !== 'undefined') {
       console.log("VettedStorage is available, loading data...");
-      loadData();
+      loadData().catch(err => {
+        console.error("Error loading data:", err);
+        renderTable([]);
+      });
       loadSettings();
-    } else {
-      console.log("Waiting for VettedStorage to load...");
+    } else if (initAttempts < MAX_INIT_ATTEMPTS) {
+      console.log(`Waiting for VettedStorage to load... (attempt ${initAttempts}/${MAX_INIT_ATTEMPTS})`);
       setTimeout(initLoad, 100);
+    } else {
+      console.error("VettedStorage failed to load after", MAX_INIT_ATTEMPTS, "attempts");
+      alert("Error: Storage system failed to load. Please reload the extension.");
+      renderTable([]);
     }
   };
   
-  initLoad();
+  // Start initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLoad);
+  } else {
+    initLoad();
+  }
 });
