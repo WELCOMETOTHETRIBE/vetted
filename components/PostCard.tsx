@@ -72,6 +72,38 @@ export default function PostCard({
     return d.toLocaleDateString()
   }
 
+  // Render content with clickable mentions
+  const renderContent = (content: string) => {
+    const mentionRegex = /@(\w+)/g
+    const parts = []
+    let lastIndex = 0
+    let match
+
+    while ((match = mentionRegex.exec(content)) !== null) {
+      // Add text before mention
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index))
+      }
+      // Add mention link
+      const handle = match[1]
+      parts.push(
+        <Link
+          key={match.index}
+          href={`/profile/${handle}`}
+          className="text-blue-600 hover:text-blue-800 font-medium"
+        >
+          @{handle}
+        </Link>
+      )
+      lastIndex = match.index + match[0].length
+    }
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex))
+    }
+    return parts.length > 0 ? parts : content
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
       {/* Author Info */}
