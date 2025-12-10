@@ -59,8 +59,8 @@ export async function POST(req: Request) {
 
         // Create notifications for mentioned users
         const notifications = mentionedUsers
-          .filter(user => user.id !== session.user.id) // Don't notify yourself
-          .map(user => ({
+          .filter((user: { id: string }) => user.id !== session.user.id) // Don't notify yourself
+          .map((user: { id: string }) => ({
             userId: user.id,
             type: "MENTION" as const,
             title: "You were mentioned",
