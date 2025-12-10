@@ -136,7 +136,17 @@ export default function NetworkContent({
               : "text-gray-600"
           }`}
         >
-          Pending ({pendingReceived.length})
+          Received ({pendingReceived.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("sent")}
+          className={`px-4 py-2 font-medium ${
+            activeTab === "sent"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-600"
+          }`}
+        >
+          Sent ({pendingSent.length})
         </button>
       </div>
 
@@ -154,11 +164,11 @@ export default function NetworkContent({
             })
           )}
         </div>
-      ) : (
+      ) : activeTab === "pending" ? (
         <div className="space-y-4">
           {pendingReceived.length === 0 ? (
             <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600">No pending requests</p>
+              <p className="text-gray-600">No pending requests received</p>
             </div>
           ) : (
             pendingReceived.map((conn) => {
@@ -182,6 +192,29 @@ export default function NetworkContent({
                     >
                       Reject
                     </button>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pendingSent.length === 0 ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+              <p className="text-gray-600">No pending requests sent</p>
+            </div>
+          ) : (
+            pendingSent.map((conn) => {
+              const receiver = conn.receiver
+              return (
+                <div
+                  key={conn.id}
+                  className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                >
+                  {renderUser(receiver)}
+                  <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">
+                    Pending
                   </div>
                 </div>
               )
