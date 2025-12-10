@@ -20,7 +20,5 @@ cmds = [
 
 [start]
 cmd = "npm start"
-
-[providers]
 env = { PATH = "/opt/venv/bin:${PATH}" }
 
