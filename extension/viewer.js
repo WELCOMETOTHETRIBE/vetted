@@ -1,6 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("Profile Manager: DOMContentLoaded fired");
+  
   const tableContainer = document.getElementById("table-container");
   const emptyState = document.getElementById("empty");
+  
+  if (!tableContainer) {
+    console.error("ERROR: table-container element not found!");
+    return;
+  }
+  
+  if (!emptyState) {
+    console.error("ERROR: empty element not found!");
+    return;
+  }
+  
+  console.log("Profile Manager: Elements found, initializing...");
   const modal = document.getElementById("profile-modal");
   const modalBody = document.getElementById("modal-body");
   const closeBtn = document.querySelector(".close");
