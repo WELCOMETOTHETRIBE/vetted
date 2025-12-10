@@ -191,8 +191,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/ashby ./scripts/ashby
 COPY --from=builder --chown=nextjs:nodejs /app/requirements.txt ./requirements.txt
 
-# Copy Python virtual environment from builder
-COPY --from=builder --chown=nextjs:nodejs /opt/venv /opt/venv
+# Copy Python virtual environment from deps stage (where it was created)
+COPY --from=deps --chown=nextjs:nodejs /opt/venv /opt/venv
 
 # Set PATH to include venv
 ENV PATH="/opt/venv/bin:$PATH"
