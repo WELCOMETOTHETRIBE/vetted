@@ -20,8 +20,12 @@ export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
+    // Log the request for debugging
+    console.log("POST /api/candidates/upload - Request received")
+    
     const session = await auth()
     if (!session?.user) {
+      console.log("POST /api/candidates/upload - Unauthorized: No session")
       return NextResponse.json(
         { error: "Unauthorized: Please log in to Vetted as an admin user" },
         { status: 401, headers: corsHeaders }
@@ -42,6 +46,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
+    console.log("POST /api/candidates/upload - Body received:", Array.isArray(body) ? `${body.length} candidates` : "1 candidate")
     
     // Handle both single candidate and array of candidates
     const candidates = Array.isArray(body) ? body : [body]
