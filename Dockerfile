@@ -35,61 +35,28 @@ RUN cd node_modules/.prisma/client && \
     npx tsc --project tsconfig.json 2>&1 && \
     echo "TypeScript compilation completed" || (echo "TypeScript compilation failed, will use runtime fallback" && rm -f client.js)
 
-# Create default.js that tries compiled client.js first, then constructs from runtime
+# Create default.js that exports PrismaClient from generated client
+# The generated PrismaClient uses binary engine (default), not client engine
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
-const { getPrismaClient } = runtime;
-const fs = require('fs');
-const path = require('path');
 
 let PrismaClient;
 try {
-  const client = require('./client.js');
-  PrismaClient = client.PrismaClient;
-} catch (e) {
+  let clientModule;
   try {
-    const classFile = path.join(__dirname, 'internal/class.ts');
-    const classContent = fs.readFileSync(classFile, 'utf8');
-    const schemaMatch = classContent.match(/inlineSchema["\s]*:["\s]*"((?:[^"\\]|\\.)+)"/);
-    const inlineSchema = schemaMatch ? schemaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
-    const runtimeDataModelMatch = classContent.match(/config\.runtimeDataModel\s*=\s*JSON\.parse\("((?:[^"\\]|\\.)+)"\)/);
-    let runtimeDataModel = { models: {}, enums: {}, types: {} };
-    if (runtimeDataModelMatch) {
-      try {
-        const jsonStr = runtimeDataModelMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '');
-        runtimeDataModel = JSON.parse(jsonStr);
-      } catch (e) {}
-    }
-    const ClientClass = getPrismaClient({
-      previewFeatures: [],
-      clientVersion: "7.1.0",
-      engineVersion: "ab635e6b9d606fa5c8fb8b1a7f909c3c3c1c98ba",
-      activeProvider: "postgresql",
-      inlineSchema: inlineSchema,
-      runtimeDataModel: runtimeDataModel,
-      compilerWasm: {
-        getRuntime: async () => await import("@prisma/client/runtime/query_compiler_bg.postgresql.mjs"),
-        getQueryCompilerWasmModule: async () => {
-          const { wasm } = await import("@prisma/client/runtime/query_compiler_bg.postgresql.wasm-base64.mjs");
-          const { Buffer } = await import('node:buffer');
-          const wasmArray = Buffer.from(wasm, 'base64');
-          return new WebAssembly.Module(wasmArray);
-        }
-      }
-    });
-    PrismaClient = class extends ClientClass {
-      constructor(options) {
-        super(options || {});
-      }
-    };
-  } catch (e2) {
-    PrismaClient = class PrismaClient {
-      constructor() {
-        throw new Error('PrismaClient initialization failed');
-      }
-    };
+    clientModule = require('./client.js');
+  } catch (e) {
+    clientModule = require('./client.ts');
   }
+  PrismaClient = clientModule.PrismaClient;
+} catch (e) {
+  PrismaClient = class PrismaClient {
+    constructor(options) {
+      throw new Error('PrismaClient requires the generated client files. Please run: npx prisma generate');
+    }
+  };
 }
+
 module.exports = {
   PrismaClient,
   ...runtime
