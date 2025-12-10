@@ -76,7 +76,13 @@ export default function AshbyScraperButton() {
         console.error("Scraper error details:", data)
       }
     } catch (error: any) {
-      setMessage(`Error: ${error.message || "Failed to scrape jobs"}`)
+      if (error.name === 'AbortError') {
+        setMessage("Request timed out. The scraper may still be running in the background. Please wait a few minutes and try again, or refresh the page to check if the scrape completed.")
+      } else if (error.message?.includes('fetch')) {
+        setMessage("Connection error. The scraper may still be running. Please wait a few minutes and try again.")
+      } else {
+        setMessage(`Error: ${error.message || "Failed to scrape jobs"}`)
+      }
       } finally {
       setLoading(false)
     }
