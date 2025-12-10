@@ -61,18 +61,23 @@ RUN cd node_modules/.prisma/client && \
     fi
 
 # Create default.js that exports PrismaClient from compiled client.js
-# Prisma 7 uses client engine which requires adapter (provided in lib/prisma.ts)
+# Ensure client.js is loaded as CommonJS
 RUN cat > node_modules/.prisma/client/default.js << 'EOFJS'
 const runtime = require('@prisma/client/runtime/client');
 
 let PrismaClient;
 
 try {
+  const clientPath = require.resolve('./client.js');
+  delete require.cache[clientPath];
+  
+  // Load client.js as CommonJS
   const clientModule = require('./client.js');
-  if (clientModule && clientModule.PrismaClient) {
+  
+  if (clientModule && typeof clientModule.PrismaClient === 'function') {
     PrismaClient = clientModule.PrismaClient;
   } else {
-    throw new Error('client.js does not export PrismaClient');
+    throw new Error('PrismaClient not found in client.js');
   }
 } catch (e) {
   PrismaClient = class PrismaClient {
