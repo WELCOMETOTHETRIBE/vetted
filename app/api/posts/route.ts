@@ -78,9 +78,9 @@ export async function POST(req: Request) {
 
     // Also handle explicit mentions array if provided
     if (data.mentions && Array.isArray(data.mentions) && data.mentions.length > 0) {
-      const mentionedUserIds = data.mentions.filter(id => id !== session.user.id)
+      const mentionedUserIds = data.mentions.filter((id: string) => id !== session.user.id)
       if (mentionedUserIds.length > 0) {
-        const notifications = mentionedUserIds.map(userId => ({
+        const notifications = mentionedUserIds.map((userId: string) => ({
           userId,
           type: "MENTION" as const,
           title: "You were mentioned",
