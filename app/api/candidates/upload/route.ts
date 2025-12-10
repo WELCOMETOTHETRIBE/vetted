@@ -113,16 +113,20 @@ export async function POST(req: Request) {
 
         if (existing) {
           // Update existing candidate
+          console.log("Updating existing candidate:", linkedinUrl)
           const updated = await prisma.candidate.update({
             where: { linkedinUrl },
             data: candidatePayload,
           })
+          console.log("Updated candidate:", updated.id, updated.fullName)
           created.push(updated)
         } else {
           // Create new candidate
+          console.log("Creating new candidate:", linkedinUrl, candidatePayload.fullName)
           const newCandidate = await prisma.candidate.create({
             data: candidatePayload,
           })
+          console.log("Created candidate:", newCandidate.id, newCandidate.fullName, newCandidate.createdAt)
           created.push(newCandidate)
         }
       } catch (error: any) {
@@ -132,6 +136,13 @@ export async function POST(req: Request) {
         })
       }
     }
+
+    console.log("Upload complete:", {
+      created: created.length,
+      errors: errors.length,
+      candidateIds: created.map(c => c.id),
+      candidateNames: created.map(c => c.fullName)
+    })
 
     return NextResponse.json(
       {

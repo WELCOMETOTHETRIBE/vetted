@@ -47,6 +47,13 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
     prisma.candidate.count({ where }),
   ])
 
+  console.log("Candidates page - Found candidates:", {
+    total,
+    count: candidates.length,
+    candidateIds: candidates.map(c => c.id),
+    candidateNames: candidates.map(c => c.fullName)
+  })
+
   return { candidates, total, page, limit }
 }
 
