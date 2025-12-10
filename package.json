@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "node server.js",
+    "migrate:deploy": "prisma db push && node server.js",
     "lint": "eslint",
     "db:generate": "prisma generate && node scripts/create-prisma-default.js",
     "db:push": "prisma db push",
