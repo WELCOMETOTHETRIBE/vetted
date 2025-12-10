@@ -126,7 +126,7 @@ export default function PostCard({
           </div>
         </Link>
         <div className="flex-1">
-          <Link href={`/profile/${post.author.id}`}>
+          <Link href={`/profile/${post.author.handle || post.author.id}`}>
             <h3 className="font-semibold text-gray-900 hover:text-blue-600">
               {post.author.name || "Anonymous"}
             </h3>
@@ -139,7 +139,7 @@ export default function PostCard({
 
       {/* Post Content */}
       <div className="mb-4">
-        <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+        <p className="text-gray-900 whitespace-pre-wrap">{renderContent(post.content)}</p>
       </div>
 
       {/* Post Image */}
