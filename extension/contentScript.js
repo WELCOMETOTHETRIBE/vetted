@@ -211,13 +211,31 @@
               });
             } else {
               const errorMsg = response.error || "Failed to save profile JSON";
-              console.error("Save failed:", errorMsg, response);
-              showToast(`Error: ${errorMsg}`, true);
+              const storageInfo = response.storageInfo;
               
-              // If storage quota error, provide helpful message
-              if (errorMsg.includes("quota") || errorMsg.includes("Storage") || errorMsg.includes("QUOTA_BYTES")) {
-                showToast("Storage full! Open extension popup and click 'Clear All' or delete individual profiles.", true);
+              // Log error with context
+              if (storageInfo) {
+                console.warn("Save failed - Storage info:", {
+                  error: errorMsg,
+                  used: `${(storageInfo.used / (1024 * 1024)).toFixed(2)}MB`,
+                  limit: `${(storageInfo.limit / (1024 * 1024)).toFixed(0)}MB`,
+                  percentage: `${storageInfo.percentage}%`
+                });
+              } else {
+                console.error("Save failed:", errorMsg, response);
               }
+              
+              // Show user-friendly error message
+              let userMessage = errorMsg;
+              if (errorMsg.includes("quota") || errorMsg.includes("Storage") || errorMsg.includes("QUOTA_BYTES") || errorMsg.includes("Storage full")) {
+                if (storageInfo) {
+                  userMessage = `Storage full (${storageInfo.percentage}% used). Open extension popup and click 'Clear All' or delete individual profiles.`;
+                } else {
+                  userMessage = "Storage full! Open extension popup and click 'Clear All' or delete individual profiles.";
+                }
+              }
+              
+              showToast(userMessage, true);
             }
           }
         );

@@ -99,28 +99,71 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const currentListSize = estimateStorageSize(currentList);
           const estimatedNewSize = currentListSize + newProfileSize;
           
-          // Chrome storage limit is ~10MB, warn if approaching limit
+          // Chrome storage limit is ~10MB
           const STORAGE_LIMIT = 10 * 1024 * 1024; // 10MB
-          if (estimatedNewSize > STORAGE_LIMIT * 0.9) {
-            console.warn("Storage approaching limit:", estimatedNewSize, "bytes");
-          }
-
-          currentList.push(message.payload);
-
-          // Try to save with error handling
-          chrome.storage.local.set({ profileDocuments: currentList }, () => {
-            if (chrome.runtime.lastError) {
-              console.error("Storage error:", chrome.runtime.lastError);
-              const errorMsg = chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.";
+          const STORAGE_WARNING_THRESHOLD = STORAGE_LIMIT * 0.85; // 85% threshold
+          
+          // Check storage before attempting to save
+          chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
+            const currentUsage = bytesInUse || 0;
+            const wouldExceed = (currentUsage + newProfileSize) > STORAGE_LIMIT;
+            
+            if (wouldExceed) {
+              const mbUsed = (currentUsage / (1024 * 1024)).toFixed(2);
+              const mbLimit = (STORAGE_LIMIT / (1024 * 1024)).toFixed(0);
+              const errorMsg = `Storage full (${mbUsed}MB / ${mbLimit}MB). Please clear some profiles using the extension popup.`;
+              console.warn("Storage would exceed limit:", {
+                currentUsage: currentUsage,
+                newProfileSize: newProfileSize,
+                wouldExceed: wouldExceed
+              });
               sendResponse({ 
                 success: false, 
                 error: errorMsg,
-                count: currentList.length - 1 // Don't count the failed one
+                count: currentList.length,
+                storageInfo: {
+                  used: currentUsage,
+                  limit: STORAGE_LIMIT,
+                  percentage: ((currentUsage / STORAGE_LIMIT) * 100).toFixed(1)
+                }
               });
               return;
             }
             
-            sendResponse({ success: true, count: currentList.length });
+            // Warn if approaching limit
+            if (estimatedNewSize > STORAGE_WARNING_THRESHOLD) {
+              console.warn("Storage approaching limit:", {
+                estimatedSize: estimatedNewSize,
+                percentage: ((estimatedNewSize / STORAGE_LIMIT) * 100).toFixed(1) + "%"
+              });
+            }
+
+            currentList.push(message.payload);
+
+            // Try to save with error handling
+            chrome.storage.local.set({ profileDocuments: currentList }, () => {
+              if (chrome.runtime.lastError) {
+                const errorMsg = chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.";
+                console.error("Storage error:", {
+                  error: chrome.runtime.lastError,
+                  currentListSize: currentList.length,
+                  estimatedSize: estimatedNewSize
+                });
+                sendResponse({ 
+                  success: false, 
+                  error: errorMsg,
+                  count: currentList.length - 1, // Don't count the failed one
+                  storageInfo: {
+                    used: currentUsage,
+                    limit: STORAGE_LIMIT,
+                    percentage: ((currentUsage / STORAGE_LIMIT) * 100).toFixed(1)
+                  }
+                });
+                return;
+              }
+              
+              sendResponse({ success: true, count: currentList.length });
+            });
           });
         } catch (error) {
           console.error("Error processing profile save:", error);
