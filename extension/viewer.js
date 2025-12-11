@@ -1362,24 +1362,64 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("[DEBUG-VIEWER] On load - Queue length:", queue.length);
       console.log("[DEBUG-VIEWER] On load - Auto-send enabled:", autoSendEnabled);
       
-      // If there are queued profiles and auto-send is enabled, trigger send immediately
+      // If there are queued profiles and auto-send is enabled, send them directly
       if (queue.length > 0 && autoSendEnabled) {
-        console.log("[DEBUG-VIEWER] Found queued profiles, triggering batch send immediately...");
-        chrome.runtime.sendMessage({
-          type: "SEND_BATCH_TO_VETTED"
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error("[DEBUG-VIEWER] Error triggering batch send:", chrome.runtime.lastError);
-            console.error("[DEBUG-VIEWER] Error details:", chrome.runtime.lastError.message);
-          } else {
-            console.log("[DEBUG-VIEWER] Batch send triggered, response:", response);
-            if (response && response.success) {
-              console.log("[DEBUG-VIEWER] Successfully sent", response.sent, "profiles");
-            } else if (response && response.error) {
-              console.error("[DEBUG-VIEWER] Batch send failed:", response.error);
+        console.log("[DEBUG-VIEWER] Found queued profiles, sending directly to API...");
+        
+        // Check if extension context is valid
+        let extensionContextValid = true;
+        try {
+          extensionContextValid = chrome.runtime && chrome.runtime.id !== undefined;
+        } catch (e) {
+          extensionContextValid = false;
+        }
+        
+        if (!extensionContextValid || typeof ProfileProcessor === 'undefined') {
+          console.warn("[DEBUG-VIEWER] Extension context invalid or ProfileProcessor unavailable, cannot send");
+          return;
+        }
+        
+        // Process and send queued profiles directly (bypass background script)
+        try {
+          console.log("[DEBUG-VIEWER] Processing", queue.length, "queued profiles...");
+          const processed = queue.map((profileDoc, index) => {
+            try {
+              return ProfileProcessor.processProfileDocument(profileDoc);
+            } catch (e) {
+              console.error(`[DEBUG-VIEWER] Error processing profile ${index + 1}:`, e);
+              return null;
             }
+          }).filter(p => p !== null);
+          
+          if (processed.length === 0) {
+            console.error("[DEBUG-VIEWER] No valid profiles after processing");
+            // Clear invalid queue
+            chrome.storage.local.set({ vettedQueue: [] });
+            return;
           }
-        });
+          
+          console.log("[DEBUG-VIEWER] Sending", processed.length, "processed profiles directly to API...");
+          
+          // Get API key
+          chrome.storage.local.get(["vettedApiKey"], async (data) => {
+            try {
+              const result = await sendDirectlyToVetted(processed, data.vettedApiKey);
+              if (result.success) {
+                console.log("[DEBUG-VIEWER] Successfully sent", result.sent, "profiles");
+                // Clear queue after successful send
+                chrome.storage.local.set({ vettedQueue: [] }, () => {
+                  console.log("[DEBUG-VIEWER] Queue cleared after successful send");
+                });
+              } else {
+                console.error("[DEBUG-VIEWER] Send failed:", result.error);
+              }
+            } catch (error) {
+              console.error("[DEBUG-VIEWER] Error sending:", error);
+            }
+          });
+        } catch (error) {
+          console.error("[DEBUG-VIEWER] Error processing/sending queued profiles:", error);
+        }
       } else if (queue.length > 0) {
         console.log("[DEBUG-VIEWER] Queue has profiles but auto-send is disabled");
       } else {
