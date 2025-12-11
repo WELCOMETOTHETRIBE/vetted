@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     })
 
     const connectedUserIds = new Set<string>([session.user.id])
-    connections.forEach((conn) => {
+    connections.forEach((conn: { requesterId: string; receiverId: string }) => {
       connectedUserIds.add(conn.requesterId)
       connectedUserIds.add(conn.receiverId)
     })
