@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar"
 import AdminContent from "@/components/AdminContent"
 import PopulateJobsButton from "@/components/PopulateJobsButton"
 import AshbyScraperButton from "@/components/AshbyScraperButton"
+import MigrateButton from "@/components/MigrateButton"
 import Link from "next/link"
 
 async function getAdminData() {
@@ -77,6 +78,7 @@ export default async function AdminPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
           <div className="flex gap-3 flex-wrap">
+            <MigrateButton />
             <PopulateJobsButton />
             <AshbyScraperButton />
             <Link
