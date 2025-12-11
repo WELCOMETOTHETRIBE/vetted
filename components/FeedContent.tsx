@@ -31,6 +31,8 @@ interface FeedContentProps {
 
 export default function FeedContent({ initialPosts, userId }: FeedContentProps) {
   const [posts, setPosts] = useState(initialPosts)
+  const [usePersonalized, setUsePersonalized] = useState(false)
+  const [loadingPersonalized, setLoadingPersonalized] = useState(false)
 
   const handlePostSubmit = async (content: string, imageUrl?: string) => {
     try {
@@ -110,9 +112,80 @@ export default function FeedContent({ initialPosts, userId }: FeedContentProps) 
     }
   }
 
+  const loadPersonalizedFeed = async () => {
+    setLoadingPersonalized(true)
+    try {
+      const response = await fetch("/api/posts/recommend")
+      if (response.ok) {
+        const data = await response.json()
+        setPosts(data.posts || [])
+        setUsePersonalized(true)
+      }
+    } catch (error) {
+      console.error("Error loading personalized feed:", error)
+    } finally {
+      setLoadingPersonalized(false)
+    }
+  }
+
+  const loadChronologicalFeed = async () => {
+    setLoadingPersonalized(true)
+    try {
+      const response = await fetch("/api/posts")
+      if (response.ok) {
+        const updatedPosts = await response.json()
+        setPosts(updatedPosts)
+        setUsePersonalized(false)
+      }
+    } catch (error) {
+      console.error("Error loading feed:", error)
+    } finally {
+      setLoadingPersonalized(false)
+    }
+  }
+
   return (
     <>
       <PostComposer onSubmit={handlePostSubmit} />
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadChronologicalFeed}
+            disabled={loadingPersonalized}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              !usePersonalized
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            } disabled:opacity-50`}
+          >
+            Latest
+          </button>
+          <button
+            onClick={loadPersonalizedFeed}
+            disabled={loadingPersonalized}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              usePersonalized
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            } disabled:opacity-50`}
+          >
+            {loadingPersonalized ? (
+              "Loading..."
+            ) : (
+              <>
+                <span>🤖</span>
+                <span>For You</span>
+              </>
+            )}
+          </button>
+        </div>
+        {usePersonalized && (
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <span>🤖</span>
+            <span>AI-powered recommendations</span>
+          </span>
+        )}
+      </div>
       <div>
         {posts.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">

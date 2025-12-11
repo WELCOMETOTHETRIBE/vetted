@@ -30,6 +30,12 @@ const PostComposer = ({ onSubmit, placeholder = "What's on your mind?" }: PostCo
           rows={3}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
+        <div className="mt-1 flex items-center justify-between">
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <span>🛡️</span>
+            <span>AI spam detection active</span>
+          </span>
+        </div>
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <label className="cursor-pointer text-gray-600 hover:text-blue-600">

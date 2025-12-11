@@ -18,7 +18,8 @@ export default function SearchBar() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+      // Enable AI-enhanced search by default
+      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&ai=true`)
       if (response.ok) {
         const data = await response.json()
         setResults(data)
@@ -46,10 +47,11 @@ export default function SearchBar() {
           onChange={handleInputChange}
           onFocus={() => query && setShowResults(true)}
           onBlur={() => setTimeout(() => setShowResults(false), 200)}
-          placeholder="Search people, jobs, companies..."
+          placeholder="Search people, jobs, companies... (AI-enhanced)"
           className="w-full px-4 py-2 pl-10 pr-4 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+        <span className="absolute right-3 top-2.5 text-xs text-blue-600" title="AI-enhanced search">🤖</span>
       </div>
 
       {showResults && results && (
