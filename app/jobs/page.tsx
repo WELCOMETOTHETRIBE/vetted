@@ -62,40 +62,6 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
     take: 50,
   })
 
-  // Extract URLs from descriptions for each job
-  const jobsWithUrls = jobs.map((job: {
-    id: string
-    title: string
-    description?: string | null
-    location?: string | null
-    isRemote: boolean
-    isHybrid: boolean
-    employmentType: string
-    salaryMin?: number | null
-    salaryMax?: number | null
-    salaryCurrency?: string | null
-    createdAt: Date
-    views: number
-    company: {
-      id: string
-      name: string
-      slug: string
-      logo?: string | null
-    }
-    applications?: Array<{ id: string }>
-  }) => {
-    const extractUrl = (desc: string | null): string | null => {
-      if (!desc) return null
-      const urlMatch = desc.match(/Apply at:\s*(https?:\/\/[^\s\n]+)/i) || 
-                       desc.match(/(https?:\/\/jobs\.ashbyhq\.com[^\s\n]+)/i)
-      return urlMatch ? urlMatch[1] : null
-    }
-    return {
-      ...job,
-      originalUrl: extractUrl(job.description ?? null),
-    }
-  })
-
   return jobs
 }
 
@@ -111,6 +77,19 @@ export default async function JobsPage({
   }
 
   const jobs = await getJobs(params)
+
+  // Extract URLs from descriptions for each job
+  const extractUrl = (desc: string | null | undefined): string | null => {
+    if (!desc) return null
+    const urlMatch = desc.match(/Apply at:\s*(https?:\/\/[^\s\n]+)/i) || 
+                     desc.match(/(https?:\/\/jobs\.ashbyhq\.com[^\s\n]+)/i)
+    return urlMatch ? urlMatch[1] : null
+  }
+
+  const jobsWithUrls = jobs.map((job) => ({
+    ...job,
+    originalUrl: extractUrl(job.description),
+  }))
 
   return (
     <div className="min-h-screen bg-gray-50">
