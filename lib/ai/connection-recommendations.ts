@@ -301,7 +301,7 @@ async function getBasicRecommendations(userId: string, limit: number): Promise<C
           commonSkills: commonSkills.map((us: { skill: { name: string } }) => us.skill.name),
         }
       })
-      .sort((a, b) => b.commonSkillsCount - a.commonSkillsCount)
+      .sort((a: any, b: any) => b.commonSkillsCount - a.commonSkillsCount)
       .slice(0, limit)
 
   return ranked.map((r: any) => ({
