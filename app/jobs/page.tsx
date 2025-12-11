@@ -62,6 +62,20 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
     take: 50,
   })
 
+  // Extract URLs from descriptions for each job
+  const jobsWithUrls = jobs.map((job) => {
+    const extractUrl = (desc: string | null): string | null => {
+      if (!desc) return null
+      const urlMatch = desc.match(/Apply at:\s*(https?:\/\/[^\s\n]+)/i) || 
+                       desc.match(/(https?:\/\/jobs\.ashbyhq\.com[^\s\n]+)/i)
+      return urlMatch ? urlMatch[1] : null
+    }
+    return {
+      ...job,
+      originalUrl: extractUrl(job.description),
+    }
+  })
+
   return jobs
 }
 
@@ -115,7 +129,7 @@ export default async function JobsPage({
                   </div>
                 </div>
               ) : (
-                jobs.map((job: any) => <JobCard key={job.id} job={job} />)
+                jobsWithUrls.map((job: any) => <JobCard key={job.id} job={job} />)
               )}
             </div>
           </main>

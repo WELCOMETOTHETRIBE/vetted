@@ -23,6 +23,7 @@ interface JobCardProps {
     createdAt: Date
     views: number
     applications?: Array<{ id: string }>
+    originalUrl?: string | null
   }
 }
 
@@ -102,13 +103,29 @@ const JobCard = ({ job }: JobCardProps) => {
               </span>
             )}
           </div>
-          <span className="text-xs text-gray-400">
-            Posted {new Date(job.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: new Date(job.createdAt).getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
-            })}
-          </span>
+          <div className="flex items-center gap-3">
+            {job.originalUrl && (
+              <a
+                href={job.originalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                title="View original job posting"
+              >
+                <span>🔗</span>
+                <span>Original Post</span>
+                <span className="text-[10px]">↗</span>
+              </a>
+            )}
+            <span className="text-xs text-gray-400">
+              Posted {new Date(job.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: new Date(job.createdAt).getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+              })}
+            </span>
+          </div>
         </div>
       </div>
     </Link>
