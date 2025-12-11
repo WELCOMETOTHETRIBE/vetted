@@ -47,40 +47,44 @@ export default function SearchBar() {
           onChange={handleInputChange}
           onFocus={() => query && setShowResults(true)}
           onBlur={() => setTimeout(() => setShowResults(false), 200)}
-          placeholder="Search people, jobs, companies... (AI-enhanced)"
-          className="w-full px-4 py-2 pl-10 pr-4 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Search people, jobs, companies..."
+          className="w-full px-4 py-2.5 pl-11 pr-12 text-sm border border-neutral-300 rounded-xl bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:bg-white transition-all placeholder:text-neutral-400"
+          aria-label="Search"
         />
-        <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-        <span className="absolute right-3 top-2.5 text-xs text-blue-600" title="AI-enhanced search">🤖</span>
+        <span className="absolute left-3.5 top-3 text-neutral-400 text-base" aria-hidden="true">🔍</span>
+        <span className="absolute right-3 top-3 text-xs text-primary-600 font-medium" title="AI-enhanced search" aria-label="AI-enhanced">🤖</span>
       </div>
 
       {showResults && results && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto animate-fade-in">
           {loading ? (
-            <div className="p-4 text-center text-gray-600">Searching...</div>
+            <div className="p-6 text-center text-neutral-600">
+              <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-primary-500 border-t-transparent"></div>
+              <p className="mt-2 text-sm">Searching...</p>
+            </div>
           ) : (
             <>
               {results.people && results.people.length > 0 && (
                 <div className="p-2">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-2 py-1">
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 py-2">
                     People
                   </h3>
                   {results.people.map((person: any) => (
                     <a
                       key={person.id}
                       href={`/profile/${person.handle || person.id}`}
-                      className="block px-2 py-2 hover:bg-gray-100 rounded"
+                      className="block px-3 py-2.5 hover:bg-neutral-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
                     >
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm flex-shrink-0">
                           {person.name?.charAt(0).toUpperCase() || "U"}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-neutral-900 truncate">
                             {person.name || "Anonymous"}
                           </p>
                           {person.profile?.headline && (
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-neutral-600 truncate">
                               {person.profile.headline}
                             </p>
                           )}
@@ -92,52 +96,52 @@ export default function SearchBar() {
               )}
 
               {results.jobs && results.jobs.length > 0 && (
-                <div className="p-2 border-t border-gray-200">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-2 py-1">
+                <div className="p-2 border-t border-neutral-200">
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 py-2">
                     Jobs
                   </h3>
                   {results.jobs.map((job: any) => (
                     <a
                       key={job.id}
                       href={`/jobs/${job.id}`}
-                      className="block px-2 py-2 hover:bg-gray-100 rounded"
+                      className="block px-3 py-2.5 hover:bg-neutral-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
                     >
-                      <p className="text-sm font-medium text-gray-900">{job.title}</p>
-                      <p className="text-xs text-gray-600">{job.company.name}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{job.title}</p>
+                      <p className="text-xs text-neutral-600 mt-0.5">{job.company.name}</p>
                     </a>
                   ))}
                 </div>
               )}
 
               {results.companies && results.companies.length > 0 && (
-                <div className="p-2 border-t border-gray-200">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-2 py-1">
+                <div className="p-2 border-t border-neutral-200">
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 py-2">
                     Companies
                   </h3>
                   {results.companies.map((company: any) => (
                     <a
                       key={company.id}
                       href={`/company/${company.slug}`}
-                      className="block px-2 py-2 hover:bg-gray-100 rounded"
+                      className="block px-3 py-2.5 hover:bg-neutral-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
                     >
-                      <p className="text-sm font-medium text-gray-900">{company.name}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{company.name}</p>
                     </a>
                   ))}
                 </div>
               )}
 
               {results.groups && results.groups.length > 0 && (
-                <div className="p-2 border-t border-gray-200">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-2 py-1">
+                <div className="p-2 border-t border-neutral-200">
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 py-2">
                     Groups
                   </h3>
                   {results.groups.map((group: any) => (
                     <a
                       key={group.id}
                       href={`/groups/${group.id}`}
-                      className="block px-2 py-2 hover:bg-gray-100 rounded"
+                      className="block px-3 py-2.5 hover:bg-neutral-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
                     >
-                      <p className="text-sm font-medium text-gray-900">{group.name}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{group.name}</p>
                     </a>
                   ))}
                 </div>
@@ -147,8 +151,8 @@ export default function SearchBar() {
                 (!results.jobs || results.jobs.length === 0) &&
                 (!results.companies || results.companies.length === 0) &&
                 (!results.groups || results.groups.length === 0) && (
-                  <div className="p-4 text-center text-gray-600">
-                    No results found
+                  <div className="p-6 text-center text-neutral-500">
+                    <p className="text-sm">No results found</p>
                   </div>
                 )}
             </>

@@ -74,25 +74,25 @@ const JobCard = ({ job }: JobCardProps) => {
 
   return (
     <Link href={`/jobs/${job.id}`}>
-      <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer group">
+      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-6 hover:shadow-card-hover hover:border-primary-300 transition-all duration-200 cursor-pointer group">
         <div className="flex items-start gap-4 mb-4">
           {job.company.logo ? (
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 border border-blue-200">
+            <div className="w-14 h-14 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 border border-primary-200 shadow-sm">
               <span className="text-2xl">🏢</span>
             </div>
           ) : (
-            <div className="w-14 h-14 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 border border-gray-200">
+            <div className="w-14 h-14 bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl flex items-center justify-center flex-shrink-0 border border-neutral-200 shadow-sm">
               <span className="text-2xl">🏢</span>
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+            <h3 className="text-xl font-bold text-neutral-900 mb-1 group-hover:text-primary-600 transition-colors">
               {job.title}
             </h3>
             <Link
               href={`/company/${job.company.slug}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm inline-block"
+              className="text-primary-600 hover:text-primary-700 font-semibold text-sm inline-block transition-colors"
             >
               {job.company.name}
             </Link>
@@ -101,24 +101,24 @@ const JobCard = ({ job }: JobCardProps) => {
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {matchScore !== null && !loadingMatch && (
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-              matchColor === "green" ? "bg-green-50 text-green-700 border-green-200" :
-              matchColor === "blue" ? "bg-blue-50 text-blue-700 border-blue-200" :
-              matchColor === "yellow" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-              "bg-gray-50 text-gray-700 border-gray-200"
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm ${
+              matchColor === "green" ? "bg-success-50 text-success-700 border-success-200" :
+              matchColor === "blue" ? "bg-primary-50 text-primary-700 border-primary-200" :
+              matchColor === "yellow" ? "bg-warning-50 text-warning-700 border-warning-200" :
+              "bg-neutral-50 text-neutral-700 border-neutral-200"
             }`}>
               <span>🎯</span>
               <span className="ml-1">{matchScore}% Match</span>
             </span>
           )}
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200 shadow-sm">
             {locationText}
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-neutral-50 text-neutral-700 border border-neutral-200 shadow-sm">
             {job.employmentType.replace("_", " ")}
           </span>
           {salaryText && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-success-50 text-success-700 border border-success-200 shadow-sm">
               💰 {salaryText}
             </span>
           )}
@@ -126,7 +126,7 @@ const JobCard = ({ job }: JobCardProps) => {
 
         {job.description && (
           <div className="mb-4">
-            <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+            <p className="text-sm text-neutral-600 line-clamp-2 leading-relaxed">
               {job.description.length > 200 
                 ? `${job.description.substring(0, 200)}...` 
                 : job.description}
@@ -134,8 +134,8 @@ const JobCard = ({ job }: JobCardProps) => {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+        <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
+          <div className="flex items-center gap-4 text-xs text-neutral-500">
             <span className="flex items-center gap-1">
               <span>👁️</span>
               <span>{job.views || 0} views</span>
@@ -154,7 +154,7 @@ const JobCard = ({ job }: JobCardProps) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-primary-200"
                 title="View original job posting"
               >
                 <span>🔗</span>
@@ -162,7 +162,7 @@ const JobCard = ({ job }: JobCardProps) => {
                 <span className="text-[10px]">↗</span>
               </a>
             )}
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-neutral-400">
               Posted {new Date(job.createdAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",

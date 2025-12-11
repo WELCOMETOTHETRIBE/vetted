@@ -26,16 +26,16 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
   const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white border-b border-neutral-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo - More Prominent */}
           <div className="flex items-center">
-            <Link href="/feed" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+            <Link href="/feed" className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg p-1">
               <img
                 src="/vetted-logo.png"
                 alt="Vetted"
-                className="h-12 w-auto"
+                className="h-10 w-auto"
                 onError={(e) => {
                   // Fallback to text if image fails to load
                   const target = e.target as HTMLImageElement
@@ -43,18 +43,18 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                   const parent = target.parentElement
                   if (parent && !parent.querySelector(".fallback-logo")) {
                     const fallback = document.createElement("span")
-                    fallback.className = "fallback-logo text-3xl font-bold text-blue-600"
+                    fallback.className = "fallback-logo text-2xl font-bold text-primary-600"
                     fallback.textContent = "Vetted"
                     parent.appendChild(fallback)
                   }
                 }}
               />
-              <span className="hidden md:block text-xl font-bold text-gray-900">Vetted</span>
+              <span className="hidden md:block text-xl font-bold text-neutral-900">Vetted</span>
             </Link>
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-xl mx-8">
+          <div className="flex-1 max-w-xl mx-4 lg:mx-8">
             <SearchBar />
           </div>
 
@@ -64,55 +64,62 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   pathname === item.href
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                    ? "text-primary-700 bg-primary-50 shadow-sm"
+                    : "text-neutral-700 hover:bg-neutral-100 hover:text-primary-600"
+                } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
+                aria-current={pathname === item.href ? "page" : undefined}
               >
                 <span className="hidden sm:inline">{item.label}</span>
-                <span className="sm:hidden">{item.icon}</span>
+                <span className="sm:hidden text-base" aria-label={item.label}>{item.icon}</span>
               </Link>
             ))}
             {/* Admin tab - separate from main nav items */}
             {isAdmin && (
               <Link
                 href="/admin"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   pathname === "/admin"
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                    ? "text-primary-700 bg-primary-50 shadow-sm"
+                    : "text-neutral-700 hover:bg-neutral-100 hover:text-primary-600"
+                } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
+                aria-current={pathname === "/admin" ? "page" : undefined}
               >
                 <span className="hidden sm:inline">Admin</span>
-                <span className="sm:hidden">⚙️</span>
+                <span className="sm:hidden text-base" aria-label="Admin">⚙️</span>
               </Link>
             )}
 
             {/* Profile Dropdown */}
-            <div className="ml-4 relative group">
-              <button className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-gray-100">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm">
+            <div className="ml-2 relative group">
+              <button 
+                className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+                aria-label="Profile menu"
+                aria-expanded="false"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
                   Me
                 </div>
-                <span className="hidden md:inline text-sm text-gray-700">▼</span>
+                <span className="hidden md:inline text-sm text-neutral-600">▼</span>
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <Link
                   href="/profile/edit"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
                 >
                   View Profile
                 </Link>
                 <Link
                   href="/profile/edit"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
                 >
                   Settings
                 </Link>
+                <div className="border-t border-neutral-200 my-1"></div>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors"
                 >
                   Sign Out
                 </button>
