@@ -1,4 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Check if profileProcessor loaded (must be after DOMContentLoaded since scripts load in order)
+  if (typeof ProfileProcessor === 'undefined') {
+    console.error("[DEBUG-VIEWER] ERROR: ProfileProcessor not loaded!");
+    console.error("[DEBUG-VIEWER] Check that profileProcessor.js exists and is accessible");
+    // Show error to user
+    const errorDiv = document.createElement("div");
+    errorDiv.style.cssText = "background: #ffebee; color: #c62828; padding: 12px; margin: 12px; border-radius: 4px; border: 1px solid #ef5350;";
+    errorDiv.innerHTML = "⚠️ <strong>Error:</strong> ProfileProcessor not loaded. Please reload the extension.";
+    document.body.insertBefore(errorDiv, document.body.firstChild);
+  } else {
+    console.log("[DEBUG-VIEWER] ProfileProcessor loaded successfully");
+  }
+
   const tableContainer = document.getElementById("table-container");
   const emptyState = document.getElementById("empty");
   const modal = document.getElementById("profile-modal");
@@ -9,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const refreshBtn = document.getElementById("refresh-btn");
   const copyCsvBtn = document.getElementById("copy-csv-btn");
   const downloadCsvBtn = document.getElementById("download-csv-btn");
+  const testApiBtn = document.getElementById("test-api-btn");
   const sendToVettedBtn = document.getElementById("send-to-vetted-btn");
   const clearBtn = document.getElementById("clear-btn");
   // Settings UI removed - API URL is now hardcoded
@@ -699,6 +713,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Settings functions removed - API URL is now hardcoded
 
+  // Direct send function (fallback when background script doesn't respond)
+  async function sendDirectlyToVetted(processedProfiles, apiKey) {
+    const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+    console.log("[DEBUG-DIRECT] Sending directly to API, bypassing background script");
+    console.log("[DEBUG-DIRECT] Profile count:", processedProfiles.length);
+    
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+    
+    const timeoutMs = 30000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+    
+    try {
+      const response = await fetch(VETTED_API_URL, {
+        method: "POST",
+        headers: headers,
+        credentials: "include",
+        body: JSON.stringify(processedProfiles),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          const errorText = await response.text();
+          if (errorText) errorMessage += ` - ${errorText.substring(0, 200)}`;
+        }
+        return { success: false, error: errorMessage };
+      }
+      
+      const result = await response.json();
+      return { 
+        success: true, 
+        sent: processedProfiles.length,
+        result: result 
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        return { success: false, error: `Request timed out after ${timeoutMs/1000} seconds` };
+      }
+      return { success: false, error: error.message || "Unknown error" };
+    }
+  }
+
   async function sendToVetted(profiles, apiUrl, apiKey) {
     if (!apiUrl) {
       throw new Error("Vetted API URL not configured.");
@@ -885,41 +957,141 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  // Test API connection directly
+  if (testApiBtn) {
+    testApiBtn.onclick = async () => {
+      try {
+        testApiBtn.disabled = true;
+        testApiBtn.textContent = "Testing...";
+        
+        const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+        console.log("[TEST] Testing API connection to:", VETTED_API_URL);
+        
+        // Get API key
+        const vettedSettings = await new Promise((resolve) => {
+          chrome.storage.local.get(["vettedApiKey"], (data) => {
+            resolve(data);
+          });
+        });
+        
+        const headers = {
+          "Content-Type": "application/json",
+        };
+        
+        if (vettedSettings.vettedApiKey) {
+          headers["Authorization"] = `Bearer ${vettedSettings.vettedApiKey}`;
+          console.log("[TEST] Using API key authentication");
+        } else {
+          console.log("[TEST] Using session-based authentication (cookies)");
+        }
+        
+        // Send a minimal test payload
+        const testPayload = [{
+          "Linkedin URL": "https://linkedin.com/in/test",
+          "Full Name": "Test User",
+          "Current Company": "Test Company"
+        }];
+        
+        console.log("[TEST] Sending test request...");
+        const startTime = Date.now();
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 10000); // 10 second timeout for test
+        
+        try {
+          const response = await fetch(VETTED_API_URL, {
+            method: "POST",
+            headers: headers,
+            credentials: "include",
+            body: JSON.stringify(testPayload),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          const elapsed = Date.now() - startTime;
+          
+          console.log("[TEST] Response received in", elapsed, "ms");
+          console.log("[TEST] Status:", response.status, response.statusText);
+          console.log("[TEST] OK:", response.ok);
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log("[TEST] Success! Response:", result);
+            alert(`✅ API Test Successful!\n\nStatus: ${response.status}\nTime: ${elapsed}ms\n\nResponse: ${JSON.stringify(result, null, 2).substring(0, 200)}`);
+          } else {
+            const errorText = await response.text();
+            console.error("[TEST] Error response:", errorText);
+            alert(`❌ API Test Failed!\n\nStatus: ${response.status} ${response.statusText}\n\nError: ${errorText.substring(0, 200)}`);
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          const elapsed = Date.now() - startTime;
+          console.error("[TEST] Fetch error after", elapsed, "ms:", fetchError);
+          
+          if (fetchError.name === 'AbortError') {
+            alert(`❌ API Test Timed Out!\n\nRequest took longer than 10 seconds.\n\nThis suggests:\n- Network connectivity issues\n- API server is slow/down\n- CORS blocking the request\n\nCheck the console for details.`);
+          } else {
+            alert(`❌ API Test Failed!\n\nError: ${fetchError.message}\n\nTime: ${elapsed}ms\n\nCheck the console for details.`);
+          }
+        }
+        
+        testApiBtn.disabled = false;
+        testApiBtn.textContent = "Test API";
+      } catch (error) {
+        console.error("[TEST] Test error:", error);
+        alert("Test error: " + error.message);
+        testApiBtn.disabled = false;
+        testApiBtn.textContent = "Test API";
+      }
+    };
+  }
+
   if (!sendToVettedBtn) {
     console.error("sendToVettedBtn element not found!");
   } else {
     sendToVettedBtn.onclick = async () => {
+      const startTime = Date.now();
+      console.log("[DEBUG] ========== Send to Vetted clicked ==========");
+      console.log("[DEBUG] Initial profileDocuments length:", profileDocuments.length);
+      console.log("[DEBUG] Chrome runtime available:", !!chrome.runtime);
+      console.log("[DEBUG] Chrome runtime ID:", chrome.runtime?.id);
+      
       try {
-        console.log("Send to Vetted clicked, profileDocuments length:", profileDocuments.length);
-        
         // Reload data first to ensure we have the latest profiles
+        console.log("[DEBUG] Step 1: Reloading profiles from storage...");
         await new Promise((resolve, reject) => {
           chrome.storage.local.get(["profileDocuments"], (data) => {
             if (chrome.runtime.lastError) {
-              console.error("Error loading profiles:", chrome.runtime.lastError);
+              console.error("[DEBUG] Error loading profiles:", chrome.runtime.lastError);
               reject(chrome.runtime.lastError);
               return;
             }
             const documents = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
             profileDocuments = documents;
-            console.log("Reloaded profiles from storage:", documents.length);
+            console.log("[DEBUG] Step 1 complete: Reloaded", documents.length, "profiles from storage");
             resolve(undefined);
           });
         });
 
         if (profileDocuments.length === 0) {
+          console.log("[DEBUG] No profiles to send, aborting");
           setTimeout(() => {
             alert("No profiles to send. Please save a profile first using 'Save Profile JSON'.");
           }, 0);
           return;
         }
 
+        console.log("[DEBUG] Step 2: Checking ProfileProcessor...");
         if (typeof ProfileProcessor === 'undefined') {
+          console.error("[DEBUG] ProfileProcessor is undefined!");
           setTimeout(() => {
             alert("Profile processor not loaded. Please refresh the extension popup.");
           }, 0);
           return;
         }
+        console.log("[DEBUG] Step 2 complete: ProfileProcessor available");
 
         // Disable button immediately to prevent multiple clicks
         sendToVettedBtn.disabled = true;
@@ -927,14 +1099,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Hardcoded Vetted API URL
         const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+        console.log("[DEBUG] Step 3: Vetted API URL:", VETTED_API_URL);
         
         // Get API key if configured
+        console.log("[DEBUG] Step 4: Loading API key from storage...");
         const vettedSettings = await new Promise((resolve, reject) => {
           chrome.storage.local.get(["vettedApiKey"], (data) => {
             if (chrome.runtime.lastError) {
+              console.error("[DEBUG] Error loading API key:", chrome.runtime.lastError);
               reject(chrome.runtime.lastError);
               return;
             }
+            console.log("[DEBUG] Step 4 complete: API key loaded, has key:", !!data.vettedApiKey);
             resolve(data);
           });
         });
@@ -943,18 +1119,23 @@ document.addEventListener("DOMContentLoaded", () => {
         // Use requestIdleCallback or setTimeout to yield to UI thread
         let processed;
         try {
-          console.log("Processing", profileDocuments.length, "profiles...");
+          console.log("[DEBUG] Step 5: Processing", profileDocuments.length, "profiles...");
+          const processStartTime = Date.now();
           
           // Process in async context to allow UI updates
           processed = await new Promise((resolve, reject) => {
             // Use requestIdleCallback if available, otherwise setTimeout
             const processFn = () => {
               try {
+                console.log("[DEBUG] Step 5: Calling ProfileProcessor.processProfileDocuments...");
                 const result = ProfileProcessor.processProfileDocuments(profileDocuments);
-                console.log("Processed profiles:", result.length);
+                const processTime = Date.now() - processStartTime;
+                console.log("[DEBUG] Step 5 complete: Processed", result.length, "profiles in", processTime, "ms");
+                console.log("[DEBUG] Step 5: First processed profile sample:", result[0] ? Object.keys(result[0]).slice(0, 5) : "none");
                 resolve(result);
               } catch (error) {
-                console.error("Processing error:", error);
+                console.error("[DEBUG] Step 5 ERROR: Processing error:", error);
+                console.error("[DEBUG] Error stack:", error.stack);
                 reject(error);
               }
             };
@@ -967,6 +1148,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           
           if (!processed || processed.length === 0) {
+            console.error("[DEBUG] Step 5 ERROR: No valid processed profiles");
             sendToVettedBtn.disabled = false;
             sendToVettedBtn.textContent = "Send to Vetted";
             setTimeout(() => {
@@ -975,6 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
           }
           
+          console.log("[DEBUG] Step 6: Merging edited fields and tags...");
           // Merge edited fields and tags
           processed.forEach((profile, index) => {
             const doc = profileDocuments[index];
@@ -988,10 +1171,16 @@ document.addEventListener("DOMContentLoaded", () => {
               }
             }
           });
+          console.log("[DEBUG] Step 6 complete: Merged metadata into processed profiles");
         } catch (processingError) {
           sendToVettedBtn.disabled = false;
           sendToVettedBtn.textContent = "Send to Vetted";
-          console.error("Error processing profiles:", processingError);
+          console.error("[DEBUG] Processing ERROR:", processingError);
+          console.error("[DEBUG] Error details:", {
+            message: processingError.message,
+            stack: processingError.stack,
+            name: processingError.name
+          });
           setTimeout(() => {
             alert("Error processing profiles: " + (processingError.message || "Unknown error"));
           }, 0);
@@ -1000,100 +1189,100 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Update button text
         sendToVettedBtn.textContent = "Sending...";
+        const sendStartTime = Date.now();
 
         try {
-          console.log("Sending", processed.length, "profiles to Vetted via background script...");
+          console.log("[DEBUG] Step 7: Sending", processed.length, "profiles directly to Vetted API...");
+          console.log("[DEBUG] Step 7: Payload size:", JSON.stringify(processed).length, "bytes");
+          console.log("[DEBUG] Step 7: Has API key:", !!vettedSettings.vettedApiKey);
           
-          // Check if extension context is valid
-          if (!chrome.runtime || !chrome.runtime.id) {
-            throw new Error("Extension context invalidated. Please refresh the extension popup.");
-          }
+          // Send directly from viewer (bypassing background script for reliability)
+          // Since API test works, this should be more reliable
+          const statusInterval = setInterval(() => {
+            const elapsed = Date.now() - sendStartTime;
+            const seconds = (elapsed / 1000).toFixed(1);
+            console.log("[DEBUG] Step 7: Still sending...", seconds, "seconds elapsed");
+            sendToVettedBtn.textContent = `Sending... (${seconds}s)`;
+          }, 1000);
           
-          // Send message to background script to process and send
-          // Use a timeout to detect if the message isn't being handled
-          const messageTimeout = setTimeout(() => {
-            sendToVettedBtn.disabled = false;
-            sendToVettedBtn.textContent = "Send to Vetted";
-            alert("Request timed out. The background script may not be responding. Please try again.");
-          }, 35000); // 35 second timeout
-          
-          chrome.runtime.sendMessage({
-            type: "SEND_PROCESSED_TO_VETTED",
-            payload: processed,
-            apiKey: vettedSettings.vettedApiKey
-          }, (response) => {
-            clearTimeout(messageTimeout);
-            
-            // Re-enable button
-            sendToVettedBtn.disabled = false;
-            sendToVettedBtn.textContent = "Send to Vetted";
-            
-            if (chrome.runtime.lastError) {
-              console.error("Message error:", chrome.runtime.lastError);
-              const errorMsg = chrome.runtime.lastError.message || "Unknown error";
+          sendDirectlyToVetted(processed, vettedSettings.vettedApiKey)
+            .then((result) => {
+              clearInterval(statusInterval);
+              const elapsed = Date.now() - sendStartTime;
+              const totalTime = Date.now() - startTime;
               
-              // Check for common errors
-              if (errorMsg.includes("Extension context invalidated") || 
-                  errorMsg.includes("message port closed") ||
-                  errorMsg.includes("Could not establish connection")) {
+              sendToVettedBtn.disabled = false;
+              sendToVettedBtn.textContent = "Send to Vetted";
+              
+              if (result.success) {
+                console.log("[DEBUG] ========== SUCCESS ==========");
+                console.log("[DEBUG] Successfully sent profiles:", result);
+                console.log("[DEBUG] Send time:", elapsed, "ms");
+                console.log("[DEBUG] Total time:", totalTime, "ms");
+                console.log("[DEBUG] =============================");
+                
+                // Clear profiles from storage after successful send
+                chrome.storage.local.set({ profileDocuments: [] }, () => {
+                  if (chrome.runtime.lastError) {
+                    console.error("[DEBUG] Error clearing profiles:", chrome.runtime.lastError);
+                  } else {
+                    console.log("[DEBUG] Profiles cleared after successful send");
+                  }
+                });
+                
                 setTimeout(() => {
-                  alert("Extension context invalidated. Please refresh the extension popup and try again.");
+                  alert(`✅ Successfully sent ${result.sent || processed.length} profile(s) to Vetted!`);
                 }, 0);
               } else {
+                console.error("[DEBUG] Step 7 ERROR: Send failed:", result.error);
                 setTimeout(() => {
-                  alert("Error sending to Vetted: " + errorMsg);
+                  alert("❌ Error sending to Vetted: " + (result.error || "Unknown error"));
                 }, 0);
               }
-              return;
-            }
-            
-            if (!response) {
-              setTimeout(() => {
-                alert("Error: No response from background script. The extension may need to be reloaded.");
-              }, 0);
-              return;
-            }
-            
-            if (response.success) {
-              console.log("Successfully sent profiles:", response);
-              
-              // Clear profiles from storage after successful send
-              chrome.storage.local.set({ profileDocuments: [] }, () => {
-                if (chrome.runtime.lastError) {
-                  console.error("Error clearing profiles:", chrome.runtime.lastError);
-                } else {
-                  console.log("Profiles cleared after successful send");
-                }
+            })
+            .catch((error) => {
+              clearInterval(statusInterval);
+              const elapsed = Date.now() - sendStartTime;
+              console.error("[DEBUG] Step 7 EXCEPTION: Send error after", elapsed, "ms:", error);
+              console.error("[DEBUG] Exception details:", {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
               });
-              
+              sendToVettedBtn.disabled = false;
+              sendToVettedBtn.textContent = "Send to Vetted";
               setTimeout(() => {
-                alert(`Successfully sent ${response.sent || processed.length} profile(s) to Vetted!`);
+                alert("❌ Error sending to Vetted: " + (error.message || error.toString() || "Unknown error occurred") + "\n\nCheck the console (F12) for detailed logs.");
               }, 0);
-            } else {
-              console.error("Send failed:", response.error);
-              setTimeout(() => {
-                alert("Error sending to Vetted: " + (response.error || "Unknown error"));
-              }, 0);
-            }
-          });
+            });
+          
         } catch (sendError) {
-          console.error("Send error:", sendError);
+          const elapsed = Date.now() - sendStartTime;
+          console.error("[DEBUG] Step 7 EXCEPTION: Send error after", elapsed, "ms:", sendError);
+          console.error("[DEBUG] Exception details:", {
+            message: sendError.message,
+            stack: sendError.stack,
+            name: sendError.name
+          });
           sendToVettedBtn.disabled = false;
           sendToVettedBtn.textContent = "Send to Vetted";
           setTimeout(() => {
-            alert("Error sending to Vetted: " + (sendError.message || sendError.toString() || "Unknown error occurred"));
+            alert("Error sending to Vetted: " + (sendError.message || sendError.toString() || "Unknown error occurred") + "\n\nCheck the console (F12) for detailed logs.");
           }, 0);
         }
       } catch (error) {
-        console.error("Send to Vetted failed:", error);
-        console.error("Error details:", {
+        const totalTime = Date.now() - startTime;
+        console.error("[DEBUG] ========== FATAL ERROR ==========");
+        console.error("[DEBUG] Send to Vetted failed after", totalTime, "ms");
+        console.error("[DEBUG] Error details:", {
           message: error.message,
           stack: error.stack,
           name: error.name
         });
+        console.error("[DEBUG] ==================================");
         // Use setTimeout to prevent blocking
         setTimeout(() => {
-          alert("Error: " + (error.message || error.toString() || "Unknown error occurred"));
+          alert("Error: " + (error.message || error.toString() || "Unknown error occurred") + "\n\nCheck the console (F12) for detailed logs.");
         }, 0);
         // Ensure button is re-enabled even if error occurs
         sendToVettedBtn.disabled = false;

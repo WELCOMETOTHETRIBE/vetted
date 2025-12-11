@@ -1,0 +1,16 @@
+{
+  "name": "function_name_here",
+  "description": "Description of what this function does and when to use it.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "parameter_name": {
+        "type": "string",
+        "description": "Description of the parameter"
+      }
+    },
+    "required": ["parameter_name"],
+    "additionalProperties": false
+  }
+}
+

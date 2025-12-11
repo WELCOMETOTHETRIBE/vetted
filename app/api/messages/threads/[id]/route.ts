@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { detectSpam } from "@/lib/ai/content-ai"
 
 const sendMessageSchema = z.object({
   content: z.string().min(1),
@@ -78,6 +79,22 @@ export async function POST(
     }
     const body = await req.json()
     const { content } = sendMessageSchema.parse(body)
+
+    // Check for spam (non-blocking)
+    detectSpam(content)
+      .then((spamResult) => {
+        if (spamResult.isSpam && spamResult.confidence > 70) {
+          console.warn("Potential spam in message:", {
+            userId: session.user.id,
+            threadId,
+            confidence: spamResult.confidence,
+            reason: spamResult.reason,
+          })
+        }
+      })
+      .catch((error) => {
+        console.error("Error checking spam (non-blocking):", error)
+      })
 
     // Verify user is part of thread
     const thread = await prisma.messageThread.findUnique({

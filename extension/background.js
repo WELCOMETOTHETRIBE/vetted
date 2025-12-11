@@ -2,14 +2,46 @@
 // for complying with site terms of service (e.g., LinkedIn ToS) and applicable laws.
 // This is intended for internal/testing use only.
 
-// Import profile processor functions
-importScripts('profileProcessor.js');
+// Import profile processor functions with error handling
+try {
+  importScripts('profileProcessor.js');
+  console.log("[DEBUG-BG] profileProcessor.js loaded successfully");
+} catch (error) {
+  console.error("[DEBUG-BG] ERROR loading profileProcessor.js:", error);
+  console.error("[DEBUG-BG] Error details:", {
+    message: error.message,
+    name: error.name,
+    stack: error.stack
+  });
+  // Continue anyway - ProfileProcessor might be loaded elsewhere or we'll handle errors gracefully
+}
 
 // Initialize storage on install
 chrome.runtime.onInstalled.addListener(() => {
+  console.log("[DEBUG-BG] Extension installed/reloaded");
+  console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
+  console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
+  
+  if (!isExtensionContextValid()) {
+    console.error("[DEBUG-BG] WARNING: Extension context invalid during install");
+    return;
+  }
+  
   chrome.storage.local.get(["profileDocuments"], (data) => {
+    if (chrome.runtime.lastError) {
+      console.error("[DEBUG-BG] Error accessing storage:", chrome.runtime.lastError);
+      return;
+    }
     if (!Array.isArray(data.profileDocuments)) {
-      chrome.storage.local.set({ profileDocuments: [] });
+      chrome.storage.local.set({ profileDocuments: [] }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("[DEBUG-BG] Error initializing storage:", chrome.runtime.lastError);
+        } else {
+          console.log("[DEBUG-BG] Storage initialized successfully");
+        }
+      });
+    } else {
+      console.log("[DEBUG-BG] Storage already initialized with", data.profileDocuments.length, "profiles");
     }
   });
 });
@@ -59,9 +91,38 @@ function estimateStorageSize(obj) {
   return new Blob([JSON.stringify(obj)]).size;
 }
 
+// Check if extension context is valid
+function isExtensionContextValid() {
+  try {
+    return chrome.runtime && chrome.runtime.id !== undefined;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Listen for messages from the content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Background script received message:", message.type);
+  // Check extension context validity
+  if (!isExtensionContextValid()) {
+    console.error("[DEBUG-BG] ERROR: Extension context invalidated");
+    try {
+      sendResponse({ success: false, error: "Extension context invalidated. Please reload the extension." });
+    } catch (e) {
+      console.error("[DEBUG-BG] Could not send error response:", e);
+    }
+    return false;
+  }
+  
+  console.log("[DEBUG-BG] ========== Message received ==========");
+  console.log("[DEBUG-BG] Message type:", message.type);
+  console.log("[DEBUG-BG] Sender:", sender);
+  console.log("[DEBUG-BG] Has payload:", !!message.payload);
+  if (message.payload && Array.isArray(message.payload)) {
+    console.log("[DEBUG-BG] Payload is array, length:", message.payload.length);
+  }
+  console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
+  console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
+  console.log("[DEBUG-BG] =====================================");
   if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
     try {
       // Get current profiles
@@ -198,29 +259,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Handle sending already-processed profiles from viewer
   if (message.type === "SEND_PROCESSED_TO_VETTED" && Array.isArray(message.payload)) {
-    console.log("Received SEND_PROCESSED_TO_VETTED message with", message.payload.length, "profiles");
+    const startTime = Date.now();
+    console.log("[DEBUG-BG] ========== Received SEND_PROCESSED_TO_VETTED ==========");
+    console.log("[DEBUG-BG] Profile count:", message.payload.length);
+    console.log("[DEBUG-BG] Has API key:", !!message.apiKey);
+    console.log("[DEBUG-BG] Payload size:", JSON.stringify(message.payload).length, "bytes");
+    console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
     
-    // Capture sendResponse before async operation
+    // IMPORTANT: Return true immediately to keep message channel open
+    // Then handle async operation
     const respond = (result) => {
+      const elapsed = Date.now() - startTime;
       try {
-        sendResponse(result);
+        console.log("[DEBUG-BG] Attempting to send response after", elapsed, "ms");
+        console.log("[DEBUG-BG] Response data:", result);
+        const responseSent = sendResponse(result);
+        console.log("[DEBUG-BG] sendResponse called, result:", responseSent);
+        console.log("[DEBUG-BG] Response sent successfully");
       } catch (e) {
-        console.error("Error calling sendResponse:", e);
+        console.error("[DEBUG-BG] ERROR calling sendResponse after", elapsed, "ms:", e);
+        console.error("[DEBUG-BG] Error details:", {
+          message: e.message,
+          stack: e.stack,
+          name: e.name
+        });
+        // Try to send error response
+        try {
+          sendResponse({ success: false, error: "Failed to send response: " + e.message });
+        } catch (e2) {
+          console.error("[DEBUG-BG] Could not send error response either:", e2);
+        }
       }
     };
     
     // Use async/await pattern for better error handling
+    console.log("[DEBUG-BG] Calling sendProcessedProfilesToVetted...");
     sendProcessedProfilesToVetted(message.payload, message.apiKey)
       .then((result) => {
-        console.log("sendProcessedProfilesToVetted result:", result);
+        const elapsed = Date.now() - startTime;
+        console.log("[DEBUG-BG] sendProcessedProfilesToVetted completed after", elapsed, "ms");
+        console.log("[DEBUG-BG] Result:", result);
         respond(result);
       })
       .catch((error) => {
-        console.error("Error in SEND_PROCESSED_TO_VETTED:", error);
+        const elapsed = Date.now() - startTime;
+        console.error("[DEBUG-BG] ERROR in SEND_PROCESSED_TO_VETTED after", elapsed, "ms");
+        console.error("[DEBUG-BG] Error:", error);
+        console.error("[DEBUG-BG] Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         respond({ success: false, error: error.message || "Unknown error" });
       });
 
-    return true; // Keep channel open for async response
+    // CRITICAL: Return true to keep message channel open for async response
+    return true;
   }
 
   // Handle auto-send to Vetted (legacy - for immediate single sends)
@@ -329,11 +423,18 @@ async function sendBatchToVetted() {
 
 // Function to send already-processed profiles to Vetted API
 async function sendProcessedProfilesToVetted(processedProfiles, apiKey) {
+  const startTime = Date.now();
+  console.log("[DEBUG-BG] ========== sendProcessedProfilesToVetted START ==========");
+  console.log("[DEBUG-BG] Profile count:", processedProfiles?.length || 0);
+  console.log("[DEBUG-BG] Has API key:", !!apiKey);
+  
   try {
     // Hardcoded Vetted API URL
     const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+    console.log("[DEBUG-BG] API URL:", VETTED_API_URL);
     
     if (!processedProfiles || processedProfiles.length === 0) {
+      console.error("[DEBUG-BG] ERROR: No profiles to send");
       return { success: false, error: "No profiles to send" };
     }
 
@@ -344,27 +445,65 @@ async function sendProcessedProfilesToVetted(processedProfiles, apiKey) {
 
     if (apiKey) {
       headers["Authorization"] = `Bearer ${apiKey}`;
+      console.log("[DEBUG-BG] Authorization header added (key length:", apiKey.length, ")");
+    } else {
+      console.log("[DEBUG-BG] No API key provided, using session-based auth");
     }
+
+    // Prepare request body
+    const requestBody = JSON.stringify(processedProfiles);
+    const bodySize = requestBody.length;
+    console.log("[DEBUG-BG] Request body size:", bodySize, "bytes");
+    console.log("[DEBUG-BG] Request headers:", headers);
 
     // Send to Vetted API with timeout
     const timeoutMs = 30000; // 30 seconds
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
+      console.error("[DEBUG-BG] TIMEOUT: Request timeout after", timeoutMs, "ms");
       controller.abort();
     }, timeoutMs);
 
     let response;
     try {
+      console.log("[DEBUG-BG] Starting fetch request...");
+      console.log("[DEBUG-BG] URL:", VETTED_API_URL);
+      console.log("[DEBUG-BG] Method: POST");
+      console.log("[DEBUG-BG] Headers:", JSON.stringify(headers, null, 2));
+      console.log("[DEBUG-BG] Body size:", bodySize, "bytes");
+      const fetchStartTime = Date.now();
+      
+      // Add a heartbeat log every 5 seconds
+      const heartbeatInterval = setInterval(() => {
+        const elapsed = Date.now() - fetchStartTime;
+        console.log("[DEBUG-BG] Fetch still in progress...", elapsed, "ms elapsed");
+      }, 5000);
+      
       response = await fetch(VETTED_API_URL, {
         method: "POST",
         headers: headers,
         credentials: "include",
-        body: JSON.stringify(processedProfiles),
+        body: requestBody,
         signal: controller.signal
       });
+      
+      clearInterval(heartbeatInterval);
+      const fetchTime = Date.now() - fetchStartTime;
       clearTimeout(timeoutId);
+      console.log("[DEBUG-BG] Fetch completed in", fetchTime, "ms");
+      console.log("[DEBUG-BG] Response status:", response.status, response.statusText);
+      console.log("[DEBUG-BG] Response ok:", response.ok);
+      console.log("[DEBUG-BG] Response headers:", Object.fromEntries(response.headers.entries()));
     } catch (fetchError) {
+      const fetchTime = Date.now() - startTime;
       clearTimeout(timeoutId);
+      console.error("[DEBUG-BG] FETCH ERROR after", fetchTime, "ms:", fetchError);
+      console.error("[DEBUG-BG] Error details:", {
+        name: fetchError.name,
+        message: fetchError.message,
+        stack: fetchError.stack
+      });
+      
       if (fetchError.name === 'AbortError') {
         throw new Error(`Request timed out after ${timeoutMs/1000} seconds`);
       }
@@ -372,18 +511,27 @@ async function sendProcessedProfilesToVetted(processedProfiles, apiKey) {
     }
 
     if (!response.ok) {
+      console.error("[DEBUG-BG] Response not OK:", response.status, response.statusText);
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
       try {
         const errorData = await response.json();
+        console.error("[DEBUG-BG] Error response JSON:", errorData);
         errorMessage = errorData.error || errorMessage;
+        if (errorData.details) {
+          console.error("[DEBUG-BG] Error details:", errorData.details);
+          errorMessage += ` - ${JSON.stringify(errorData.details)}`;
+        }
       } catch (e) {
+        console.error("[DEBUG-BG] Could not parse error as JSON, trying text...");
         try {
           const errorText = await response.text();
+          console.error("[DEBUG-BG] Error response text:", errorText);
           if (errorText) {
             errorMessage += ` - ${errorText.substring(0, 200)}`;
           }
         } catch (textError) {
-          // Ignore
+          console.error("[DEBUG-BG] Could not read error response:", textError);
         }
       }
       
@@ -393,19 +541,50 @@ async function sendProcessedProfilesToVetted(processedProfiles, apiKey) {
         errorMessage = "Forbidden: You must be an admin user to upload candidates";
       } else if (response.status === 404) {
         errorMessage = "Not Found: Check that your API URL is correct";
+      } else if (response.status === 405) {
+        errorMessage = "Method Not Allowed: The API endpoint may not be deployed yet";
+      } else if (response.status === 500) {
+        errorMessage = "Server Error: The Vetted API encountered an error. Check server logs.";
       }
       
+      const totalTime = Date.now() - startTime;
+      console.error("[DEBUG-BG] Returning error after", totalTime, "ms:", errorMessage);
       return { success: false, error: errorMessage };
     }
 
-    const result = await response.json();
+    console.log("[DEBUG-BG] Response OK, parsing JSON...");
+    let result;
+    try {
+      result = await response.json();
+      console.log("[DEBUG-BG] Response JSON parsed successfully");
+      console.log("[DEBUG-BG] Response data:", result);
+    } catch (jsonError) {
+      console.error("[DEBUG-BG] ERROR parsing response JSON:", jsonError);
+      const textResult = await response.text();
+      console.error("[DEBUG-BG] Response text:", textResult.substring(0, 500));
+      throw new Error("Invalid JSON response from server");
+    }
+    
+    const totalTime = Date.now() - startTime;
+    console.log("[DEBUG-BG] ========== sendProcessedProfilesToVetted SUCCESS ==========");
+    console.log("[DEBUG-BG] Total time:", totalTime, "ms");
+    console.log("[DEBUG-BG] =========================================================");
+    
     return { 
       success: true, 
       sent: processedProfiles.length,
       result: result 
     };
   } catch (error) {
-    console.error("Error sending processed profiles to Vetted:", error);
+    const totalTime = Date.now() - startTime;
+    console.error("[DEBUG-BG] ========== sendProcessedProfilesToVetted ERROR ==========");
+    console.error("[DEBUG-BG] Error after", totalTime, "ms:", error);
+    console.error("[DEBUG-BG] Error details:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    console.error("[DEBUG-BG] =========================================================");
     return { success: false, error: error.message || "Unknown error" };
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { generateCandidateSummary } from "@/lib/ai/candidate-ai"
 
 /**
  * This endpoint accepts processed profile JSON from the extension
@@ -121,24 +122,47 @@ export async function POST(req: Request) {
           status: "ACTIVE" as const,
         }
 
+        let savedCandidate
         if (existing) {
           // Update existing candidate
           console.log("Updating existing candidate:", linkedinUrl)
-          const updated = await prisma.candidate.update({
+          savedCandidate = await prisma.candidate.update({
             where: { linkedinUrl },
             data: candidatePayload,
           })
-          console.log("Updated candidate:", updated.id, updated.fullName)
-          created.push(updated)
+          console.log("Updated candidate:", savedCandidate.id, savedCandidate.fullName)
         } else {
           // Create new candidate
           console.log("Creating new candidate:", linkedinUrl, candidatePayload.fullName)
-          const newCandidate = await prisma.candidate.create({
+          savedCandidate = await prisma.candidate.create({
             data: candidatePayload,
           })
-          console.log("Created candidate:", newCandidate.id, newCandidate.fullName, newCandidate.createdAt)
-          created.push(newCandidate)
+          console.log("Created candidate:", savedCandidate.id, savedCandidate.fullName, savedCandidate.createdAt)
         }
+
+        // Generate AI summary asynchronously (don't block upload)
+        generateCandidateSummary(savedCandidate)
+          .then(async (summary) => {
+            if (summary) {
+              await prisma.candidate.update({
+                where: { id: savedCandidate.id },
+                data: {
+                  aiSummary: summary.summary,
+                  aiKeyStrengths: JSON.stringify(summary.keyStrengths),
+                  aiBestFitRoles: JSON.stringify(summary.bestFitRoles),
+                  aiHighlights: JSON.stringify(summary.highlights),
+                  aiConcerns: JSON.stringify(summary.concerns),
+                  aiSummaryGeneratedAt: new Date(),
+                },
+              })
+              console.log("AI summary generated for candidate:", savedCandidate.id)
+            }
+          })
+          .catch((error) => {
+            console.error("Error generating AI summary (non-blocking):", error)
+          })
+
+        created.push(savedCandidate)
       } catch (error: any) {
         console.error("Error processing candidate:", {
           linkedinUrl: candidateData["Linkedin URL"] || candidateData.linkedinUrl,

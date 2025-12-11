@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { detectSpam, recommendContent } from "@/lib/ai/content-ai"
 
 const createPostSchema = z.object({
   content: z.string().min(1),
@@ -20,6 +21,25 @@ export async function POST(req: Request) {
 
     const body = await req.json()
     const data = createPostSchema.parse(body)
+
+    // Check for spam (non-blocking, log if detected)
+    detectSpam(data.content)
+      .then((spamResult) => {
+        if (spamResult.isSpam && spamResult.confidence > 70) {
+          console.warn("Potential spam detected:", {
+            userId: session.user.id,
+            content: data.content.substring(0, 100),
+            confidence: spamResult.confidence,
+            reason: spamResult.reason,
+            category: spamResult.category,
+          })
+          // In production, you might want to flag or reject the post
+          // For now, we'll just log it
+        }
+      })
+      .catch((error) => {
+        console.error("Error checking spam (non-blocking):", error)
+      })
 
     const post = await prisma.post.create({
       data: {
@@ -120,6 +140,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const groupId = searchParams.get("groupId")
     const userId = searchParams.get("userId")
+    const personalized = searchParams.get("personalized") === "true" // Optional AI personalization
 
     let where: any = { isActive: true }
 
@@ -175,8 +196,56 @@ export async function GET(req: Request) {
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: personalized ? 50 : 20, // Get more posts for AI ranking
     })
+
+    // Apply AI personalization if requested
+    if (personalized && posts.length > 0) {
+      try {
+        // Get user interests
+        const userProfile = await prisma.userProfile.findUnique({
+          where: { userId: session.user.id },
+          select: { headline: true, about: true },
+        })
+
+        const userSkills = await prisma.userSkill.findMany({
+          where: { userId: session.user.id },
+          include: { skill: { select: { name: true } } },
+          take: 10,
+        })
+
+        const interests: string[] = []
+        if (userProfile?.headline) interests.push(userProfile.headline)
+        userSkills.forEach((us) => {
+          if (us.skill.name) interests.push(us.skill.name)
+        })
+
+        // Get recommendations
+        const recommendations = await recommendContent(
+          session.user.id,
+          posts.map((p) => ({
+            id: p.id,
+            content: p.content,
+            authorId: p.authorId,
+            createdAt: p.createdAt,
+            reactions: p.reactions,
+            comments: p.comments,
+          })),
+          interests
+        )
+
+        // Sort posts by recommendation score
+        const sortedPosts = recommendations
+          .slice(0, 20) // Top 20
+          .map((rec) => posts.find((p) => p.id === rec.postId))
+          .filter((p): p is NonNullable<typeof p> => p !== null)
+
+        return NextResponse.json(sortedPosts)
+      } catch (error) {
+        console.error("Error applying personalization (falling back to chronological):", error)
+        // Fall through to return chronological posts
+      }
+    }
 
     return NextResponse.json(posts)
   } catch (error) {

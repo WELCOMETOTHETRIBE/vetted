@@ -1,0 +1,193 @@
+[
+  {
+    "name": "analyze_vetted_codebase",
+    "description": "Analyze the Vetted codebase to understand implementation patterns, find related code, or get architectural context for making changes.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "A natural language question about the codebase, feature, or implementation."
+        },
+        "target_directories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A directory path to limit search scope."
+          },
+          "description": "Optional array of directory paths to limit search scope."
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "understand",
+            "find",
+            "analyze",
+            "implement",
+            "debug"
+          ],
+          "description": "The type of analysis needed: 'understand', 'find', 'analyze', 'implement', 'debug'."
+        }
+      },
+      "required": [
+        "query",
+        "action"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "implement_vetted_feature",
+    "description": "Implement a new feature or complete an incomplete implementation in the Vetted platform. Ensures code follows existing patterns, includes error handling, and is production-ready.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "Description of the feature to implement."
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A file path that needs to be created or modified."
+          },
+          "description": "Array of file paths that need to be created or modified."
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "Priority level for the implementation: 'high', 'medium', 'low'."
+        }
+      },
+      "required": [
+        "feature"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "get_vetted_project_status",
+    "description": "Get the current status of the Vetted project including implemented features, pending enhancements, and technical debt. Useful for understanding what's done and what needs work.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "features",
+            "infrastructure",
+            "extensions",
+            "all"
+          ],
+          "description": "What aspect of the project to analyze: 'features', 'infrastructure', 'extensions', 'all'."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "evaluate_technology_for_vetted",
+    "description": "Evaluate a new technology, framework, or tool for potential use in the Vetted platform. Provides analysis of benefits, trade-offs, implementation complexity, and recommendations.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "technology": {
+          "type": "string",
+          "description": "Name of the technology, framework, or tool to evaluate."
+        },
+        "use_case": {
+          "type": "string",
+          "description": "The specific use case or problem this technology would solve in Vetted."
+        },
+        "current_solution": {
+          "type": "string",
+          "description": "What Vetted currently uses for this use case, if applicable."
+        }
+      },
+      "required": [
+        "technology",
+        "use_case"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "debug_vetted_issue",
+    "description": "Debug an issue or error in the Vetted platform. Analyzes error messages, traces code paths, identifies root causes, and proposes fixes.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "error_description": {
+          "type": "string",
+          "description": "Description of the error or issue, including error messages, stack traces, or symptoms."
+        },
+        "affected_components": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A component, file, or feature that is affected."
+          },
+          "description": "Optional array of components, files, or features that are affected."
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "Severity level of the issue: 'critical', 'high', 'medium', 'low'."
+        }
+      },
+      "required": [
+        "error_description"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "refactor_vetted_code",
+    "description": "Refactor code in the Vetted platform to improve maintainability, performance, or follow best practices. Ensures functionality is preserved while improving code quality.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "What to refactor: file path, component name, or feature name."
+        },
+        "goal": {
+          "type": "string",
+          "description": "The goal of the refactoring: 'performance', 'maintainability', 'readability', 'patterns', or 'optimization'."
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "file",
+            "component",
+            "feature",
+            "module"
+          ],
+          "description": "Scope of the refactoring: 'file', 'component', 'feature', 'module'."
+        }
+      },
+      "required": [
+        "target",
+        "goal"
+      ],
+      "additionalProperties": false
+    }
+  }
+]

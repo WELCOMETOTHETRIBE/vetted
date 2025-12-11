@@ -568,6 +568,13 @@ model Candidate {
   addedById                         String? // Admin who added this candidate
   status                            CandidateStatus @default(ACTIVE)
   notes                             String?         @db.Text // Admin notes
+  // AI-generated fields
+  aiSummary                         String?         @db.Text // AI-generated candidate summary
+  aiKeyStrengths                    String?         @db.Text // JSON array of key strengths
+  aiBestFitRoles                    String?         @db.Text // JSON array of best fit roles
+  aiHighlights                      String?         @db.Text // Notable experience highlights
+  aiConcerns                        String?         @db.Text // Potential concerns or gaps
+  aiSummaryGeneratedAt              DateTime?       // When AI summary was generated
   createdAt                         DateTime        @default(now())
   updatedAt                         DateTime        @updatedAt
 

@@ -25,6 +25,13 @@ interface Candidate {
     name: string | null
     email: string
   }
+  // AI-generated fields
+  aiSummary?: string | null
+  aiKeyStrengths?: string | null
+  aiBestFitRoles?: string | null
+  aiHighlights?: string | null
+  aiConcerns?: string | null
+  aiSummaryGeneratedAt?: Date | null
 }
 
 interface CandidatesContentProps {
@@ -50,6 +57,8 @@ export default function CandidatesContent({
   const [uploading, setUploading] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [aiLoading, setAiLoading] = useState<string | null>(null) // Track which AI action is loading
+  const [aiResults, setAiResults] = useState<any>(null) // Store AI results
 
   // Initialize search params from URL on client side
   useEffect(() => {
@@ -432,12 +441,291 @@ export default function CandidatesContent({
                   </a>
                 </div>
                 <button
-                  onClick={() => setSelectedCandidate(null)}
+                  onClick={() => {
+                    setSelectedCandidate(null)
+                    setAiResults(null)
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   ✕
                 </button>
               </div>
+
+              {/* AI Action Buttons */}
+              <div className="mb-6 flex gap-2 flex-wrap">
+                <button
+                  onClick={async () => {
+                    setAiLoading("match")
+                    try {
+                      const response = await fetch(`/api/candidates/${selectedCandidate.id}/match-jobs`)
+                      if (response.ok) {
+                        const data = await response.json()
+                        setAiResults({ type: "match", data })
+                      }
+                    } catch (error) {
+                      console.error("Error matching jobs:", error)
+                    } finally {
+                      setAiLoading(null)
+                    }
+                  }}
+                  disabled={aiLoading !== null}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm"
+                >
+                  {aiLoading === "match" ? "Matching..." : "🔍 Match to Jobs"}
+                </button>
+                <button
+                  onClick={async () => {
+                    setAiLoading("outreach")
+                    try {
+                      const response = await fetch(`/api/candidates/${selectedCandidate.id}/outreach`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({}),
+                      })
+                      if (response.ok) {
+                        const data = await response.json()
+                        setAiResults({ type: "outreach", data })
+                      }
+                    } catch (error) {
+                      console.error("Error generating outreach:", error)
+                    } finally {
+                      setAiLoading(null)
+                    }
+                  }}
+                  disabled={aiLoading !== null}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
+                >
+                  {aiLoading === "outreach" ? "Generating..." : "✉️ Generate Outreach"}
+                </button>
+                <button
+                  onClick={async () => {
+                    const jobId = prompt("Enter Job ID for interview prep:")
+                    if (!jobId) return
+                    setAiLoading("interview")
+                    try {
+                      const response = await fetch(`/api/candidates/${selectedCandidate.id}/interview-prep`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ jobId }),
+                      })
+                      if (response.ok) {
+                        const data = await response.json()
+                        setAiResults({ type: "interview", data })
+                      }
+                    } catch (error) {
+                      console.error("Error generating interview prep:", error)
+                    } finally {
+                      setAiLoading(null)
+                    }
+                  }}
+                  disabled={aiLoading !== null}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 text-sm"
+                >
+                  {aiLoading === "interview" ? "Preparing..." : "📋 Interview Prep"}
+                </button>
+              </div>
+
+              {/* AI Results Display */}
+              {aiResults && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {aiResults.type === "match" && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3">Job Matches</h3>
+                      {aiResults.data.matches && aiResults.data.matches.length > 0 ? (
+                        <div className="space-y-3">
+                          {aiResults.data.matches.slice(0, 5).map((match: any, i: number) => (
+                            <div key={i} className="p-3 bg-white rounded border">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{match.jobTitle}</h4>
+                                  <p className="text-sm text-gray-600">{match.companyName}</p>
+                                </div>
+                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                                  {match.matchScore}% match
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 mb-2">{match.reasoning}</p>
+                              {match.strengths && match.strengths.length > 0 && (
+                                <div className="text-xs text-gray-600">
+                                  <strong>Strengths:</strong> {match.strengths.join(", ")}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600">No matches found</p>
+                      )}
+                    </div>
+                  )}
+                  {aiResults.type === "outreach" && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Generated Outreach Message</h3>
+                      <div className="p-3 bg-white rounded border mb-3">
+                        <p className="text-gray-700 whitespace-pre-wrap">{aiResults.data.message}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(aiResults.data.message)
+                          alert("Message copied to clipboard!")
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        Copy to Clipboard
+                      </button>
+                    </div>
+                  )}
+                  {aiResults.type === "interview" && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3">Interview Preparation</h3>
+                      {aiResults.data.questions && (
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-900 mb-2">Questions</h4>
+                          <div className="space-y-2">
+                            {aiResults.data.questions.technical && aiResults.data.questions.technical.length > 0 && (
+                              <div>
+                                <strong className="text-sm text-gray-700">Technical:</strong>
+                                <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
+                                  {aiResults.data.questions.technical.map((q: string, i: number) => (
+                                    <li key={i}>{q}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {aiResults.data.questions.behavioral && aiResults.data.questions.behavioral.length > 0 && (
+                              <div>
+                                <strong className="text-sm text-gray-700">Behavioral:</strong>
+                                <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
+                                  {aiResults.data.questions.behavioral.map((q: string, i: number) => (
+                                    <li key={i}>{q}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {aiResults.data.insights && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Insights</h4>
+                          {aiResults.data.insights.candidateStrengths && aiResults.data.insights.candidateStrengths.length > 0 && (
+                            <div className="mb-2">
+                              <strong className="text-sm text-gray-700">Strengths:</strong>
+                              <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
+                                {aiResults.data.insights.candidateStrengths.map((s: string, i: number) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {aiResults.data.insights.talkingPoints && aiResults.data.insights.talkingPoints.length > 0 && (
+                            <div>
+                              <strong className="text-sm text-gray-700">Talking Points:</strong>
+                              <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
+                                {aiResults.data.insights.talkingPoints.map((p: string, i: number) => (
+                                  <li key={i}>{p}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* AI Summary Section */}
+              {selectedCandidate.aiSummary && (
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🤖</span>
+                    <h3 className="font-semibold text-gray-900">AI Summary</h3>
+                    {selectedCandidate.aiSummaryGeneratedAt && (
+                      <span className="text-xs text-gray-500">
+                        (Generated {new Date(selectedCandidate.aiSummaryGeneratedAt).toLocaleDateString()})
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-700 mb-4">{selectedCandidate.aiSummary}</p>
+                  
+                  {selectedCandidate.aiKeyStrengths && (
+                    <div className="mb-3">
+                      <h4 className="font-medium text-gray-900 mb-2">Key Strengths</h4>
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        {(() => {
+                          try {
+                            const strengths = JSON.parse(selectedCandidate.aiKeyStrengths || "[]")
+                            return Array.isArray(strengths) ? strengths.map((s: string, i: number) => (
+                              <li key={i}>{s}</li>
+                            )) : null
+                          } catch {
+                            return <li>{selectedCandidate.aiKeyStrengths}</li>
+                          }
+                        })()}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {selectedCandidate.aiBestFitRoles && (
+                    <div className="mb-3">
+                      <h4 className="font-medium text-gray-900 mb-2">Best Fit Roles</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(() => {
+                          try {
+                            const roles = JSON.parse(selectedCandidate.aiBestFitRoles || "[]")
+                            return Array.isArray(roles) ? roles.map((r: string, i: number) => (
+                              <span key={i} className="px-2 py-1 bg-blue-200 text-blue-800 rounded text-sm">
+                                {r}
+                              </span>
+                            )) : null
+                          } catch {
+                            return <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded text-sm">
+                              {selectedCandidate.aiBestFitRoles}
+                            </span>
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedCandidate.aiHighlights && (
+                    <div className="mb-3">
+                      <h4 className="font-medium text-gray-900 mb-2">Notable Highlights</h4>
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        {(() => {
+                          try {
+                            const highlights = JSON.parse(selectedCandidate.aiHighlights || "[]")
+                            return Array.isArray(highlights) ? highlights.map((h: string, i: number) => (
+                              <li key={i}>{h}</li>
+                            )) : null
+                          } catch {
+                            return <li>{selectedCandidate.aiHighlights}</li>
+                          }
+                        })()}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {selectedCandidate.aiConcerns && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Areas to Explore</h4>
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        {(() => {
+                          try {
+                            const concerns = JSON.parse(selectedCandidate.aiConcerns || "[]")
+                            return Array.isArray(concerns) ? concerns.map((c: string, i: number) => (
+                              <li key={i}>{c}</li>
+                            )) : null
+                          } catch {
+                            return <li>{selectedCandidate.aiConcerns}</li>
+                          }
+                        })()}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
