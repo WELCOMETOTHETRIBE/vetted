@@ -25,10 +25,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const testApiBtn = document.getElementById("test-api-btn");
   const sendToVettedBtn = document.getElementById("send-to-vetted-btn");
   const clearBtn = document.getElementById("clear-btn");
-  // Settings UI removed - API URL is now hardcoded
+  const autoSendToggle = document.getElementById("auto-send-toggle");
 
   let currentEditingIndex = -1;
   let profileDocuments = [];
+
+  // Load and initialize auto-send setting
+  chrome.storage.local.get(["autoSendToVetted"], (data) => {
+    // Enable auto-send by default if not set
+    const autoSendEnabled = data.autoSendToVetted !== undefined ? data.autoSendToVetted : true;
+    if (autoSendToggle) {
+      autoSendToggle.checked = autoSendEnabled;
+      // Save default if it wasn't set
+      if (data.autoSendToVetted === undefined) {
+        chrome.storage.local.set({ autoSendToVetted: true });
+      }
+    }
+  });
+
+  // Handle auto-send toggle
+  if (autoSendToggle) {
+    autoSendToggle.addEventListener("change", (e) => {
+      const enabled = e.target.checked;
+      chrome.storage.local.set({ autoSendToVetted: enabled }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving auto-send setting:", chrome.runtime.lastError);
+        } else {
+          console.log("[DEBUG-VIEWER] Auto-send to Vetted", enabled ? "enabled" : "disabled");
+        }
+      });
+    });
+  }
 
   // Tag options
   const CORE_ROLES = [
