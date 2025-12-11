@@ -312,8 +312,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else if (queue.length === 1) {
           // Use chrome.alarms instead of setTimeout - alarms persist across service worker restarts
           console.log("[DEBUG-BG] Starting 10-second alarm for auto-send...");
-          chrome.alarms.create("sendBatchToVetted", { delayInMinutes: 10 / 60 }); // 10 seconds = 10/60 minutes
-          console.log("[DEBUG-BG] Alarm created successfully");
+          chrome.alarms.create("sendBatchToVetted", { delayInMinutes: 10 / 60 }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("[DEBUG-BG] Error creating alarm:", chrome.runtime.lastError);
+              // Fallback: send immediately if alarm creation fails
+              console.log("[DEBUG-BG] Alarm creation failed, sending immediately as fallback...");
+              sendBatchToVetted().then((result) => {
+                console.log("[DEBUG-BG] Fallback batch send result:", result);
+              }).catch((error) => {
+                console.error("[DEBUG-BG] Fallback batch send error:", error);
+              });
+            } else {
+              console.log("[DEBUG-BG] Alarm created successfully");
+              // Verify alarm was created
+              chrome.alarms.get("sendBatchToVetted", (alarm) => {
+                if (chrome.runtime.lastError) {
+                  console.error("[DEBUG-BG] Error getting alarm:", chrome.runtime.lastError);
+                } else if (alarm) {
+                  console.log("[DEBUG-BG] Alarm verified, scheduled for:", new Date(alarm.scheduledTime));
+                } else {
+                  console.warn("[DEBUG-BG] Alarm not found after creation!");
+                }
+              });
+            }
+          });
         } else {
           console.log("[DEBUG-BG] Queue length is", queue.length, "- waiting for more profiles or alarm");
         }
