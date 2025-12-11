@@ -104,11 +104,12 @@ body {
 }
 
 .card-hover {
-  @apply transition-all duration-200 hover:border-primary-300;
+  @apply transition-all duration-200;
 }
 
 .card-hover:hover {
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  border-color: rgb(147 197 253); /* primary-300 equivalent */
 }
 
 .btn-primary {
