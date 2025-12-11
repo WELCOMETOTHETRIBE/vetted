@@ -11,6 +11,7 @@ import json
 import asyncio
 import re
 import sys
+import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -21,34 +22,56 @@ from bs4 import BeautifulSoup, Tag
 
 # ---------- CONFIG ----------
 
-DEFAULT_SEARCH_QUERY = 'site:jobs.ashbyhq.com "software engineer"'
+SOURCE_CONFIG = {
+    "ashby": {
+        "site": "jobs.ashbyhq.com",
+        "default_query": "software engineer",
+        "search_template": 'site:jobs.ashbyhq.com "{query}"',
+    },
+    "greenhouse": {
+        "site": "boards.greenhouse.io",
+        "default_query": "Product Designer",
+        "search_template": 'site:boards.greenhouse.io "{query}"',
+    },
+    "lever": {
+        "site": "lever.co",
+        "default_query": "Recruiter",
+        "search_template": 'site:lever.co "{query}"',
+    },
+}
+
 MAX_RESULTS = 100  # target number of URLs to collect
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 OUTPUT_FILE = os.getenv("ASHBY_OUTPUT_FILE", "ashby_jobs.json")
-ALLOWED_DOMAIN_FRAGMENT = "jobs.ashbyhq.com"
 
 # ---------- SEARCH PHASE (SerpAPI) ----------
 
 
-def fetch_ashby_job_urls(search_query: str | None = None) -> list[str]:
-    """Fetch Ashby job URLs from Google search using SerpAPI."""
+def fetch_job_urls(search_query: str | None = None, source: str = "ashby") -> list[str]:
+    """Fetch job URLs from Google search using SerpAPI."""
     if not SERPAPI_KEY:
         raise RuntimeError("SERPAPI_KEY environment variable is not set.")
 
-    # Use provided query or default, or from environment
-    query = search_query or os.getenv("ASHBY_SEARCH_QUERY") or DEFAULT_SEARCH_QUERY
+    # Get source config
+    if source not in SOURCE_CONFIG:
+        raise ValueError(f"Unknown source: {source}. Must be one of: {', '.join(SOURCE_CONFIG.keys())}")
     
-    # Ensure it's a proper site search
-    if not query.startswith("site:jobs.ashbyhq.com"):
-        # If it doesn't start with site:, construct the query
-        if query.startswith("site:"):
-            # Already has site: but different domain, replace it
-            query = f'site:jobs.ashbyhq.com {query.split(" ", 1)[1] if " " in query else ""}'
-        else:
-            # No site: prefix, add it
-            query = f'site:jobs.ashbyhq.com "{query}"'
+    config = SOURCE_CONFIG[source]
+    allowed_domain = config["site"]
+    
+    # Use provided query or default, or from environment
+    query_text = search_query or os.getenv("ASHBY_SEARCH_QUERY") or config["default_query"]
+    
+    # Construct the search query
+    if query_text.startswith("site:"):
+        # Already has site: prefix, use as-is but validate domain
+        query = query_text
+    else:
+        # Use the template for this source
+        query = config["search_template"].format(query=query_text)
 
     print(f"[search] Fetching up to {MAX_RESULTS} results for: {query!r}")
+    print(f"[search] Source: {source} ({allowed_domain})")
 
     params = {
         "engine": "google",
@@ -67,7 +90,7 @@ def fetch_ashby_job_urls(search_query: str | None = None) -> list[str]:
         if not link:
             continue
 
-        if ALLOWED_DOMAIN_FRAGMENT not in link:
+        if allowed_domain not in link:
             continue
 
         base = link.split("?", 1)[0]
@@ -84,7 +107,7 @@ def fetch_ashby_job_urls(search_query: str | None = None) -> list[str]:
     if len(deduped) > MAX_RESULTS:
         deduped = deduped[:MAX_RESULTS]
 
-    print(f"[search] Collected {len(deduped)} Ashby URLs")
+    print(f"[search] Collected {len(deduped)} {source} URLs")
     return deduped
 
 
@@ -442,18 +465,19 @@ async def scrape_jobs(urls: list[str]) -> list[dict]:
     return jobs
 
 
-def run_ashby_scrape(search_query: str | None = None) -> list[dict]:
+def run_ashby_scrape(search_query: str | None = None, source: str = "ashby") -> list[dict]:
     """
-    Main function to run the Ashby scrape.
+    Main function to run the job scrape.
     
     Args:
-        search_query: Optional search query (e.g., "software engineer", "machine learning")
-                     If not provided, uses DEFAULT_SEARCH_QUERY or ASHBY_SEARCH_QUERY env var.
+        search_query: Optional search query (e.g., "software engineer", "machine learning", "Product Designer")
+                     If not provided, uses default query for the source.
+        source: Job board source ("ashby", "greenhouse", or "lever"). Defaults to "ashby".
     
     Returns:
         List of job dictionaries.
     """
-    urls = fetch_ashby_job_urls(search_query)
+    urls = fetch_job_urls(search_query, source)
     jobs = asyncio.run(scrape_jobs(urls))
     return jobs
 
@@ -461,12 +485,20 @@ def run_ashby_scrape(search_query: str | None = None) -> list[dict]:
 def main():
     """CLI entry point."""
     try:
-        # Get search query from command line argument or environment variable
-        search_query = None
-        if len(sys.argv) > 1:
-            search_query = sys.argv[1]
+        parser = argparse.ArgumentParser(description="Scrape jobs from various job boards")
+        parser.add_argument("query", nargs="?", help="Search query (e.g., 'software engineer', 'Product Designer')")
+        parser.add_argument("--source", default="ashby", choices=["ashby", "greenhouse", "lever"],
+                          help="Job board source (default: ashby)")
         
-        jobs = run_ashby_scrape(search_query)
+        args = parser.parse_args()
+        
+        # Get source from environment variable or command line
+        source = os.getenv("JOB_SOURCE") or args.source
+        
+        # Get search query from command line argument or environment variable
+        search_query = args.query or os.getenv("ASHBY_SEARCH_QUERY")
+        
+        jobs = run_ashby_scrape(search_query, source)
 
         # Determine output path
         output_path = Path(OUTPUT_FILE)

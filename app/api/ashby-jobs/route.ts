@@ -43,6 +43,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const force = searchParams.get("force") === "true"
     const searchQuery = searchParams.get("query") || null
+    const source = searchParams.get("source") || "ashby" // Default to ashby for backward compatibility
     const skipExisting = searchParams.get("skipExisting") !== "false" // Default to true
 
     const outputFile = process.env.ASHBY_OUTPUT_FILE || "ashby_jobs.json"
@@ -143,17 +144,21 @@ export async function GET(req: Request) {
       )
     }
     
-    // Build command with search query if provided
+    // Build command with search query and source if provided
     let command = `${pythonCmd} ${pythonScript}`
     if (searchQuery) {
       // Escape the query for shell safety
       const escapedQuery = searchQuery.replace(/"/g, '\\"')
       command += ` "${escapedQuery}"`
     }
+    if (source) {
+      command += ` --source ${source}`
+    }
     
     console.log(`[ashby-jobs] Running scraper: ${command}`)
     console.log(`[ashby-jobs] Script path: ${pythonScript}`)
     console.log(`[ashby-jobs] Python command: ${pythonCmd}`)
+    console.log(`[ashby-jobs] Source: ${source}`)
 
     // Set timeout to 10 minutes (scraping can take a while)
     let stdout = ""
@@ -167,6 +172,7 @@ export async function GET(req: Request) {
             ...process.env,
             SERPAPI_KEY: process.env.SERPAPI_KEY,
             ASHBY_OUTPUT_FILE: outputFile,
+            JOB_SOURCE: source,
             // Also set as env var as fallback
             ...(searchQuery ? { ASHBY_SEARCH_QUERY: searchQuery } : {}),
           },

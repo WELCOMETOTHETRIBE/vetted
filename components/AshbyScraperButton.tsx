@@ -2,11 +2,32 @@
 
 import { useState } from "react"
 
+type JobSource = "ashby" | "greenhouse" | "lever"
+
+const SOURCE_CONFIG: Record<JobSource, { label: string; defaultQuery: string; site: string }> = {
+  ashby: {
+    label: "Ashby",
+    defaultQuery: "software engineer",
+    site: "site:jobs.ashbyhq.com",
+  },
+  greenhouse: {
+    label: "Greenhouse",
+    defaultQuery: "Product Designer",
+    site: "site:boards.greenhouse.io",
+  },
+  lever: {
+    label: "Lever",
+    defaultQuery: "Recruiter",
+    site: "site:lever.co",
+  },
+}
+
 export default function AshbyScraperButton() {
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState("software engineer")
+  const [source, setSource] = useState<JobSource>("ashby")
+  const [searchQuery, setSearchQuery] = useState(SOURCE_CONFIG.ashby.defaultQuery)
   const [showForm, setShowForm] = useState(false)
   const [results, setResults] = useState<{
     count: number
@@ -18,6 +39,11 @@ export default function AshbyScraperButton() {
     skipped: number
     errors: number
   } | null>(null)
+
+  const handleSourceChange = (newSource: JobSource) => {
+    setSource(newSource)
+    setSearchQuery(SOURCE_CONFIG[newSource].defaultQuery)
+  }
 
   const handleScrape = async () => {
     if (!searchQuery.trim()) {
@@ -31,12 +57,13 @@ export default function AshbyScraperButton() {
 
     try {
       const queryParam = encodeURIComponent(searchQuery.trim())
+      const sourceParam = encodeURIComponent(source)
       // Create an AbortController with a very long timeout (15 minutes)
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
       
       const response = await fetch(
-        `/api/ashby-jobs?query=${queryParam}&force=true`,
+        `/api/ashby-jobs?query=${queryParam}&source=${sourceParam}&force=true`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -143,11 +170,28 @@ export default function AshbyScraperButton() {
           onClick={() => setShowForm(true)}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
         >
-          Scrape Ashby Jobs
+          Scrape Jobs
         </button>
       ) : (
         <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-gray-200 rounded-lg p-4 shadow-lg min-w-[400px]">
           <div className="mb-4">
+            <label
+              htmlFor="job-source"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Job Board Source
+            </label>
+            <select
+              id="job-source"
+              value={source}
+              onChange={(e) => handleSourceChange(e.target.value as JobSource)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+              disabled={loading}
+            >
+              <option value="ashby">Ashby (jobs.ashbyhq.com)</option>
+              <option value="greenhouse">Greenhouse (boards.greenhouse.io)</option>
+              <option value="lever">Lever (lever.co)</option>
+            </select>
             <label
               htmlFor="search-query"
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -165,7 +209,7 @@ export default function AshbyScraperButton() {
               disabled={loading}
             />
             <p className="mt-1 text-xs text-gray-500">
-              Searches for jobs on Ashby-powered job boards
+              Searches for jobs on {SOURCE_CONFIG[source].label} job boards
             </p>
           </div>
 
