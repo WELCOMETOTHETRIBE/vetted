@@ -30,18 +30,43 @@ export async function POST(req: Request) {
       )
     }
 
-    // Read the scraped jobs file
+    // Read the scraped jobs file (check both project root and /tmp)
     const outputFile = process.env.ASHBY_OUTPUT_FILE || "ashby_jobs.json"
-    const outputPath = join(process.cwd(), outputFile)
+    let outputPath = join(process.cwd(), outputFile)
+    const tmpPath = join("/tmp", outputFile)
 
     let scrapedJobs: any[]
+    let data: string
     try {
-      const data = await readFile(outputPath, "utf-8")
+      // Try project root first
+      data = await readFile(outputPath, "utf-8")
+    } catch (error: any) {
+      // If not found in project root, try /tmp (where it might be due to permissions)
+      if (error.code === "ENOENT") {
+        try {
+          data = await readFile(tmpPath, "utf-8")
+          outputPath = tmpPath
+          console.log(`[ashby-jobs-import] Found output file in /tmp: ${tmpPath}`)
+        } catch (tmpError) {
+          return NextResponse.json(
+            { error: "No scraped jobs found. Please run the scraper first.", checked: [outputPath, tmpPath] },
+            { status: 404 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          { error: "Error reading scraped jobs file", details: error.message },
+          { status: 500 }
+        )
+      }
+    }
+    
+    try {
       scrapedJobs = JSON.parse(data)
-    } catch (error) {
+    } catch (parseError) {
       return NextResponse.json(
-        { error: "No scraped jobs found. Please run the scraper first." },
-        { status: 404 }
+        { error: "Invalid JSON in scraped jobs file", details: parseError instanceof Error ? parseError.message : String(parseError) },
+        { status: 500 }
       )
     }
 
