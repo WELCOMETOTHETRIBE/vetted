@@ -55,29 +55,37 @@ export async function POST(req: Request) {
       const prismaBinPath = path.join(process.cwd(), 'node_modules', '.bin', 'prisma')
       const hasPrismaBin = fs.existsSync(prismaBinPath)
       
-      // Temporarily rename prisma.config.ts to avoid loading it (it requires prisma/config module)
+      // Temporarily rename prisma config files to avoid loading them (they require prisma/config module)
       // Prisma will use schema.prisma directly with DATABASE_URL from environment
-      const configPath = path.join(process.cwd(), 'prisma.config.ts')
-      const configBackupPath = path.join(process.cwd(), 'prisma.config.ts.backup')
-      const hasConfig = fs.existsSync(configPath)
-      let configRenamed = false
-      
-      // Backup and remove config file if it exists
-      if (hasConfig) {
-        try {
-          fs.renameSync(configPath, configBackupPath)
-          configRenamed = true
-          console.log("Temporarily renamed prisma.config.ts to avoid module dependency")
-        } catch (e: any) {
-          console.warn("Failed to rename config file:", e.message)
-          // If rename fails, try copying and deleting
+      const configPaths = [
+        path.join(process.cwd(), 'prisma.config.ts'),
+        path.join(process.cwd(), 'prisma.config.js'),
+      ]
+      const configBackupPaths = [
+        path.join(process.cwd(), 'prisma.config.ts.backup'),
+        path.join(process.cwd(), 'prisma.config.js.backup'),
+      ]
+      // Rename all config files that exist
+      const renamedConfigs: Array<{ original: string; backup: string }> = []
+      for (let i = 0; i < configPaths.length; i++) {
+        const configPath = configPaths[i]
+        const configBackupPath = configBackupPaths[i]
+        if (fs.existsSync(configPath)) {
           try {
-            fs.copyFileSync(configPath, configBackupPath)
-            fs.unlinkSync(configPath)
-            configRenamed = true
-            console.log("Copied and removed prisma.config.ts")
-          } catch (e2: any) {
-            console.warn("Failed to copy/remove config file:", e2.message)
+            fs.renameSync(configPath, configBackupPath)
+            renamedConfigs.push({ original: configPath, backup: configBackupPath })
+            console.log(`Temporarily renamed ${path.basename(configPath)} to avoid module dependency`)
+          } catch (e: any) {
+            console.warn(`Failed to rename ${path.basename(configPath)}:`, e.message)
+            // If rename fails, try copying and deleting
+            try {
+              fs.copyFileSync(configPath, configBackupPath)
+              fs.unlinkSync(configPath)
+              renamedConfigs.push({ original: configPath, backup: configBackupPath })
+              console.log(`Copied and removed ${path.basename(configPath)}`)
+            } catch (e2: any) {
+              console.warn(`Failed to copy/remove ${path.basename(configPath)}:`, e2.message)
+            }
           }
         }
       }
@@ -105,18 +113,21 @@ export async function POST(req: Request) {
           }
         )
       } finally {
-        // Restore config file if it was renamed
-        if (configRenamed && fs.existsSync(configBackupPath)) {
-          try {
-            fs.renameSync(configBackupPath, configPath)
-            console.log("Restored prisma.config.ts")
-          } catch (e: any) {
-            console.warn("Failed to restore config file:", e.message)
-            // If restore fails, try copying
+        // Restore all renamed config files
+        for (const { original, backup } of renamedConfigs) {
+          if (fs.existsSync(backup)) {
             try {
-              fs.copyFileSync(configBackupPath, configPath)
-            } catch (e2: any) {
-              console.error("Failed to restore config file completely:", e2.message)
+              fs.renameSync(backup, original)
+              console.log(`Restored ${path.basename(original)}`)
+            } catch (e: any) {
+              console.warn(`Failed to restore ${path.basename(original)}:`, e.message)
+              // If restore fails, try copying
+              try {
+                fs.copyFileSync(backup, original)
+                console.log(`Restored ${path.basename(original)} via copy`)
+              } catch (e2: any) {
+                console.error(`Failed to restore ${path.basename(original)} completely:`, e2.message)
+              }
             }
           }
         }
