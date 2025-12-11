@@ -55,9 +55,11 @@ export async function POST(req: Request) {
       const prismaBinPath = path.join(process.cwd(), 'node_modules', '.bin', 'prisma')
       const hasPrismaBin = fs.existsSync(prismaBinPath)
       
+      // Use --skip-config to avoid loading prisma.config.ts which requires prisma/config module
+      // This tells Prisma to use the schema file directly with DATABASE_URL from env
       const prismaCmd = hasPrismaBin 
-        ? `"${prismaBinPath}" db push --accept-data-loss`
-        : `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss`
+        ? `"${prismaBinPath}" db push --accept-data-loss --skip-config --schema=prisma/schema.prisma`
+        : `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss --skip-config --schema=prisma/schema.prisma`
       
       const output = execSync(
         prismaCmd,
