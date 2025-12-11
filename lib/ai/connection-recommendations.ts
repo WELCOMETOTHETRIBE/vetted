@@ -157,7 +157,7 @@ Rank these connections by relevance to me.`
     const enriched: ConnectionRecommendation[] = recommendations
       .slice(0, limit)
       .map((rec: any) => {
-        const conn = potentialConnections.find((c) => c.id === rec.userId)
+        const conn = potentialConnections.find((c: any) => c.id === rec.userId)
         if (!conn) return null
 
         return {
