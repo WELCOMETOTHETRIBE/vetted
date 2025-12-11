@@ -138,26 +138,34 @@
               // Check if auto-send is enabled and queue for batch send
               chrome.storage.local.get(["autoSendToVetted", "autoSendToSheets"], (settings) => {
                 if (chrome.runtime.lastError) {
-                  console.error("Error loading settings:", chrome.runtime.lastError);
+                  console.error("[DEBUG-CS] Error loading settings:", chrome.runtime.lastError);
                   showToast(`Profile saved (#${response.count})`, false);
                   return;
                 }
                 
+                console.log("[DEBUG-CS] ========== Auto-send check ==========");
+                console.log("[DEBUG-CS] autoSendToVetted:", settings.autoSendToVetted);
+                console.log("[DEBUG-CS] autoSendToSheets:", settings.autoSendToSheets);
+                
                 if (settings.autoSendToVetted) {
+                  console.log("[DEBUG-CS] Auto-send to Vetted is ENABLED");
                   // Check extension context before queuing
                   if (!isExtensionContextValid()) {
+                    console.error("[DEBUG-CS] Extension context invalid!");
                     showExtensionReloadMessage();
                     showToast("Extension was reloaded. Please refresh this page.", true);
                     return;
                   }
 
+                  console.log("[DEBUG-CS] Sending QUEUE_FOR_VETTED message...");
                   // Queue profile for batch auto-send to Vetted
                   chrome.runtime.sendMessage({
                     type: "QUEUE_FOR_VETTED",
                     payload: profileDoc
                   }, (queueResponse) => {
+                    console.log("[DEBUG-CS] Queue response received:", queueResponse);
                     if (chrome.runtime.lastError) {
-                      console.error("Queue error:", chrome.runtime.lastError);
+                      console.error("[DEBUG-CS] Queue error:", chrome.runtime.lastError);
                       const errorMsg = chrome.runtime.lastError.message || "Unknown error";
                       
                       // Check if it's an invalidated context error
@@ -170,9 +178,11 @@
                       
                       showToast(`Profile saved but queue failed: ${errorMsg}`, true);
                     } else if (queueResponse && !queueResponse.success) {
+                      console.error("[DEBUG-CS] Queue failed:", queueResponse.error);
                       showToast(`Queue failed: ${queueResponse.error || "Unknown error"}`, true);
                     } else {
                       const queuedCount = queueResponse?.queuedCount || 0;
+                      console.log("[DEBUG-CS] Profile queued successfully, queue count:", queuedCount);
                       showToast(`Profile saved & queued for Vetted (${queuedCount} in queue)`);
                     }
                   });
