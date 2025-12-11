@@ -63,7 +63,27 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
   })
 
   // Extract URLs from descriptions for each job
-  const jobsWithUrls = jobs.map((job) => {
+  const jobsWithUrls = jobs.map((job: {
+    id: string
+    title: string
+    description?: string | null
+    location?: string | null
+    isRemote: boolean
+    isHybrid: boolean
+    employmentType: string
+    salaryMin?: number | null
+    salaryMax?: number | null
+    salaryCurrency?: string | null
+    createdAt: Date
+    views: number
+    company: {
+      id: string
+      name: string
+      slug: string
+      logo?: string | null
+    }
+    applications?: Array<{ id: string }>
+  }) => {
     const extractUrl = (desc: string | null): string | null => {
       if (!desc) return null
       const urlMatch = desc.match(/Apply at:\s*(https?:\/\/[^\s\n]+)/i) || 
