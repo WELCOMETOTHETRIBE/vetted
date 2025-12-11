@@ -19,6 +19,6 @@ cmds = [
 ]
 
 [start]
-cmd = "NPM_CONFIG_CACHE=/tmp/.npm npm run db:push || echo 'Migration skipped' && node server.js"
+cmd = "sh scripts/run-migration.sh"
 env = { PATH = "/opt/venv/bin:${PATH}", NPM_CONFIG_CACHE = "/tmp/.npm" }
 
