@@ -99,11 +99,16 @@ body {
 }
 
 .card {
-  @apply bg-white rounded-xl border border-neutral-200 shadow-card;
+  @apply bg-white rounded-xl border border-neutral-200;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
 .card-hover {
-  @apply transition-all duration-200 hover:shadow-card-hover hover:border-primary-300;
+  @apply transition-all duration-200 hover:border-primary-300;
+}
+
+.card-hover:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 .btn-primary {
