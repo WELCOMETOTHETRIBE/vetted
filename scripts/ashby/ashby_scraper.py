@@ -123,6 +123,220 @@ def extract_company_from_title(title: str | None) -> str | None:
     return None
 
 
+def extract_company_from_url(url: str, source: str) -> str | None:
+    """Extract company name from URL for Greenhouse and Lever."""
+    try:
+        if source == "greenhouse":
+            # Greenhouse URLs: https://boards.greenhouse.io/companyname/job-id
+            # or https://boards.greenhouse.io/companyname/jobs/job-id
+            match = re.search(r'boards\.greenhouse\.io/([^/]+)', url)
+            if match:
+                company = match.group(1)
+                # Skip common paths like 'jobs', 'departments', etc.
+                if company.lower() in ['jobs', 'departments', 'offices', 'apply']:
+                    return None
+                # Clean up: replace hyphens with spaces and title case
+                company = company.replace('-', ' ').replace('_', ' ')
+                # Title case but preserve acronyms
+                words = company.split()
+                title_words = []
+                for word in words:
+                    if word.isupper() and len(word) > 1:
+                        title_words.append(word)
+                    else:
+                        title_words.append(word.capitalize())
+                return ' '.join(title_words)
+        elif source == "lever":
+            # Lever URLs: https://jobs.lever.co/companyname/job-id
+            # or https://companyname.lever.co/job-id
+            # First try subdomain format
+            match = re.search(r'https?://([^.]+)\.lever\.co', url)
+            if match:
+                company = match.group(1)
+            else:
+                # Try path format
+                match = re.search(r'jobs\.lever\.co/([^/]+)', url)
+                if match:
+                    company = match.group(1)
+                else:
+                    return None
+            
+            if company:
+                # Clean up: replace hyphens with spaces and title case
+                company = company.replace('-', ' ').replace('_', ' ')
+                words = company.split()
+                title_words = []
+                for word in words:
+                    if word.isupper() and len(word) > 1:
+                        title_words.append(word)
+                    else:
+                        title_words.append(word.capitalize())
+                return ' '.join(title_words)
+    except Exception as e:
+        print(f"[extract_company_from_url] Error: {e}")
+    return None
+
+
+def extract_company_greenhouse(soup: BeautifulSoup, url: str) -> str | None:
+    """Extract company name from Greenhouse job page."""
+    # Try URL first (most reliable for Greenhouse)
+    company = extract_company_from_url(url, "greenhouse")
+    if company:
+        return company
+    
+    # Try meta tags
+    meta_company = soup.find("meta", property="og:site_name")
+    if meta_company and meta_company.get("content"):
+        content = meta_company.get("content").strip()
+        if content and content.lower() not in ["greenhouse", "job board"]:
+            return content
+    
+    # Try og:title which sometimes has "Job Title at Company"
+    og_title = soup.find("meta", property="og:title")
+    if og_title and og_title.get("content"):
+        text = og_title.get("content")
+        if " at " in text.lower():
+            parts = text.rsplit(" at ", 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+    
+    # Try h1 or page header
+    h1 = soup.find("h1")
+    if h1:
+        text = h1.get_text(strip=True)
+        # Sometimes company name is in the h1
+        if " at " in text.lower():
+            parts = text.rsplit(" at ", 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+    
+    # Try finding company name in page structure (breadcrumb, nav, etc.)
+    company_elem = soup.find("a", href=re.compile(r"/company/|/about|/team"))
+    if company_elem:
+        text = company_elem.get_text(strip=True)
+        if text and len(text) < 50:  # Reasonable company name length
+            return text
+    
+    # Try looking for company name in page title
+    title = soup.find("title")
+    if title:
+        text = title.get_text(strip=True)
+        if " at " in text.lower():
+            parts = text.rsplit(" at ", 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+    
+    return None
+
+
+def extract_company_lever(soup: BeautifulSoup, url: str) -> str | None:
+    """Extract company name from Lever job page."""
+    # Try URL first (most reliable for Lever)
+    company = extract_company_from_url(url, "lever")
+    if company:
+        return company
+    
+    # Try meta tags
+    meta_company = soup.find("meta", property="og:site_name")
+    if meta_company and meta_company.get("content"):
+        content = meta_company.get("content").strip()
+        if content and content.lower() not in ["lever", "job board"]:
+            return content
+    
+    # Try og:title which sometimes has "Job Title at Company"
+    og_title = soup.find("meta", property="og:title")
+    if og_title and og_title.get("content"):
+        text = og_title.get("content")
+        if " at " in text.lower():
+            parts = text.rsplit(" at ", 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+    
+    # Try page title
+    title = soup.find("title")
+    if title:
+        text = title.get_text(strip=True)
+        if " at " in text.lower():
+            parts = text.rsplit(" at ", 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+    
+    # Try finding company name in page structure
+    company_elem = soup.find("a", href=re.compile(r"/company/|/about|/team"))
+    if company_elem:
+        text = company_elem.get_text(strip=True)
+        if text and len(text) < 50:
+            return text
+    
+    return None
+
+
+def extract_fields_greenhouse(soup: BeautifulSoup) -> dict:
+    """Extract job fields from Greenhouse page structure."""
+    fields = {
+        "location": None,
+        "employment_type": None,
+        "department": None,
+    }
+    
+    # Greenhouse often uses specific class names or data attributes
+    # Look for location
+    location_elem = soup.find(string=re.compile(r"location", re.IGNORECASE))
+    if location_elem:
+        parent = location_elem.parent
+        if parent:
+            # Try to find the value in next sibling or parent
+            value = find_field_value(soup, "Location")
+            if value:
+                fields["location"] = value
+    
+    # Try common Greenhouse selectors
+    location_selectors = [
+        soup.find("div", class_=re.compile(r"location", re.I)),
+        soup.find("span", class_=re.compile(r"location", re.I)),
+        soup.find("p", class_=re.compile(r"location", re.I)),
+    ]
+    for elem in location_selectors:
+        if elem:
+            text = elem.get_text(strip=True)
+            if text and len(text) < 100:  # Reasonable location length
+                fields["location"] = text
+                break
+    
+    return fields
+
+
+def extract_fields_lever(soup: BeautifulSoup) -> dict:
+    """Extract job fields from Lever page structure."""
+    fields = {
+        "location": None,
+        "employment_type": None,
+        "department": None,
+    }
+    
+    # Lever uses specific structure
+    # Look for location
+    location_elem = soup.find(string=re.compile(r"location", re.IGNORECASE))
+    if location_elem:
+        value = find_field_value(soup, "Location")
+        if value:
+            fields["location"] = value
+    
+    # Try common Lever selectors
+    location_selectors = [
+        soup.find("div", class_=re.compile(r"location", re.I)),
+        soup.find("span", class_=re.compile(r"location", re.I)),
+    ]
+    for elem in location_selectors:
+        if elem:
+            text = elem.get_text(strip=True)
+            if text and len(text) < 100:
+                fields["location"] = text
+                break
+    
+    return fields
+
+
 def find_field_value(soup: BeautifulSoup, label: str) -> str | None:
     """Find a field value by label in the HTML."""
     node = soup.find(string=re.compile(rf"^{label}\s*$", re.IGNORECASE))
@@ -296,9 +510,9 @@ def derive_meta(full_text: str) -> dict:
 # ---------- SCRAPING A SINGLE JOB ----------
 
 
-async def scrape_job(page, url: str) -> dict:
+async def scrape_job(page, url: str, source: str = "ashby") -> dict:
     """Scrape a single job posting page."""
-    print(f"[scrape] Visiting {url}")
+    print(f"[scrape] Visiting {url} (source: {source})")
 
     try:
         await page.goto(url, wait_until="networkidle", timeout=30000)
@@ -310,10 +524,34 @@ async def scrape_job(page, url: str) -> dict:
         title_tag = soup.find("title")
         raw_title = title_tag.get_text(strip=True) if title_tag else None
 
-        company = extract_company_from_title(raw_title)
-        location = find_field_value(soup, "Location")
-        employment_type = find_field_value(soup, "Employment Type")
-        department = find_field_value(soup, "Department")
+        # Extract company name based on source
+        company = None
+        if source == "ashby":
+            company = extract_company_from_title(raw_title)
+        elif source == "greenhouse":
+            company = extract_company_greenhouse(soup, url)
+        elif source == "lever":
+            company = extract_company_lever(soup, url)
+        
+        # If still no company, try URL extraction as fallback
+        if not company:
+            company = extract_company_from_url(url, source)
+        
+        # Extract fields based on source
+        if source == "greenhouse":
+            fields = extract_fields_greenhouse(soup)
+            location = fields.get("location") or find_field_value(soup, "Location")
+            employment_type = fields.get("employment_type") or find_field_value(soup, "Employment Type")
+            department = fields.get("department") or find_field_value(soup, "Department")
+        elif source == "lever":
+            fields = extract_fields_lever(soup)
+            location = fields.get("location") or find_field_value(soup, "Location")
+            employment_type = fields.get("employment_type") or find_field_value(soup, "Employment Type")
+            department = fields.get("department") or find_field_value(soup, "Department")
+        else:  # ashby
+            location = find_field_value(soup, "Location")
+            employment_type = find_field_value(soup, "Employment Type")
+            department = find_field_value(soup, "Department")
 
         description_text = extract_description_text(soup)
         sections = gather_sections(soup)
@@ -392,13 +630,20 @@ async def scrape_job(page, url: str) -> dict:
 
         meta = derive_meta(description_text + "\n\n" + (dont_work_here_raw or ""))
 
+        # Map source to output format
+        source_map = {
+            "ashby": "ashbyhq",
+            "greenhouse": "greenhouse",
+            "lever": "lever",
+        }
+        
         job_data = {
-            "company": company,
+            "company": company or "Unknown Company",
             "title": raw_title,
             "location": location,
             "employment_type": employment_type,
             "department": department,
-            "source": "ashbyhq",
+            "source": source_map.get(source, source),
             "overview": {
                 "headline": headline,
                 "summary": overview_summary,
@@ -444,7 +689,7 @@ async def scrape_job(page, url: str) -> dict:
 # ---------- MAIN ORCHESTRATOR ----------
 
 
-async def scrape_jobs(urls: list[str]) -> list[dict]:
+async def scrape_jobs(urls: list[str], source: str = "ashby") -> list[dict]:
     """Scrape all job URLs using Playwright."""
     jobs: list[dict] = []
 
@@ -454,7 +699,7 @@ async def scrape_jobs(urls: list[str]) -> list[dict]:
 
         for i, url in enumerate(urls, start=1):
             try:
-                job = await scrape_job(page, url)
+                job = await scrape_job(page, url, source)
                 jobs.append(job)
                 print(f"[scrape] Done {i}/{len(urls)}")
             except Exception as e:
@@ -478,7 +723,7 @@ def run_ashby_scrape(search_query: str | None = None, source: str = "ashby") -> 
         List of job dictionaries.
     """
     urls = fetch_job_urls(search_query, source)
-    jobs = asyncio.run(scrape_jobs(urls))
+    jobs = asyncio.run(scrape_jobs(urls, source))
     return jobs
 
 
