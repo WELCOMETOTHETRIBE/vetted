@@ -221,9 +221,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "QUEUE_FOR_VETTED" && typeof message.payload === "object" && message.payload !== null) {
     console.log("[DEBUG-BG] ========== QUEUE_FOR_VETTED received ==========");
     console.log("[DEBUG-BG] Profile payload:", !!message.payload);
+    console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
+    console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
     
     // Get current queue
     chrome.storage.local.get(["vettedQueue"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("[DEBUG-BG] Error getting queue:", chrome.runtime.lastError);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      
       const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
       console.log("[DEBUG-BG] Current queue length:", queue.length);
       
@@ -253,14 +261,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else if (queue.length === 1) {
           // Start timer for first item in queue
           console.log("[DEBUG-BG] Starting 10-second timer for auto-send...");
-          setTimeout(() => {
+          console.log("[DEBUG-BG] Timer will trigger sendBatchToVetted in 10 seconds");
+          const timerId = setTimeout(() => {
+            console.log("[DEBUG-BG] ========== TIMER EXPIRED ==========");
             console.log("[DEBUG-BG] Timer expired, sending batch...");
+            console.log("[DEBUG-BG] Extension context still valid:", isExtensionContextValid());
+            console.log("[DEBUG-BG] ProfileProcessor still available:", typeof ProfileProcessor !== 'undefined');
             sendBatchToVetted().then((result) => {
               console.log("[DEBUG-BG] Batch send result:", result);
             }).catch((error) => {
               console.error("[DEBUG-BG] Batch send error:", error);
             });
           }, 10000); // 10 seconds
+          console.log("[DEBUG-BG] Timer ID:", timerId, "- Timer set successfully");
+        } else {
+          console.log("[DEBUG-BG] Queue length is", queue.length, "- waiting for more profiles or timer");
         }
       });
     });
