@@ -46,6 +46,31 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+// Listen for alarms - this handles the 10-second delay for batch sending
+chrome.alarms.onAlarm.addListener((alarm) => {
+  console.log("[DEBUG-BG] ========== ALARM TRIGGERED ==========");
+  console.log("[DEBUG-BG] Alarm name:", alarm.name);
+  console.log("[DEBUG-BG] Alarm scheduled time:", alarm.scheduledTime);
+  console.log("[DEBUG-BG] Current time:", Date.now());
+  
+  if (alarm.name === "sendBatchToVetted") {
+    console.log("[DEBUG-BG] Processing sendBatchToVetted alarm...");
+    console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
+    console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
+    
+    sendBatchToVetted().then((result) => {
+      console.log("[DEBUG-BG] Batch send result:", result);
+    }).catch((error) => {
+      console.error("[DEBUG-BG] Batch send error:", error);
+    });
+    
+    // Clear the alarm
+    chrome.alarms.clear("sendBatchToVetted", (wasCleared) => {
+      console.log("[DEBUG-BG] Alarm cleared:", wasCleared);
+    });
+  }
+});
+
 // Function to send profile to Google Sheets
 async function sendProfileToSheets(profileDoc) {
   try {
@@ -259,23 +284,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.error("[DEBUG-BG] Batch send error:", error);
           });
         } else if (queue.length === 1) {
-          // Start timer for first item in queue
-          console.log("[DEBUG-BG] Starting 10-second timer for auto-send...");
-          console.log("[DEBUG-BG] Timer will trigger sendBatchToVetted in 10 seconds");
-          const timerId = setTimeout(() => {
-            console.log("[DEBUG-BG] ========== TIMER EXPIRED ==========");
-            console.log("[DEBUG-BG] Timer expired, sending batch...");
-            console.log("[DEBUG-BG] Extension context still valid:", isExtensionContextValid());
-            console.log("[DEBUG-BG] ProfileProcessor still available:", typeof ProfileProcessor !== 'undefined');
-            sendBatchToVetted().then((result) => {
-              console.log("[DEBUG-BG] Batch send result:", result);
-            }).catch((error) => {
-              console.error("[DEBUG-BG] Batch send error:", error);
-            });
-          }, 10000); // 10 seconds
-          console.log("[DEBUG-BG] Timer ID:", timerId, "- Timer set successfully");
+          // Use chrome.alarms instead of setTimeout - alarms persist across service worker restarts
+          console.log("[DEBUG-BG] Starting 10-second alarm for auto-send...");
+          chrome.alarms.create("sendBatchToVetted", { delayInMinutes: 10 / 60 }); // 10 seconds = 10/60 minutes
+          console.log("[DEBUG-BG] Alarm created successfully");
         } else {
-          console.log("[DEBUG-BG] Queue length is", queue.length, "- waiting for more profiles or timer");
+          console.log("[DEBUG-BG] Queue length is", queue.length, "- waiting for more profiles or alarm");
         }
       });
     });
