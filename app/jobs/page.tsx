@@ -59,7 +59,7 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
       },
     },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 500,
   })
 
   return jobs
