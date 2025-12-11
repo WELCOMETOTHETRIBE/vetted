@@ -57,8 +57,8 @@ export async function getConnectionRecommendations(
 
     // Get all connected user IDs
     const connectedIds = new Set<string>([userId])
-    user.connectionsAsRequester.forEach((conn) => connectedIds.add(conn.receiverId))
-    user.connectionsAsReceiver.forEach((conn) => connectedIds.add(conn.requesterId))
+    user.connectionsAsRequester.forEach((conn: { receiverId: string }) => connectedIds.add(conn.receiverId))
+    user.connectionsAsReceiver.forEach((conn: { requesterId: string }) => connectedIds.add(conn.requesterId))
 
     // Get potential connections (not already connected, not pending)
     const potentialConnections = await prisma.user.findMany({
