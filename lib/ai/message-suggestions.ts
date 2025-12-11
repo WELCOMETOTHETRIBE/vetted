@@ -54,7 +54,7 @@ export async function generateMessageSuggestions(
     // Build conversation context
     const messages = thread.messages.reverse() // Oldest first
     const conversationContext = messages
-      .map((msg) => `${msg.sender.id === userId ? "You" : otherUser.name}: ${msg.content}`)
+      .map((msg: any) => `${msg.sender.id === userId ? "You" : otherUser.name}: ${msg.content}`)
       .join("\n")
 
     const toneInstructions = {
