@@ -360,6 +360,7 @@ async function sendBatchToVetted() {
     // Hardcoded Vetted API URL
     const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
     console.log("[DEBUG-BG] API URL:", VETTED_API_URL);
+    console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
     
     chrome.storage.local.get(["vettedQueue", "vettedApiKey"], async (data) => {
       const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
@@ -371,6 +372,8 @@ async function sendBatchToVetted() {
         resolve({ success: true, sent: 0, message: "No profiles in queue" });
         return;
       }
+      
+      console.log("[DEBUG-BG] Processing", queue.length, "profiles from queue...");
 
       try {
         // Process all profiles in queue
@@ -379,21 +382,29 @@ async function sendBatchToVetted() {
           return;
         }
 
-        const processed = queue.map(profileDoc => {
+        const processed = queue.map((profileDoc, index) => {
           try {
-            return ProfileProcessor.processProfileDocument(profileDoc);
+            console.log(`[DEBUG-BG] Processing profile ${index + 1}/${queue.length}...`);
+            const result = ProfileProcessor.processProfileDocument(profileDoc);
+            console.log(`[DEBUG-BG] Profile ${index + 1} processed successfully`);
+            return result;
           } catch (e) {
-            console.error("Error processing profile:", e);
+            console.error(`[DEBUG-BG] Error processing profile ${index + 1}:`, e);
             return null;
           }
         }).filter(p => p !== null);
 
+        console.log("[DEBUG-BG] Processed profiles:", processed.length, "out of", queue.length);
+
         if (processed.length === 0) {
           // Clear queue if all failed
+          console.error("[DEBUG-BG] All profiles failed processing, clearing queue");
           chrome.storage.local.set({ vettedQueue: [] });
           resolve({ success: false, error: "No valid profiles to send" });
           return;
         }
+        
+        console.log("[DEBUG-BG] Sending", processed.length, "processed profiles to API...");
 
         // Send batch to Vetted API
         const headers = {
@@ -404,14 +415,28 @@ async function sendBatchToVetted() {
           headers["Authorization"] = `Bearer ${data.vettedApiKey}`;
         }
 
+        console.log("[DEBUG-BG] Fetch request details:", {
+          url: VETTED_API_URL,
+          method: "POST",
+          headers: Object.keys(headers),
+          bodySize: JSON.stringify(processed).length
+        });
+        
+        const fetchStartTime = Date.now();
         const response = await fetch(VETTED_API_URL, {
           method: "POST",
           headers: headers,
           credentials: "include",
           body: JSON.stringify(processed),
         });
+        
+        const fetchTime = Date.now() - fetchStartTime;
+        console.log("[DEBUG-BG] Fetch completed in", fetchTime, "ms");
+        console.log("[DEBUG-BG] Response status:", response.status, response.statusText);
+        console.log("[DEBUG-BG] Response ok:", response.ok);
 
         if (!response.ok) {
+          console.error("[DEBUG-BG] Response not OK, parsing error...");
           let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
           try {
             const errorData = await response.json();

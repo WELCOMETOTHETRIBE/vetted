@@ -1353,6 +1353,29 @@ document.addEventListener("DOMContentLoaded", () => {
   // Delay initialization slightly to ensure DOM is ready
   setTimeout(() => {
     loadData();
+    
+    // Check if there are queued profiles that need to be sent
+    chrome.storage.local.get(["vettedQueue", "autoSendToVetted"], (data) => {
+      const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+      const autoSendEnabled = data.autoSendToVetted !== undefined ? data.autoSendToVetted : true;
+      
+      console.log("[DEBUG-VIEWER] On load - Queue length:", queue.length);
+      console.log("[DEBUG-VIEWER] On load - Auto-send enabled:", autoSendEnabled);
+      
+      // If there are queued profiles and auto-send is enabled, trigger send
+      if (queue.length > 0 && autoSendEnabled) {
+        console.log("[DEBUG-VIEWER] Found queued profiles, triggering batch send...");
+        chrome.runtime.sendMessage({
+          type: "SEND_BATCH_TO_VETTED"
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error("[DEBUG-VIEWER] Error triggering batch send:", chrome.runtime.lastError);
+          } else {
+            console.log("[DEBUG-VIEWER] Batch send triggered, response:", response);
+          }
+        });
+      }
+    });
   }, 50);
 
   // Listen for storage changes to auto-refresh when profiles are saved
