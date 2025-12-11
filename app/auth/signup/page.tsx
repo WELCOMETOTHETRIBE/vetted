@@ -58,36 +58,36 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-8">
             <Image
               src="/vetted.png"
               alt="Vetted"
               width={160}
               height={64}
-              className="h-16 w-auto"
+              className="h-20 w-auto drop-shadow-md"
               priority
             />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
             Create your Vetted account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-3 text-center text-sm text-neutral-600">
             Or{" "}
-            <Link href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/auth/signin" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
               sign in to your existing account
             </Link>
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-xl shadow-sm">
               {error}
             </div>
           )}
-          <div className="rounded-md shadow-sm space-y-4">
+          <div className="space-y-4">
             <div>
               <label htmlFor="name" className="sr-only">
                 Full Name
@@ -99,7 +99,7 @@ export default function SignUpPage() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="input-base"
                 placeholder="Full Name"
               />
             </div>
@@ -115,7 +115,7 @@ export default function SignUpPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="input-base"
                 placeholder="Email address"
               />
             </div>
@@ -132,7 +132,7 @@ export default function SignUpPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="input-base"
                 placeholder="Password (min 8 characters)"
               />
             </div>
@@ -142,7 +142,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="btn-primary w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Creating account..." : "Sign up"}
             </button>
@@ -151,10 +151,10 @@ export default function SignUpPage() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-neutral-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+                <span className="px-3 bg-white text-neutral-500 font-medium">Or continue with</span>
               </div>
             </div>
 
@@ -162,7 +162,7 @@ export default function SignUpPage() {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex justify-center items-center py-3 px-4 border-2 border-neutral-300 rounded-xl shadow-sm bg-white text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
                 <span>Sign up with Google</span>
               </button>
