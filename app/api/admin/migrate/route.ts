@@ -55,22 +55,30 @@ export async function POST(req: Request) {
       const prismaBinPath = path.join(process.cwd(), 'node_modules', '.bin', 'prisma')
       const hasPrismaBin = fs.existsSync(prismaBinPath)
       
-      // Use --skip-config to avoid loading prisma.config.ts which requires prisma/config module
-      // This tells Prisma to use the schema file directly with DATABASE_URL from env
       // Temporarily rename prisma.config.ts to avoid loading it (it requires prisma/config module)
       // Prisma will use schema.prisma directly with DATABASE_URL from environment
       const configPath = path.join(process.cwd(), 'prisma.config.ts')
       const configBackupPath = path.join(process.cwd(), 'prisma.config.ts.backup')
       const hasConfig = fs.existsSync(configPath)
+      let configRenamed = false
       
       // Backup and remove config file if it exists
       if (hasConfig) {
         try {
           fs.renameSync(configPath, configBackupPath)
-        } catch (e) {
+          configRenamed = true
+          console.log("Temporarily renamed prisma.config.ts to avoid module dependency")
+        } catch (e: any) {
+          console.warn("Failed to rename config file:", e.message)
           // If rename fails, try copying and deleting
-          fs.copyFileSync(configPath, configBackupPath)
-          fs.unlinkSync(configPath)
+          try {
+            fs.copyFileSync(configPath, configBackupPath)
+            fs.unlinkSync(configPath)
+            configRenamed = true
+            console.log("Copied and removed prisma.config.ts")
+          } catch (e2: any) {
+            console.warn("Failed to copy/remove config file:", e2.message)
+          }
         }
       }
       
@@ -97,33 +105,22 @@ export async function POST(req: Request) {
           }
         )
       } finally {
-        // Restore config file if it was backed up
-        if (hasConfig && fs.existsSync(configBackupPath)) {
+        // Restore config file if it was renamed
+        if (configRenamed && fs.existsSync(configBackupPath)) {
           try {
             fs.renameSync(configBackupPath, configPath)
-          } catch (e) {
+            console.log("Restored prisma.config.ts")
+          } catch (e: any) {
+            console.warn("Failed to restore config file:", e.message)
             // If restore fails, try copying
-            fs.copyFileSync(configBackupPath, configPath)
+            try {
+              fs.copyFileSync(configBackupPath, configPath)
+            } catch (e2: any) {
+              console.error("Failed to restore config file completely:", e2.message)
+            }
           }
         }
       }
-      
-      const output = execSync(
-        prismaCmd,
-        {
-          encoding: "utf-8",
-          cwd: process.cwd(),
-          env: { 
-            ...process.env,
-            DATABASE_URL: dbUrl,
-            NPM_CONFIG_CACHE: "/tmp/.npm",
-            PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
-          },
-          stdio: ['pipe', 'pipe', 'pipe'],
-          maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-          timeout: 60000, // 60 second timeout
-        }
-      )
 
       return NextResponse.json({
         success: true,
