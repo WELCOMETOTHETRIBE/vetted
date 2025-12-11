@@ -45,7 +45,7 @@ async function getAdminData() {
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: 500,
     }),
   ])
 
