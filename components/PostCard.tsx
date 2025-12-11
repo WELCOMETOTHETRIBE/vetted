@@ -243,7 +243,7 @@ export default function PostCard({
           </form>
         </div>
       )}
-    </div>
+    </article>
   )
 }
 
