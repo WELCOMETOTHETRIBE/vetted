@@ -86,7 +86,27 @@ export default async function JobsPage({
     return urlMatch ? urlMatch[1] : null
   }
 
-  const jobsWithUrls = jobs.map((job) => ({
+  const jobsWithUrls = jobs.map((job: {
+    id: string
+    title: string
+    description?: string | null
+    location?: string | null
+    isRemote: boolean
+    isHybrid: boolean
+    employmentType: string
+    salaryMin?: number | null
+    salaryMax?: number | null
+    salaryCurrency?: string | null
+    createdAt: Date
+    views: number
+    company: {
+      id: string
+      name: string
+      slug: string
+      logo?: string | null
+    }
+    applications?: Array<{ id: string }>
+  }) => ({
     ...job,
     originalUrl: extractUrl(job.description),
   }))
