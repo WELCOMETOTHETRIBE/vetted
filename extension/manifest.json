@@ -3,7 +3,7 @@
   "name": "Profile JSON Logger",
   "version": "1.0.0",
   "description": "Floating button that logs rich profile JSON (URL, HTML, structured contents) for each page.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms"],
   "host_permissions": [
     "https://script.google.com/*",
     "https://script.googleusercontent.com/*",
