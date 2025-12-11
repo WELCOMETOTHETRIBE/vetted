@@ -1,5 +1,5 @@
 import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
-import { Candidate, Job } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 
 export interface JobMatchResult {
   jobId: string
@@ -15,8 +15,8 @@ export interface JobMatchResult {
  * Match a candidate to available jobs
  */
 export async function matchCandidateToJobs(
-  candidate: Candidate,
-  jobs: Job[]
+  candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>,
+  jobs: Awaited<ReturnType<typeof prisma.job.findMany>>
 ): Promise<JobMatchResult[]> {
   if (!isOpenAIConfigured()) {
     console.warn("OpenAI not configured, skipping job matching")
@@ -34,10 +34,10 @@ export async function matchCandidateToJobs(
     const candidateProfile = buildCandidateProfileText(candidate)
     
     // Build jobs text
-    const jobsText = jobs.map(job => {
+    const jobsText = jobs.map((job: any) => {
       return `Job ID: ${job.id}
 Title: ${job.title}
-Company: ${(job as any).company?.name || "Unknown"}
+Company: ${job.company?.name || "Unknown"}
 Location: ${job.location || "Not specified"}
 Description: ${job.description.substring(0, 500)}${job.description.length > 500 ? "..." : ""}
 Requirements: ${job.requirements?.substring(0, 300) || "Not specified"}`
@@ -94,11 +94,11 @@ Return JSON array with one object per job:
 
     // Enrich with job details
     const enrichedMatches: JobMatchResult[] = matches.map((match: any) => {
-      const job = jobs.find(j => j.id === match.jobId)
+      const job = jobs.find((j: any) => j.id === match.jobId)
       return {
         jobId: match.jobId,
         jobTitle: job?.title || "Unknown",
-        companyName: (job as any)?.company?.name || "Unknown",
+        companyName: job?.company?.name || "Unknown",
         matchScore: Math.min(100, Math.max(0, match.matchScore || 0)),
         reasoning: match.reasoning || "No reasoning provided",
         strengths: Array.isArray(match.strengths) ? match.strengths : [],
@@ -117,7 +117,7 @@ Return JSON array with one object per job:
 /**
  * Build candidate profile text (reuse from candidate-ai.ts)
  */
-function buildCandidateProfileText(candidate: Candidate): string {
+function buildCandidateProfileText(candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>): string {
   const parts: string[] = []
 
   parts.push(`Name: ${candidate.fullName}`)

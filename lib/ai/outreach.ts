@@ -1,12 +1,12 @@
 import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
-import { Candidate, Job } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 
 /**
  * Generate personalized outreach message for a candidate
  */
 export async function generateOutreachMessage(
-  candidate: Candidate,
-  job?: Job | null,
+  candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>,
+  job?: Awaited<ReturnType<typeof prisma.job.findUnique>> | null,
   recruiterName?: string,
   companyName?: string
 ): Promise<string | null> {

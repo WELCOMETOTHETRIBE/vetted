@@ -84,7 +84,14 @@ export async function GET(req: Request) {
     // Get AI recommendations
     const recommendations = await recommendContent(
       session.user.id,
-      posts.map((p) => ({
+      posts.map((p: {
+        id: string
+        content: string
+        authorId: string
+        createdAt: Date
+        reactions: Array<{ userId: string }>
+        comments: Array<{ id: string }>
+      }) => ({
         id: p.id,
         content: p.content,
         authorId: p.authorId,
@@ -99,7 +106,7 @@ export async function GET(req: Request) {
     const recommendedPosts = recommendations
       .slice(0, 20) // Top 20 recommendations
       .map((rec) => {
-        const post = posts.find((p) => p.id === rec.postId)
+        const post = posts.find((p: { id: string }) => p.id === rec.postId)
         return post ? { ...post, relevanceScore: rec.relevanceScore, reasoning: rec.reasoning } : null
       })
       .filter((p): p is NonNullable<typeof p> => p !== null)

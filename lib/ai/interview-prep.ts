@@ -1,5 +1,5 @@
 import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
-import { Candidate, Job } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 
 export interface InterviewQuestions {
   technical: string[]
@@ -20,8 +20,8 @@ export interface InterviewInsights {
  * Generate interview questions for a candidate and job
  */
 export async function generateInterviewQuestions(
-  candidate: Candidate,
-  job: Job
+  candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>,
+  job: Awaited<ReturnType<typeof prisma.job.findUnique>>
 ): Promise<InterviewQuestions | null> {
   if (!isOpenAIConfigured()) {
     return null
@@ -95,8 +95,8 @@ Generate 3-5 questions per category. Make them specific and relevant.`
  * Generate interview insights and talking points
  */
 export async function generateInterviewInsights(
-  candidate: Candidate,
-  job: Job
+  candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>,
+  job: Awaited<ReturnType<typeof prisma.job.findUnique>>
 ): Promise<InterviewInsights | null> {
   if (!isOpenAIConfigured()) {
     return null

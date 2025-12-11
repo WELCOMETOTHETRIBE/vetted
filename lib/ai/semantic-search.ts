@@ -4,7 +4,7 @@ export interface SearchResult {
   id: string
   type: "person" | "job" | "company" | "group" | "candidate"
   title: string
-  description: string | null
+  description?: string | null
   relevanceScore: number
   reasoning: string | null
 }
@@ -70,7 +70,7 @@ export async function rankSearchResults(
   results: Array<{ id: string; type: string; title: string; description?: string | null }>
 ): Promise<Array<SearchResult & { original: any }>> {
   if (!isOpenAIConfigured() || results.length === 0) {
-    return results.map(r => ({
+    return results.map((r: any) => ({
       ...r,
       type: r.type as any,
       relevanceScore: 50, // Default score
@@ -115,7 +115,7 @@ Return JSON array with relevance scores (0-100) and brief reasoning:
 
     const content = response.choices[0]?.message?.content
     if (!content) {
-      return results.map(r => ({
+      return results.map((r: any) => ({
         ...r,
         type: r.type as any,
         relevanceScore: 50,
@@ -128,7 +128,7 @@ Return JSON array with relevance scores (0-100) and brief reasoning:
     const rankings = parsed.rankings || parsed.results || []
 
     // Map rankings back to results
-    return results.map((r, idx) => {
+    return results.map((r: any, idx: number) => {
       const ranking = rankings.find((rank: any) => rank.index === idx) || { relevanceScore: 50, reasoning: null }
       return {
         ...r,
@@ -140,7 +140,7 @@ Return JSON array with relevance scores (0-100) and brief reasoning:
     }).sort((a, b) => b.relevanceScore - a.relevanceScore)
   } catch (error: any) {
     console.error("Error ranking search results:", error)
-    return results.map(r => ({
+    return results.map((r: any) => ({
       ...r,
       type: r.type as any,
       relevanceScore: 50,

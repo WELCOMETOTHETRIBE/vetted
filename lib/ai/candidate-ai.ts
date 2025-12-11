@@ -1,5 +1,5 @@
 import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
-import { Candidate } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 
 interface CandidateAISummary {
   summary: string
@@ -13,7 +13,7 @@ interface CandidateAISummary {
  * Generate AI summary for a candidate
  */
 export async function generateCandidateSummary(
-  candidate: Candidate
+  candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>
 ): Promise<CandidateAISummary | null> {
   if (!isOpenAIConfigured()) {
     console.warn("OpenAI not configured, skipping AI summary generation")
@@ -79,7 +79,7 @@ Return your response as JSON with this structure:
 /**
  * Build a text representation of candidate profile for AI analysis
  */
-function buildCandidateProfileText(candidate: Candidate): string {
+function buildCandidateProfileText(candidate: Awaited<ReturnType<typeof prisma.candidate.findUnique>>): string {
   const parts: string[] = []
 
   parts.push(`Name: ${candidate.fullName}`)

@@ -3,7 +3,7 @@ import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
 export interface ContentRecommendation {
   postId: string
   relevanceScore: number
-  reasoning: string
+  reasoning: string | null
 }
 
 export interface SpamDetectionResult {
@@ -154,15 +154,17 @@ Return JSON array:
 
     // Map back to posts
     const resultMap = new Map(
-      recommendations.map((r: any) => [r.postId, r])
+      recommendations.map((r: ContentRecommendation) => [r.postId, r])
     )
 
     return posts.map(p => {
-      const rec = resultMap.get(p.id) || { relevanceScore: 50, reasoning: null }
+      const rec = resultMap.get(p.id) as ContentRecommendation | undefined
+      const defaultRec: ContentRecommendation = { postId: p.id, relevanceScore: 50, reasoning: null }
+      const finalRec = rec || defaultRec
       return {
         postId: p.id,
-        relevanceScore: Math.min(100, Math.max(0, rec.relevanceScore || 50)),
-        reasoning: rec.reasoning || null,
+        relevanceScore: Math.min(100, Math.max(0, finalRec.relevanceScore || 50)),
+        reasoning: finalRec.reasoning || null,
       }
     }).sort((a, b) => b.relevanceScore - a.relevanceScore)
   } catch (error: any) {
