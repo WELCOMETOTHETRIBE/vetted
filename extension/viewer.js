@@ -1362,18 +1362,28 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("[DEBUG-VIEWER] On load - Queue length:", queue.length);
       console.log("[DEBUG-VIEWER] On load - Auto-send enabled:", autoSendEnabled);
       
-      // If there are queued profiles and auto-send is enabled, trigger send
+      // If there are queued profiles and auto-send is enabled, trigger send immediately
       if (queue.length > 0 && autoSendEnabled) {
-        console.log("[DEBUG-VIEWER] Found queued profiles, triggering batch send...");
+        console.log("[DEBUG-VIEWER] Found queued profiles, triggering batch send immediately...");
         chrome.runtime.sendMessage({
           type: "SEND_BATCH_TO_VETTED"
         }, (response) => {
           if (chrome.runtime.lastError) {
             console.error("[DEBUG-VIEWER] Error triggering batch send:", chrome.runtime.lastError);
+            console.error("[DEBUG-VIEWER] Error details:", chrome.runtime.lastError.message);
           } else {
             console.log("[DEBUG-VIEWER] Batch send triggered, response:", response);
+            if (response && response.success) {
+              console.log("[DEBUG-VIEWER] Successfully sent", response.sent, "profiles");
+            } else if (response && response.error) {
+              console.error("[DEBUG-VIEWER] Batch send failed:", response.error);
+            }
           }
         });
+      } else if (queue.length > 0) {
+        console.log("[DEBUG-VIEWER] Queue has profiles but auto-send is disabled");
+      } else {
+        console.log("[DEBUG-VIEWER] No queued profiles");
       }
     });
   }, 50);

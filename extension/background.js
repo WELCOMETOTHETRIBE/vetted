@@ -52,11 +52,11 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   console.log("[DEBUG-BG] Alarm name:", alarm.name);
   console.log("[DEBUG-BG] Alarm scheduled time:", alarm.scheduledTime);
   console.log("[DEBUG-BG] Current time:", Date.now());
+  console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
+  console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
   
   if (alarm.name === "sendBatchToVetted") {
     console.log("[DEBUG-BG] Processing sendBatchToVetted alarm...");
-    console.log("[DEBUG-BG] Extension context valid:", isExtensionContextValid());
-    console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
     
     sendBatchToVetted().then((result) => {
       console.log("[DEBUG-BG] Batch send result:", result);
@@ -69,6 +69,32 @@ chrome.alarms.onAlarm.addListener((alarm) => {
       console.log("[DEBUG-BG] Alarm cleared:", wasCleared);
     });
   }
+});
+
+// Also check for queued profiles when service worker wakes up
+chrome.runtime.onStartup.addListener(() => {
+  console.log("[DEBUG-BG] Service worker started, checking for queued profiles...");
+  chrome.storage.local.get(["vettedQueue"], (data) => {
+    const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+    if (queue.length > 0) {
+      console.log("[DEBUG-BG] Found", queue.length, "queued profiles on startup, sending...");
+      sendBatchToVetted();
+    }
+  });
+});
+
+// Check for queued profiles when extension is loaded/reloaded
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("[DEBUG-BG] Extension installed/reloaded, checking for queued profiles...");
+  setTimeout(() => {
+    chrome.storage.local.get(["vettedQueue"], (data) => {
+      const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+      if (queue.length > 0) {
+        console.log("[DEBUG-BG] Found", queue.length, "queued profiles after install, sending...");
+        sendBatchToVetted();
+      }
+    });
+  }, 2000); // Wait 2 seconds for everything to initialize
 });
 
 // Function to send profile to Google Sheets
