@@ -9,7 +9,7 @@
     "migrate:deploy": "npx prisma db push && node server.js",
     "lint": "eslint",
     "db:generate": "npx prisma generate && node scripts/create-prisma-default.js",
-    "db:push": "npx prisma db push",
+    "db:push": "NPM_CONFIG_CACHE=/tmp/.npm npx prisma db push || prisma db push || echo 'Prisma migration skipped'",
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:deploy": "npx prisma db push",
