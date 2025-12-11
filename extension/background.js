@@ -219,24 +219,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Handle queue for batch auto-send to Vetted
   if (message.type === "QUEUE_FOR_VETTED" && typeof message.payload === "object" && message.payload !== null) {
+    console.log("[DEBUG-BG] ========== QUEUE_FOR_VETTED received ==========");
+    console.log("[DEBUG-BG] Profile payload:", !!message.payload);
+    
     // Get current queue
     chrome.storage.local.get(["vettedQueue"], (data) => {
       const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+      console.log("[DEBUG-BG] Current queue length:", queue.length);
       
       // Add profile to queue
       queue.push(message.payload);
+      console.log("[DEBUG-BG] Added profile to queue, new length:", queue.length);
       
       // Save queue
       chrome.storage.local.set({ vettedQueue: queue }, () => {
+        if (chrome.runtime.lastError) {
+          console.error("[DEBUG-BG] Error saving queue:", chrome.runtime.lastError);
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        
+        console.log("[DEBUG-BG] Queue saved successfully");
         sendResponse({ success: true, queuedCount: queue.length });
         
         // Auto-send batch if queue reaches 5 profiles or after 10 seconds
         if (queue.length >= 5) {
-          sendBatchToVetted();
+          console.log("[DEBUG-BG] Queue reached 5 profiles, sending immediately...");
+          sendBatchToVetted().then((result) => {
+            console.log("[DEBUG-BG] Batch send result:", result);
+          }).catch((error) => {
+            console.error("[DEBUG-BG] Batch send error:", error);
+          });
         } else if (queue.length === 1) {
           // Start timer for first item in queue
+          console.log("[DEBUG-BG] Starting 10-second timer for auto-send...");
           setTimeout(() => {
-            sendBatchToVetted();
+            console.log("[DEBUG-BG] Timer expired, sending batch...");
+            sendBatchToVetted().then((result) => {
+              console.log("[DEBUG-BG] Batch send result:", result);
+            }).catch((error) => {
+              console.error("[DEBUG-BG] Batch send error:", error);
+            });
           }, 10000); // 10 seconds
         }
       });
@@ -333,13 +356,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Function to send batch of profiles to Vetted
 async function sendBatchToVetted() {
   return new Promise((resolve) => {
+    console.log("[DEBUG-BG] ========== sendBatchToVetted START ==========");
     // Hardcoded Vetted API URL
     const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
+    console.log("[DEBUG-BG] API URL:", VETTED_API_URL);
     
     chrome.storage.local.get(["vettedQueue", "vettedApiKey"], async (data) => {
       const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+      console.log("[DEBUG-BG] Queue length:", queue.length);
+      console.log("[DEBUG-BG] Has API key:", !!data.vettedApiKey);
       
       if (queue.length === 0) {
+        console.log("[DEBUG-BG] Queue is empty, nothing to send");
         resolve({ success: true, sent: 0, message: "No profiles in queue" });
         return;
       }
@@ -403,10 +431,14 @@ async function sendBatchToVetted() {
         }
 
         const result = await response.json();
+        console.log("[DEBUG-BG] Batch send successful, result:", result);
         
         // Clear queue after successful send
-        chrome.storage.local.set({ vettedQueue: [] });
+        chrome.storage.local.set({ vettedQueue: [] }, () => {
+          console.log("[DEBUG-BG] Queue cleared after successful send");
+        });
         
+        console.log("[DEBUG-BG] ========== sendBatchToVetted SUCCESS ==========");
         resolve({ 
           success: true, 
           sent: processed.length,
@@ -414,7 +446,13 @@ async function sendBatchToVetted() {
           message: `Successfully sent ${processed.length} profile(s) to Vetted`
         });
       } catch (error) {
-        console.error("Batch send error:", error);
+        console.error("[DEBUG-BG] ========== sendBatchToVetted ERROR ==========");
+        console.error("[DEBUG-BG] Batch send error:", error);
+        console.error("[DEBUG-BG] Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         resolve({ success: false, error: error.message, sent: 0 });
       }
     });
