@@ -216,7 +216,7 @@ export async function GET(req: Request) {
 
         const interests: string[] = []
         if (userProfile?.headline) interests.push(userProfile.headline)
-        userSkills.forEach((us) => {
+        userSkills.forEach((us: { skill: { name: string } }) => {
           if (us.skill.name) interests.push(us.skill.name)
         })
 
