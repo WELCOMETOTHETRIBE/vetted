@@ -9,9 +9,11 @@ try {
 
 // Try to import defineConfig, but fallback gracefully if prisma/config is not available
 // This allows the file to exist without breaking migrations in production
+// Prisma loads this as CommonJS, so we use require() and module.exports
 let defineConfig: any;
 try {
-  defineConfig = require("prisma/config").defineConfig;
+  const prismaConfig = require("prisma/config");
+  defineConfig = prismaConfig.defineConfig || prismaConfig.default?.defineConfig;
 } catch (e) {
   // prisma/config not available (e.g., in production build)
   // Export a simple config object that Prisma can use
@@ -25,14 +27,10 @@ try {
       url: databaseUrl,
     },
   };
-  // Exit early to avoid using defineConfig
-  if (typeof module !== 'undefined' && module.exports) {
-    // Already exported above
-  }
-} 
+}
 
 // Only use defineConfig if it was successfully imported
-if (defineConfig) {
+if (defineConfig && typeof module !== 'undefined' && module.exports && Object.keys(module.exports).length === 0) {
   // DATABASE_URL is only needed at runtime, not during prisma generate
   // Use a placeholder during build if not set to avoid config errors
   const databaseUrl = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
