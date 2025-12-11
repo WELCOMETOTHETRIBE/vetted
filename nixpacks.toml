@@ -19,6 +19,6 @@ cmds = [
 ]
 
 [start]
-cmd = "./node_modules/.bin/prisma db push && node server.js"
+cmd = "npm run db:push && node server.js"
 env = { PATH = "/opt/venv/bin:${PATH}" }
 
