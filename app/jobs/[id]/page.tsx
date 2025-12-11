@@ -129,113 +129,188 @@ export default async function JobDetailPage({
 
           {/* Content Section */}
           <div className="px-8 py-6">
-            <div className="prose max-w-none mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-2 border-b border-gray-200">Job Description</h2>
-            <div className="text-gray-700 whitespace-pre-wrap leading-relaxed space-y-4">
-              {job.description?.split('\n').map((line: string, idx: number) => {
-                // Skip "Apply at:" lines since we show the button above
-                if (line.match(/^Apply at:/i)) {
-                  return null
-                }
-                
-                // Check if line contains a URL
-                const urlMatch = line.match(/https?:\/\/[^\s]+/g)
-                if (urlMatch) {
-                  const parts = line.split(/(https?:\/\/[^\s]+)/g)
-                  return (
-                    <p key={idx} className="mb-4">
-                      {parts.map((part: string, partIdx: number) => {
-                        if (part.match(/^https?:\/\//)) {
-                          return (
-                            <a
-                              key={partIdx}
-                              href={part}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-700 hover:underline font-medium break-all"
-                            >
-                              {part}
-                            </a>
-                          )
-                        }
-                        return <span key={partIdx}>{part}</span>
-                      })}
-                    </p>
-                  )
-                }
-                // Skip empty lines
-                if (!line.trim()) {
-                  return <br key={idx} />
-                }
-                    return <p key={idx} className="mb-4">{line}</p>
-              })}
+            <div className="mb-8">
+              <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-white/60 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-blue-600">📄</span>
+                    Job Description
+                  </h2>
+                </div>
+                <div className="px-6 py-6">
+                  <div className="text-gray-700 leading-relaxed space-y-4">
+                    {job.description?.split('\n').map((line: string, idx: number) => {
+                      // Skip "Apply at:" lines since we show the button above
+                      if (line.match(/^Apply at:/i)) {
+                        return null
+                      }
+                      
+                      // Check if line contains a URL
+                      const urlMatch = line.match(/https?:\/\/[^\s]+/g)
+                      if (urlMatch) {
+                        const parts = line.split(/(https?:\/\/[^\s]+)/g)
+                        return (
+                          <div key={idx} className="mb-4 pl-4 border-l-4 border-blue-300 bg-blue-50/30 rounded-r-md py-2">
+                            <p className="text-gray-800">
+                              {parts.map((part: string, partIdx: number) => {
+                                if (part.match(/^https?:\/\//)) {
+                                  return (
+                                    <a
+                                      key={partIdx}
+                                      href={part}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-700 hover:underline font-medium break-all inline-flex items-center gap-1 transition-colors"
+                                    >
+                                      {part}
+                                      <span className="text-xs opacity-70">↗</span>
+                                    </a>
+                                  )
+                                }
+                                return <span key={partIdx}>{part}</span>
+                              })}
+                            </p>
+                          </div>
+                        )
+                      }
+                      // Skip empty lines
+                      if (!line.trim()) {
+                        return <div key={idx} className="h-2" />
+                      }
+                      // Check if line starts with bullet points or dashes
+                      const isListItem = /^[\-\•\*]\s/.test(line.trim()) || /^\d+\.\s/.test(line.trim())
+                      if (isListItem) {
+                        return (
+                          <div key={idx} className="flex items-start gap-3 mb-3 pl-4">
+                            <span className="text-blue-500 mt-1.5 flex-shrink-0">•</span>
+                            <p className="text-gray-800 flex-1 leading-7">{line.replace(/^[\-\•\*]\s/, '').replace(/^\d+\.\s/, '')}</p>
+                          </div>
+                        )
+                      }
+                      return (
+                        <p key={idx} className="mb-4 text-gray-800 leading-7">
+                          {line}
+                        </p>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
             {job.requirements && (
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-2 border-b border-gray-200">
-                  Requirements
-                </h2>
-                <div className="text-gray-700 whitespace-pre-wrap leading-relaxed space-y-3">
-                  {job.requirements.split('\n').map((line: string, idx: number) => {
-                    // Check if line contains a URL
-                    const urlMatch = line.match(/https?:\/\/[^\s]+/g)
-                    if (urlMatch) {
-                      const parts = line.split(/(https?:\/\/[^\s]+)/g)
-                      return (
-                        <p key={idx} className="mb-3">
-                          {parts.map((part: string, partIdx: number) => {
-                            if (part.match(/^https?:\/\//)) {
-                              return (
-                                <a
-                                  key={partIdx}
-                                  href={part}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-700 hover:underline font-medium break-all"
-                                >
-                                  {part}
-                                </a>
-                              )
-                            }
-                            return <span key={partIdx}>{part}</span>
-                          })}
-                        </p>
-                      )
-                    }
-                    // Skip empty lines
-                    if (!line.trim()) {
-                      return <br key={idx} />
-                    }
-                    return <p key={idx} className="mb-3">{line}</p>
-                  })}
+              <div className="mt-10">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden">
+                  <div className="bg-white/60 backdrop-blur-sm border-b border-gray-200 px-6 py-4">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                      <span className="text-blue-600">📋</span>
+                      Requirements
+                    </h2>
+                  </div>
+                  <div className="px-6 py-6">
+                    <div className="text-gray-700 leading-relaxed space-y-4">
+                      {job.requirements.split('\n').map((line: string, idx: number) => {
+                        // Check if line contains a URL
+                        const urlMatch = line.match(/https?:\/\/[^\s]+/g)
+                        if (urlMatch) {
+                          const parts = line.split(/(https?:\/\/[^\s]+)/g)
+                          return (
+                            <div key={idx} className="mb-4 pl-4 border-l-4 border-blue-300 bg-blue-50/30 rounded-r-md py-2">
+                              <p className="text-gray-800">
+                                {parts.map((part: string, partIdx: number) => {
+                                  if (part.match(/^https?:\/\//)) {
+                                    return (
+                                      <a
+                                        key={partIdx}
+                                        href={part}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-700 hover:underline font-medium break-all inline-flex items-center gap-1 transition-colors"
+                                      >
+                                        {part}
+                                        <span className="text-xs opacity-70">↗</span>
+                                      </a>
+                                    )
+                                  }
+                                  return <span key={partIdx}>{part}</span>
+                                })}
+                              </p>
+                            </div>
+                          )
+                        }
+                        // Skip empty lines
+                        if (!line.trim()) {
+                          return <div key={idx} className="h-2" />
+                        }
+                        // Check if line starts with bullet points or dashes
+                        const isListItem = /^[\-\•\*]\s/.test(line.trim()) || /^\d+\.\s/.test(line.trim())
+                        if (isListItem) {
+                          return (
+                            <div key={idx} className="flex items-start gap-3 mb-3 pl-4">
+                              <span className="text-blue-500 mt-1.5 flex-shrink-0">•</span>
+                              <p className="text-gray-800 flex-1">{line.replace(/^[\-\•\*]\s/, '').replace(/^\d+\.\s/, '')}</p>
+                            </div>
+                          )
+                        }
+                        return (
+                          <p key={idx} className="mb-3 text-gray-800 leading-7">
+                            {line}
+                          </p>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
           {/* Application Section */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            {hasApplied ? (
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">✅</div>
-                  <div>
-                    <p className="text-blue-900 font-semibold mb-1">
-                      Application Submitted
-                    </p>
-                    <p className="text-blue-700 text-sm">
-                      Status: <span className="font-semibold">{application?.status.replace("_", " ")}</span>
-                    </p>
+          <div className="mt-10">
+            <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl border-2 border-blue-200 shadow-lg overflow-hidden">
+              <div className="bg-white/70 backdrop-blur-sm border-b border-blue-200 px-6 py-5">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <span className="text-blue-600">✉️</span>
+                  Application
+                </h2>
+              </div>
+              <div className="px-6 py-6">
+                {hasApplied ? (
+                  <div className="bg-white/80 backdrop-blur-sm border-2 border-green-300 rounded-xl p-6 shadow-sm">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">✅</span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-green-900 mb-2">
+                          Application Submitted Successfully
+                        </h3>
+                        <div className="space-y-2">
+                          <p className="text-gray-700">
+                            <span className="font-semibold text-gray-900">Status:</span>{' '}
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                              {application?.status.replace("_", " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                            </span>
+                          </p>
+                          <p className="text-sm text-gray-600 mt-3">
+                            We'll keep you updated on your application status. You can check back here anytime to see updates.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Apply for this Position</h3>
+                      <p className="text-gray-600 text-sm">
+                        Fill out the form below to submit your application. We'll review it and get back to you soon.
+                      </p>
+                    </div>
+                    <JobApplicationForm jobId={job.id} />
+                  </div>
+                )}
               </div>
-            ) : (
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Apply for this Position</h3>
-                <JobApplicationForm jobId={job.id} />
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
