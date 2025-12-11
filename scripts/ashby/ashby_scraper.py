@@ -314,25 +314,109 @@ def extract_fields_lever(soup: BeautifulSoup) -> dict:
         "department": None,
     }
     
-    # Lever uses specific structure
-    # Look for location
-    location_elem = soup.find(string=re.compile(r"location", re.IGNORECASE))
-    if location_elem:
-        value = find_field_value(soup, "Location")
-        if value:
-            fields["location"] = value
+    # Lever typically has a structure like:
+    # h1: Job Title
+    # div/span: Location / Employment Type / Hybrid
+    # Sometimes: Department – Department
     
-    # Try common Lever selectors
+    # Look for the main content area
+    main_content = soup.find("div", class_=re.compile(r"content|posting|job", re.I))
+    if not main_content:
+        main_content = soup.find("main") or soup.find("body")
+    
+    # Try to find location/employment type in common Lever patterns
+    # Pattern 1: Look for text that contains location patterns (City, State, Country)
+    location_pattern = re.compile(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s+[A-Z]{2,3}(?:\s+[A-Z][a-z]+)*)', re.MULTILINE)
+    
+    # Look for the posting header area (usually near h1)
+    posting_header = None
+    h1 = soup.find("h1")
+    if h1:
+        # Look for sibling or parent container
+        parent = h1.parent
+        if parent:
+            # Get all text from parent and siblings
+            header_text = parent.get_text("\n", strip=True)
+            # Look for location pattern
+            location_match = location_pattern.search(header_text)
+            if location_match:
+                # Extract the full line that contains location
+                lines = header_text.split("\n")
+                for line in lines:
+                    if location_match.group(1) in line:
+                        # Parse the line: "Location / Employment Type / Hybrid"
+                        parts = [p.strip() for p in line.split("/")]
+                        if len(parts) > 0:
+                            fields["location"] = parts[0]
+                        if len(parts) > 1:
+                            # Employment type might be like "Full-Time (Hybrid in Office Location)"
+                            emp_type = parts[1].strip()
+                            # Clean up employment type
+                            if "full" in emp_type.lower() or "full-time" in emp_type.lower():
+                                fields["employment_type"] = "FULL_TIME"
+                            elif "part" in emp_type.lower() or "part-time" in emp_type.lower():
+                                fields["employment_type"] = "PART_TIME"
+                            elif "contract" in emp_type.lower():
+                                fields["employment_type"] = "CONTRACT"
+                            elif "intern" in emp_type.lower():
+                                fields["employment_type"] = "INTERNSHIP"
+                            else:
+                                fields["employment_type"] = emp_type
+                        break
+    
+    # Pattern 2: Look for specific Lever class names
     location_selectors = [
+        soup.find("div", class_=re.compile(r"posting-categories|posting-header", re.I)),
+        soup.find("span", class_=re.compile(r"location|workplace", re.I)),
         soup.find("div", class_=re.compile(r"location", re.I)),
-        soup.find("span", class_=re.compile(r"location", re.I)),
     ]
+    
     for elem in location_selectors:
         if elem:
-            text = elem.get_text(strip=True)
-            if text and len(text) < 100:
-                fields["location"] = text
+            text = elem.get_text("\n", strip=True)
+            # Check if it matches location pattern
+            location_match = location_pattern.search(text)
+            if location_match and not fields["location"]:
+                # Extract location
+                parts = [p.strip() for p in text.split("/")]
+                if len(parts) > 0:
+                    fields["location"] = parts[0]
+                if len(parts) > 1 and not fields["employment_type"]:
+                    emp_type = parts[1].strip()
+                    if "full" in emp_type.lower():
+                        fields["employment_type"] = "FULL_TIME"
+                    elif "part" in emp_type.lower():
+                        fields["employment_type"] = "PART_TIME"
+                    elif "contract" in emp_type.lower():
+                        fields["employment_type"] = "CONTRACT"
+                    elif "intern" in emp_type.lower():
+                        fields["employment_type"] = "INTERNSHIP"
                 break
+    
+    # Extract department - Lever often shows "Department – Department" or "Department / Department"
+    dept_pattern = re.compile(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*[–\-/]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)', re.MULTILINE)
+    if main_content:
+        dept_text = main_content.get_text("\n", strip=True)
+        dept_match = dept_pattern.search(dept_text)
+        if dept_match:
+            # Usually the first part is the department
+            fields["department"] = dept_match.group(1).strip()
+    
+    # Fallback: Try generic field finder
+    if not fields["location"]:
+        location = find_field_value(soup, "Location")
+        if location:
+            fields["location"] = location
+    
+    if not fields["employment_type"]:
+        emp_type = find_field_value(soup, "Employment Type")
+        if emp_type:
+            fields["employment_type"] = emp_type
+    
+    if not fields["department"]:
+        dept = find_field_value(soup, "Department")
+        if dept:
+            fields["department"] = dept
     
     return fields
 
@@ -362,8 +446,26 @@ def find_field_value(soup: BeautifulSoup, label: str) -> str | None:
     return None
 
 
-def extract_description_text(soup: BeautifulSoup) -> str:
+def extract_description_text(soup: BeautifulSoup, source: str = "ashby") -> str:
     """Extract all paragraph text as description."""
+    # For Lever, try to get the main content area first
+    if source == "lever":
+        # Look for the main job description area
+        main_content = soup.find("div", class_=re.compile(r"content|posting|description|section", re.I))
+        if main_content:
+            # Get all text from main content, preserving structure
+            description = main_content.get_text("\n", strip=True)
+            # Remove common Lever footer text
+            description = re.sub(r'Jobs powered by.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+            description = re.sub(r'Save Profile JSON.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+            description = description.strip()
+            if description:
+                max_chars = 20000
+                if len(description) > max_chars:
+                    description = description[:max_chars] + " ...[truncated]"
+                return description
+    
+    # Fallback to paragraph extraction
     paragraphs = soup.find_all("p")
     texts = [p.get_text(" ", strip=True) for p in paragraphs if p.get_text(strip=True)]
     description = "\n".join(texts)
@@ -391,6 +493,14 @@ def normalize_heading(text: str) -> str:
         return "what_we_value"
     if "what we require" in t or "requirements" in t or "require" in t:
         return "what_we_require"
+    if "what you'll do" in t or "what you will do" in t or "what you do" in t:
+        return "what_you_do"
+    if "you'll be responsible" in t or "you will be responsible" in t or "you're responsible" in t:
+        return "responsibilities"
+    if "you'll bring" in t or "you will bring" in t or "you bring" in t or "requirements" in t:
+        return "what_we_require"
+    if "why" in t and ("company" in t or "us" in t or "recordpoint" in t or "join" in t):
+        return "why_join"
     if "don't work here" in t or "dont work here" in t or "do not work here" in t:
         return "dont_work_here"
     if "compensation" in t or "salary" in t or "pay" in t:
@@ -553,7 +663,7 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
             employment_type = find_field_value(soup, "Employment Type")
             department = find_field_value(soup, "Department")
 
-        description_text = extract_description_text(soup)
+        description_text = extract_description_text(soup, source)
         sections = gather_sections(soup)
 
         overview_raw = sections.get("overview")
