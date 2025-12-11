@@ -87,11 +87,11 @@ export async function generateMessageSuggestions(
     // Parse suggestions (could be numbered list or separated by newlines)
     const suggestions = content
       .split(/\n+/)
-      .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
-      .filter((line) => line.length > 0 && line.length < 200)
+      .map((line: string) => line.replace(/^\d+[\.\)]\s*/, "").trim())
+      .filter((line: string) => line.length > 0 && line.length < 200)
       .slice(0, 3)
 
-    return suggestions.map((text) => ({
+    return suggestions.map((text: string) => ({
       text,
       tone,
     }))

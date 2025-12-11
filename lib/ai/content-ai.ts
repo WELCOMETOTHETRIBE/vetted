@@ -166,7 +166,7 @@ Return JSON array:
         relevanceScore: Math.min(100, Math.max(0, finalRec.relevanceScore || 50)),
         reasoning: finalRec.reasoning || null,
       }
-    }).sort((a, b) => b.relevanceScore - a.relevanceScore)
+    }).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
   } catch (error: any) {
     console.error("Error recommending content:", error)
     return posts.map(p => ({

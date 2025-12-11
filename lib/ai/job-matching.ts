@@ -107,7 +107,7 @@ Return JSON array with one object per job:
     })
 
     // Sort by match score descending
-    return enrichedMatches.sort((a, b) => b.matchScore - a.matchScore)
+    return enrichedMatches.sort((a: JobMatchResult, b: JobMatchResult) => b.matchScore - a.matchScore)
   } catch (error: any) {
     console.error("Error matching candidate to jobs:", error)
     return []

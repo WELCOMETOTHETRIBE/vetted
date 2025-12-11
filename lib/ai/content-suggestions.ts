@@ -84,11 +84,11 @@ Recent Posts: ${user.posts.map((p: any) => p.content.substring(0, 100)).join(" |
     // Parse suggestions
     const suggestions = content
       .split(/\n+/)
-      .map((line) => line.replace(/^\d+[\.\)]\s*/, "").replace(/^[-*]\s*/, "").trim())
-      .filter((line) => line.length > 0 && line.length < 300)
+      .map((line: string) => line.replace(/^\d+[\.\)]\s*/, "").replace(/^[-*]\s*/, "").trim())
+      .filter((line: string) => line.length > 0 && line.length < 300)
       .slice(0, 3)
 
-    return suggestions.map((content) => ({
+    return suggestions.map((content: string) => ({
       content,
       tone,
       topics: [], // Could be enhanced to extract topics

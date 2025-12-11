@@ -83,7 +83,7 @@ export async function rankSearchResults(
     const openai = getOpenAIClient()
 
     // Build results text
-    const resultsText = results.map((r, idx) => {
+    const resultsText = results.map((r: any, idx: number) => {
       return `[${idx}] Type: ${r.type}\nTitle: ${r.title}\nDescription: ${r.description || "N/A"}\nID: ${r.id}`
     }).join("\n\n")
 
@@ -137,7 +137,7 @@ Return JSON array with relevance scores (0-100) and brief reasoning:
         reasoning: ranking.reasoning || null,
         original: r,
       }
-    }).sort((a, b) => b.relevanceScore - a.relevanceScore)
+    }).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
   } catch (error: any) {
     console.error("Error ranking search results:", error)
     return results.map((r: any) => ({
