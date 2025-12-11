@@ -92,7 +92,7 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
     }
     return {
       ...job,
-      originalUrl: extractUrl(job.description),
+      originalUrl: extractUrl(job.description ?? null),
     }
   })
 
