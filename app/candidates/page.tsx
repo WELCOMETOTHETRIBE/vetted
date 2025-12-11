@@ -43,6 +43,68 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
+      // Select specific fields to avoid issues if AI fields don't exist yet
+      select: {
+        id: true,
+        linkedinUrl: true,
+        fullName: true,
+        currentCompany: true,
+        currentCompanyStartDate: true,
+        currentCompanyEndDate: true,
+        currentCompanyTenureYears: true,
+        currentCompanyTenureMonths: true,
+        jobTitle: true,
+        location: true,
+        previousTargetCompany: true,
+        previousTargetCompanyStartDate: true,
+        previousTargetCompanyEndDate: true,
+        previousTargetCompanyTenureYears: true,
+        previousTargetCompanyTenureMonths: true,
+        tenurePreviousTarget: true,
+        previousTitles: true,
+        totalYearsExperience: true,
+        universities: true,
+        fieldsOfStudy: true,
+        degrees: true,
+        undergradGraduationYear: true,
+        certifications: true,
+        languages: true,
+        projects: true,
+        publications: true,
+        volunteerOrganizations: true,
+        courses: true,
+        honorsAwards: true,
+        organizations: true,
+        patents: true,
+        testScores: true,
+        emails: true,
+        phones: true,
+        socialLinks: true,
+        skillsCount: true,
+        experienceCount: true,
+        educationCount: true,
+        companies: true,
+        rawData: true,
+        addedById: true,
+        status: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+        // AI fields - these may not exist yet if migration hasn't run
+        aiSummary: true,
+        aiKeyStrengths: true,
+        aiBestFitRoles: true,
+        aiHighlights: true,
+        aiConcerns: true,
+        aiSummaryGeneratedAt: true,
+        addedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     }),
     prisma.candidate.count({ where }),
   ])
@@ -62,23 +124,24 @@ export default async function CandidatesPage({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
-  const params = await searchParams
-  const session = await auth()
-  if (!session?.user) {
-    redirect("/auth/signin")
-  }
+  try {
+    const params = await searchParams
+    const session = await auth()
+    if (!session?.user) {
+      redirect("/auth/signin")
+    }
 
-  // Check if user is admin
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  })
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    })
 
-  if (user?.role !== "ADMIN") {
-    redirect("/feed")
-  }
+    if (user?.role !== "ADMIN") {
+      redirect("/feed")
+    }
 
-  const data = await getCandidates(params)
+    const data = await getCandidates(params)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -100,6 +163,35 @@ export default async function CandidatesPage({
         </Suspense>
       </div>
     </div>
-  )
+    )
+  } catch (error: any) {
+    console.error("Candidates page error:", error)
+    // If it's a database schema error, provide helpful message
+    if (error.message?.includes("Unknown column") || error.message?.includes("column") || error.code === "P2021") {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Navbar />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-yellow-900 mb-2">Database Migration Required</h2>
+              <p className="text-yellow-800 mb-4">
+                The database schema needs to be updated to include the new AI fields. Please run the migration:
+              </p>
+              <div className="bg-white rounded p-4 mb-4">
+                <code className="text-sm">
+                  railway run npm run db:push
+                </code>
+              </div>
+              <p className="text-sm text-yellow-700">
+                Or use the migration endpoint: <code className="bg-yellow-100 px-2 py-1 rounded">POST /api/admin/migrate</code>
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    // Re-throw other errors to show the error page
+    throw error
+  }
 }
 
