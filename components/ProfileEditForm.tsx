@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import ProfileOptimization from "./ProfileOptimization"
 
 interface ProfileEditFormProps {
   user: any
@@ -10,6 +11,8 @@ interface ProfileEditFormProps {
 export default function ProfileEditForm({ user }: ProfileEditFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [headline, setHeadline] = useState(user.profile?.headline || "")
+  const [about, setAbout] = useState(user.profile?.about || "")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -41,7 +44,20 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+    <div className="space-y-6">
+      <ProfileOptimization
+        onApplyHeadline={(h) => {
+          setHeadline(h)
+          const input = document.querySelector('input[name="headline"]') as HTMLInputElement
+          if (input) input.value = h
+        }}
+        onApplyAbout={(a) => {
+          setAbout(a)
+          const textarea = document.querySelector('textarea[name="about"]') as HTMLTextAreaElement
+          if (textarea) textarea.value = a
+        }}
+      />
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Full Name
@@ -61,7 +77,8 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
         <input
           type="text"
           name="headline"
-          defaultValue={user.profile?.headline || ""}
+          value={headline}
+          onChange={(e) => setHeadline(e.target.value)}
           placeholder="e.g., Software Engineer at Tech Company"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -87,7 +104,8 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
         <textarea
           name="about"
           rows={6}
-          defaultValue={user.profile?.about || ""}
+          value={about}
+          onChange={(e) => setAbout(e.target.value)}
           placeholder="Tell us about yourself..."
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
@@ -103,6 +121,7 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
         </button>
       </div>
     </form>
+    </div>
   )
 }
 

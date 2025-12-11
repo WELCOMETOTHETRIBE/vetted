@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 
 interface JobCardProps {
@@ -28,6 +29,28 @@ interface JobCardProps {
 }
 
 const JobCard = ({ job }: JobCardProps) => {
+  const [matchScore, setMatchScore] = useState<number | null>(null)
+  const [loadingMatch, setLoadingMatch] = useState(false)
+
+  useEffect(() => {
+    // Load match score on mount
+    const loadMatchScore = async () => {
+      setLoadingMatch(true)
+      try {
+        const response = await fetch(`/api/jobs/${job.id}/match`)
+        if (response.ok) {
+          const data = await response.json()
+          setMatchScore(data.matchScore)
+        }
+      } catch (error) {
+        // Silently fail - match score is optional
+      } finally {
+        setLoadingMatch(false)
+      }
+    }
+    loadMatchScore()
+  }, [job.id])
+
   const locationText = job.isRemote
     ? "Remote"
     : job.isHybrid
@@ -38,6 +61,16 @@ const JobCard = ({ job }: JobCardProps) => {
     job.salaryMin && job.salaryMax
       ? `${job.salaryCurrency || "$"}${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
       : null
+
+  const getMatchColor = (score: number | null) => {
+    if (score === null) return "gray"
+    if (score >= 80) return "green"
+    if (score >= 60) return "blue"
+    if (score >= 40) return "yellow"
+    return "gray"
+  }
+
+  const matchColor = getMatchColor(matchScore)
 
   return (
     <Link href={`/jobs/${job.id}`}>
@@ -67,6 +100,17 @@ const JobCard = ({ job }: JobCardProps) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
+          {matchScore !== null && !loadingMatch && (
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
+              matchColor === "green" ? "bg-green-50 text-green-700 border-green-200" :
+              matchColor === "blue" ? "bg-blue-50 text-blue-700 border-blue-200" :
+              matchColor === "yellow" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+              "bg-gray-50 text-gray-700 border-gray-200"
+            }`}>
+              <span>🎯</span>
+              <span className="ml-1">{matchScore}% Match</span>
+            </span>
+          )}
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
             {locationText}
           </span>

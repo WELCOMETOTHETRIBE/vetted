@@ -18,6 +18,8 @@ export default function MessagesContent({
   const [messages, setMessages] = useState<any[]>([])
   const [messageText, setMessageText] = useState("")
   const [activeTab, setActiveTab] = useState<"inbox" | "sent">("inbox")
+  const [messageSuggestions, setMessageSuggestions] = useState<any[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [showNewMessage, setShowNewMessage] = useState(false)
   const [newMessageUserId, setNewMessageUserId] = useState("")
   const [newMessageText, setNewMessageText] = useState("")
@@ -34,7 +36,28 @@ export default function MessagesContent({
       }, 5000)
       return () => clearInterval(interval)
     }
+    setMessageSuggestions([])
   }, [selectedThread])
+
+  const loadSuggestions = async () => {
+    if (!selectedThread) return
+    setLoadingSuggestions(true)
+    try {
+      const response = await fetch("/api/messages/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId: selectedThread.id, tone: "friendly" }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setMessageSuggestions(data.suggestions || [])
+      }
+    } catch (error) {
+      console.error("Error loading suggestions:", error)
+    } finally {
+      setLoadingSuggestions(false)
+    }
+  }
 
   const loadMessages = async (threadId: string) => {
     try {
@@ -377,6 +400,36 @@ export default function MessagesContent({
               )}
             </div>
             <div className="p-4 border-t border-gray-200">
+              {messageSuggestions.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <span>🤖</span>
+                      <span>AI Suggestions</span>
+                    </span>
+                    <button
+                      onClick={() => setMessageSuggestions([])}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {messageSuggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setMessageText(suggestion.text)
+                          setMessageSuggestions([])
+                        }}
+                        className="px-3 py-1.5 text-xs bg-purple-50 text-purple-700 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors"
+                      >
+                        {suggestion.text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex space-x-2">
                 <input
                   type="text"
@@ -386,6 +439,14 @@ export default function MessagesContent({
                   placeholder="Type a message..."
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                <button
+                  onClick={loadSuggestions}
+                  disabled={loadingSuggestions || !selectedThread}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm flex items-center gap-1"
+                  title="Get AI suggestions"
+                >
+                  {loadingSuggestions ? "..." : "🤖"}
+                </button>
                 <button
                   onClick={handleSendMessage}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

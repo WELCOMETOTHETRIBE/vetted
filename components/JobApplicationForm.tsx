@@ -14,6 +14,36 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
   const [resumeText, setResumeText] = useState("")
   const [parsingResume, setParsingResume] = useState(false)
   const [parsedResume, setParsedResume] = useState<any>(null)
+  const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false)
+  const [coverLetterTone, setCoverLetterTone] = useState<"professional" | "casual" | "enthusiastic" | "formal">("professional")
+  const [coverLetterLength, setCoverLetterLength] = useState<"short" | "medium" | "long">("medium")
+
+  const handleGenerateCoverLetter = async () => {
+    setGeneratingCoverLetter(true)
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/cover-letter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tone: coverLetterTone,
+          length: coverLetterLength,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCoverLetter(data.coverLetter || "")
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to generate cover letter")
+      }
+    } catch (error) {
+      console.error("Error generating cover letter:", error)
+      alert("An error occurred while generating cover letter")
+    } finally {
+      setGeneratingCoverLetter(false)
+    }
+  }
 
   const handleParseResume = async () => {
     if (!resumeText.trim()) {
@@ -135,14 +165,57 @@ export default function JobApplicationForm({ jobId }: JobApplicationFormProps) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Cover Letter (Optional)
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Cover Letter (Optional)
+          </label>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleGenerateCoverLetter}
+              disabled={generatingCoverLetter}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-xs font-medium flex items-center gap-1.5"
+            >
+              {generatingCoverLetter ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <span>🤖</span>
+                  <span>AI Generate</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="mb-2 flex items-center gap-2 text-xs">
+          <select
+            value={coverLetterTone}
+            onChange={(e) => setCoverLetterTone(e.target.value as any)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs"
+          >
+            <option value="professional">Professional</option>
+            <option value="casual">Casual</option>
+            <option value="enthusiastic">Enthusiastic</option>
+            <option value="formal">Formal</option>
+          </select>
+          <select
+            value={coverLetterLength}
+            onChange={(e) => setCoverLetterLength(e.target.value as any)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs"
+          >
+            <option value="short">Short</option>
+            <option value="medium">Medium</option>
+            <option value="long">Long</option>
+          </select>
+        </div>
         <textarea
           value={coverLetter}
           onChange={(e) => setCoverLetter(e.target.value)}
           rows={6}
-          placeholder="Tell us why you're interested in this position..."
+          placeholder="Tell us why you're interested in this position... Or use AI to generate one!"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>

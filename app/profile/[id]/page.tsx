@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import ProfileHeader from "@/components/ProfileHeader"
 import ProfileSectionCard from "@/components/ProfileSectionCard"
+import CareerInsights from "@/components/CareerInsights"
 
 async function getProfile(userIdOrHandle: string, currentUserId?: string) {
   const user = await prisma.user.findFirst({
@@ -236,6 +237,13 @@ export default async function ProfilePage({
             </div>
           )}
         </ProfileSectionCard>
+
+        {/* Career Insights - Only for own profile */}
+        {isOwnProfile && (
+          <div className="mb-6">
+            <CareerInsights />
+          </div>
+        )}
 
         {/* Recent Activity */}
         <ProfileSectionCard title="Recent Activity">

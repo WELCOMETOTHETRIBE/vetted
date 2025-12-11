@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import Link from "next/link"
 import JobApplicationForm from "@/components/JobApplicationForm"
+import JobMatchAnalysis from "@/components/JobMatchAnalysis"
 
 async function getJob(jobId: string, userId?: string) {
   const job = await prisma.job.findUnique({
@@ -262,6 +263,11 @@ export default async function JobDetailPage({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Match Analysis Section */}
+          <div className="mt-10">
+            <JobMatchAnalysis jobId={job.id} />
           </div>
 
           {/* Application Section */}
