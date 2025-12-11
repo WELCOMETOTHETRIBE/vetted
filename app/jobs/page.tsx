@@ -4,6 +4,28 @@ import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import JobCard from "@/components/JobCard"
 import JobFilters from "@/components/JobFilters"
+import CompanyFilter from "@/components/CompanyFilter"
+
+async function getCompanies() {
+  const companies = await prisma.company.findMany({
+    where: {
+      isActive: true,
+      jobs: {
+        some: {
+          isActive: true,
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  })
+  return companies
+}
 
 async function getJobs(searchParams: { [key: string]: string | undefined }) {
   const params = searchParams
@@ -29,6 +51,12 @@ async function getJobs(searchParams: { [key: string]: string | undefined }) {
 
   if (params.employmentType) {
     where.employmentType = params.employmentType
+  }
+
+  if (params.company) {
+    where.company = {
+      id: params.company,
+    }
   }
 
   const jobs = await prisma.job.findMany({
@@ -76,7 +104,10 @@ export default async function JobsPage({
     redirect("/auth/signin")
   }
 
-  const jobs = await getJobs(params)
+  const [jobs, companies] = await Promise.all([
+    getJobs(params),
+    getCompanies(),
+  ])
 
   // Extract URLs from descriptions for each job
   const extractUrl = (desc: string | null | undefined): string | null => {
@@ -129,6 +160,7 @@ export default async function JobsPage({
                     : `${jobs.length} ${jobs.length === 1 ? 'job' : 'jobs'} available`}
                 </p>
               </div>
+              <CompanyFilter companies={companies} selectedCompanyId={params.company} />
             </div>
             <div className="space-y-4">
               {jobs.length === 0 ? (
