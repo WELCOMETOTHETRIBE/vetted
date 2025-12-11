@@ -90,7 +90,7 @@ export async function getConnectionRecommendations(
     const userProfile = buildUserProfileText(user)
 
     // Build potential connections text
-    const connectionsText = potentialConnections.map((conn, idx) => {
+    const connectionsText = potentialConnections.map((conn: any, idx: number) => {
       const connProfile = buildUserProfileText(conn)
       return `Candidate ${idx + 1} (ID: ${conn.id}):\n${connProfile}`
     }).join("\n\n---\n\n")
@@ -239,10 +239,10 @@ async function getBasicRecommendations(userId: string, limit: number): Promise<C
   }
 
   const connectedIds = new Set<string>([userId])
-  user.connectionsAsRequester.forEach((conn) => connectedIds.add(conn.receiverId))
-  user.connectionsAsReceiver.forEach((conn) => connectedIds.add(conn.requesterId))
+  user.connectionsAsRequester.forEach((conn: { receiverId: string }) => connectedIds.add(conn.receiverId))
+  user.connectionsAsReceiver.forEach((conn: { requesterId: string }) => connectedIds.add(conn.requesterId))
 
-  const userSkillIds = user.skills.map((us) => us.skillId)
+  const userSkillIds = user.skills.map((us: { skillId: string }) => us.skillId)
 
   if (userSkillIds.length === 0) {
     // No skills, just return random active users
@@ -257,7 +257,7 @@ async function getBasicRecommendations(userId: string, limit: number): Promise<C
       take: limit,
     })
 
-    return randomUsers.map((u) => ({
+    return randomUsers.map((u: any) => ({
       userId: u.id,
       name: u.name || "User",
       image: u.image,
@@ -289,22 +289,22 @@ async function getBasicRecommendations(userId: string, limit: number): Promise<C
     take: limit * 2, // Get more to rank
   })
 
-  // Rank by number of common skills
-  const ranked = similarUsers
-    .map((u) => {
-      const commonSkills = u.skills.filter((us) =>
-        userSkillIds.includes(us.skillId)
-      )
-      return {
-        user: u,
-        commonSkillsCount: commonSkills.length,
-        commonSkills: commonSkills.map((us) => us.skill.name),
-      }
-    })
-    .sort((a, b) => b.commonSkillsCount - a.commonSkillsCount)
-    .slice(0, limit)
+    // Rank by number of common skills
+    const ranked = similarUsers
+      .map((u: any) => {
+        const commonSkills = u.skills.filter((us: { skillId: string }) =>
+          userSkillIds.includes(us.skillId)
+        )
+        return {
+          user: u,
+          commonSkillsCount: commonSkills.length,
+          commonSkills: commonSkills.map((us: { skill: { name: string } }) => us.skill.name),
+        }
+      })
+      .sort((a, b) => b.commonSkillsCount - a.commonSkillsCount)
+      .slice(0, limit)
 
-  return ranked.map((r) => ({
+  return ranked.map((r: any) => ({
     userId: r.user.id,
     name: r.user.name || "User",
     image: r.user.image,
