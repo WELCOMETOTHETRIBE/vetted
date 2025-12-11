@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { writeFileSync, existsSync, readFileSync } from "fs"
-import { join } from "path"
+import { execSync } from "child_process"
 
 export async function POST(req: Request) {
   try {
@@ -49,76 +48,44 @@ export async function POST(req: Request) {
       )
     }
 
-    // Use Prisma's programmatic API to push schema
-    // This bypasses the CLI and config file issues
     try {
-      // Import Prisma's migrate programmatically
-      // We'll use a workaround: execute prisma db push via Node's child_process
-      // but with explicit schema content passed via stdin or environment
-      
-      // Create a temporary schema file in /tmp WITHOUT url (Prisma 7 requirement)
-      const schemaPath = join(process.cwd(), 'prisma', 'schema.prisma')
-      const originalSchema = readFileSync(schemaPath, 'utf-8')
-      
-      // Remove url from datasource (Prisma 7 doesn't allow it in schema)
-      const tempSchemaPath = '/tmp/schema.migrate.prisma'
-      const tempSchema = originalSchema.replace(
-        /datasource db \{[^}]*\}/,
-        `datasource db {
-  provider = "postgresql"
-}`
-      )
-      
-      writeFileSync(tempSchemaPath, tempSchema)
-
-      // Create a proper config file in /tmp with the URL (Prisma 7 requirement)
-      const tempConfigPath = '/tmp/prisma.config.ts'
-      // Use CommonJS format to avoid module resolution issues
-      const dummyConfig = `module.exports = {
-  schema: "${tempSchemaPath}",
-  datasource: {
-    url: "${dbUrl.replace(/"/g, '\\"').replace(/\$/g, '\\$')}",
-  },
-};`
-      writeFileSync(tempConfigPath, dummyConfig)
-
-      // Import execSync synchronously
-      const { execSync } = require('child_process')
-      
-      // Run prisma db push with explicit schema and config
-      // Set working directory to /tmp to use our dummy config
+      // Use Prisma CLI directly with environment variable
+      // Set npm cache to a writable directory
       const output = execSync(
-        `npx --yes prisma db push --accept-data-loss --schema=${tempSchemaPath} --config=${tempConfigPath}`,
+        `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss`,
         {
           encoding: "utf-8",
-          cwd: '/tmp', // Change working directory to use dummy config
+          cwd: process.cwd(),
           env: { 
             ...process.env,
             DATABASE_URL: dbUrl,
+            NPM_CONFIG_CACHE: "/tmp/.npm",
           },
-          shell: "/bin/sh",
+          stdio: ['pipe', 'pipe', 'pipe'],
+          maxBuffer: 10 * 1024 * 1024, // 10MB buffer
         }
       )
 
       return NextResponse.json({
         success: true,
         message: "Migrations completed successfully",
-        output: output.split("\n").slice(-10),
+        output: output.split("\n").slice(-20).join("\n"),
         isFirstSetup,
       })
     } catch (error: any) {
+      const errorOutput = error.stdout || error.stderr || error.message || String(error)
       return NextResponse.json(
         {
           error: "Migration failed",
-          details: error.message,
-          output: error.stdout || error.stderr || error.toString(),
+          details: error.message || "Unknown error",
+          output: errorOutput.substring(0, 1000), // Limit output size
         },
         { status: 500 }
       )
     }
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error.message || String(error) },
       { status: 500 }
     )
   }

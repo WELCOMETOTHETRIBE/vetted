@@ -271,7 +271,7 @@ export default function NetworkContent({
               </button>
             </div>
           ) : (
-            recommendations.map((rec) => (
+            recommendations.map((rec: any) => (
               <div
                 key={rec.userId}
                 className="flex items-center justify-between p-4 bg-white rounded-lg border border-purple-200 shadow-sm"
@@ -306,7 +306,7 @@ export default function NetworkContent({
                       <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full border border-purple-200">
                         {rec.relevanceScore}% match
                       </span>
-                      {rec.communalities.length > 0 && (
+                      {rec.communalities && rec.communalities.length > 0 && (
                         <span className="text-xs text-gray-500">
                           {rec.communalities.slice(0, 2).join(", ")}
                           {rec.communalities.length > 2 && ` +${rec.communalities.length - 2}`}
