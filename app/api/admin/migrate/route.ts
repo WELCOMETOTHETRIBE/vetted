@@ -49,10 +49,18 @@ export async function POST(req: Request) {
     }
 
     try {
-      // Use Prisma CLI directly with environment variable
-      // Set npm cache to a writable directory
+      // Try to use Prisma binary directly if it exists, otherwise use npx
+      const fs = require('fs')
+      const path = require('path')
+      const prismaBinPath = path.join(process.cwd(), 'node_modules', '.bin', 'prisma')
+      const hasPrismaBin = fs.existsSync(prismaBinPath)
+      
+      const prismaCmd = hasPrismaBin 
+        ? `"${prismaBinPath}" db push --accept-data-loss`
+        : `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss`
+      
       const output = execSync(
-        `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss`,
+        prismaCmd,
         {
           encoding: "utf-8",
           cwd: process.cwd(),
@@ -60,9 +68,11 @@ export async function POST(req: Request) {
             ...process.env,
             DATABASE_URL: dbUrl,
             NPM_CONFIG_CACHE: "/tmp/.npm",
+            PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
           },
           stdio: ['pipe', 'pipe', 'pipe'],
           maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+          timeout: 60000, // 60 second timeout
         }
       )
 
@@ -71,14 +81,34 @@ export async function POST(req: Request) {
         message: "Migrations completed successfully",
         output: output.split("\n").slice(-20).join("\n"),
         isFirstSetup,
+        usedBinary: hasPrismaBin,
       })
     } catch (error: any) {
-      const errorOutput = error.stdout || error.stderr || error.message || String(error)
+      // Capture both stdout and stderr
+      const stdout = error.stdout || ""
+      const stderr = error.stderr || ""
+      const errorMessage = error.message || "Unknown error"
+      const errorCode = error.code || "UNKNOWN"
+      const errorSignal = error.signal || null
+      
+      const fullError = {
+        message: errorMessage,
+        code: errorCode,
+        signal: errorSignal,
+        stdout: stdout.substring(0, 500),
+        stderr: stderr.substring(0, 500),
+      }
+
+      console.error("Migration error:", fullError)
+
       return NextResponse.json(
         {
           error: "Migration failed",
-          details: error.message || "Unknown error",
-          output: errorOutput.substring(0, 1000), // Limit output size
+          details: errorMessage,
+          code: errorCode,
+          signal: errorSignal,
+          output: stdout || stderr || String(error),
+          fullError: JSON.stringify(fullError, null, 2).substring(0, 2000),
         },
         { status: 500 }
       )
