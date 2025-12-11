@@ -7,18 +7,43 @@ try {
   // dotenv not available - that's fine, environment variables should be set directly
 }
 
-import { defineConfig } from "prisma/config";
+// Try to import defineConfig, but fallback gracefully if prisma/config is not available
+// This allows the file to exist without breaking migrations in production
+let defineConfig: any;
+try {
+  defineConfig = require("prisma/config").defineConfig;
+} catch (e) {
+  // prisma/config not available (e.g., in production build)
+  // Export a simple config object that Prisma can use
+  const databaseUrl = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+  module.exports = {
+    schema: "prisma/schema.prisma",
+    migrations: {
+      path: "prisma/migrations",
+    },
+    datasource: {
+      url: databaseUrl,
+    },
+  };
+  // Exit early to avoid using defineConfig
+  if (typeof module !== 'undefined' && module.exports) {
+    // Already exported above
+  }
+} 
 
-// DATABASE_URL is only needed at runtime, not during prisma generate
-// Use a placeholder during build if not set to avoid config errors
-const databaseUrl = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+// Only use defineConfig if it was successfully imported
+if (defineConfig) {
+  // DATABASE_URL is only needed at runtime, not during prisma generate
+  // Use a placeholder during build if not set to avoid config errors
+  const databaseUrl = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
 
-export default defineConfig({
-  schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-  },
-  datasource: {
-    url: databaseUrl,
-  },
-});
+  module.exports = defineConfig({
+    schema: "prisma/schema.prisma",
+    migrations: {
+      path: "prisma/migrations",
+    },
+    datasource: {
+      url: databaseUrl,
+    },
+  });
+}
