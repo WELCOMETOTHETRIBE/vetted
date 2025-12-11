@@ -57,9 +57,56 @@ export async function POST(req: Request) {
       
       // Use --skip-config to avoid loading prisma.config.ts which requires prisma/config module
       // This tells Prisma to use the schema file directly with DATABASE_URL from env
+      // Temporarily rename prisma.config.ts to avoid loading it (it requires prisma/config module)
+      // Prisma will use schema.prisma directly with DATABASE_URL from environment
+      const configPath = path.join(process.cwd(), 'prisma.config.ts')
+      const configBackupPath = path.join(process.cwd(), 'prisma.config.ts.backup')
+      const hasConfig = fs.existsSync(configPath)
+      
+      // Backup and remove config file if it exists
+      if (hasConfig) {
+        try {
+          fs.renameSync(configPath, configBackupPath)
+        } catch (e) {
+          // If rename fails, try copying and deleting
+          fs.copyFileSync(configPath, configBackupPath)
+          fs.unlinkSync(configPath)
+        }
+      }
+      
       const prismaCmd = hasPrismaBin 
-        ? `"${prismaBinPath}" db push --accept-data-loss --skip-config --schema=prisma/schema.prisma`
-        : `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss --skip-config --schema=prisma/schema.prisma`
+        ? `"${prismaBinPath}" db push --accept-data-loss --schema=prisma/schema.prisma`
+        : `NPM_CONFIG_CACHE=/tmp/.npm npx --yes prisma db push --accept-data-loss --schema=prisma/schema.prisma`
+      
+      let output: string
+      try {
+        output = execSync(
+          prismaCmd,
+          {
+            encoding: "utf-8",
+            cwd: process.cwd(),
+            env: { 
+              ...process.env,
+              DATABASE_URL: dbUrl,
+              NPM_CONFIG_CACHE: "/tmp/.npm",
+              PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
+            },
+            stdio: ['pipe', 'pipe', 'pipe'],
+            maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+            timeout: 60000, // 60 second timeout
+          }
+        )
+      } finally {
+        // Restore config file if it was backed up
+        if (hasConfig && fs.existsSync(configBackupPath)) {
+          try {
+            fs.renameSync(configBackupPath, configPath)
+          } catch (e) {
+            // If restore fails, try copying
+            fs.copyFileSync(configBackupPath, configPath)
+          }
+        }
+      }
       
       const output = execSync(
         prismaCmd,
