@@ -5,6 +5,10 @@ import Navbar from "@/components/Navbar"
 import CandidatesContent from "@/components/CandidatesContent"
 import { Suspense } from "react"
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getCandidates(searchParams: { [key: string]: string | undefined }) {
   const search = searchParams.search
   const status = searchParams.status

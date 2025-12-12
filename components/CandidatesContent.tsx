@@ -248,6 +248,18 @@ export default function CandidatesContent({
             <option value="ARCHIVED">Archived</option>
           </select>
 
+          {/* Refresh Button */}
+          <button
+            onClick={() => {
+              setPage(1)
+              fetchCandidates()
+            }}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
+            title="Refresh candidates list"
+          >
+            🔄 Refresh
+          </button>
+
           {/* Upload Button */}
           <button
             onClick={() => setShowUploadModal(true)}
