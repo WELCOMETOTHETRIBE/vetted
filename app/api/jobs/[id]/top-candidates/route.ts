@@ -100,7 +100,7 @@ ${job.requirements ? `Requirements: ${job.requirements.substring(0, 500)}${job.r
 `
 
       // Build candidates text (limit to avoid token limits)
-      const candidatesText = candidates.slice(0, 50).map((candidate) => {
+      const candidatesText = candidates.slice(0, 50).map((candidate: any) => {
         const companies = candidate.companies ? JSON.parse(candidate.companies) : []
         const universities = candidate.universities ? JSON.parse(candidate.universities) : []
         
