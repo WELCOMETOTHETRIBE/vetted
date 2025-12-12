@@ -1552,6 +1552,7 @@ function processProfileDocument(data) {
   const socialLinkUrls = socialLinks.map(link => link.href || link.url || '').filter(Boolean);
 
   // Build result object with all new columns - ensure all fields are populated
+  // Use arrays for structured data to preserve all information
   const result = {
     "Linkedin URL": cleanField(linkedinUrl) || "",
     "Full Name": cleanField(extractedName || fullName) || "",
@@ -1576,30 +1577,30 @@ function processProfileDocument(data) {
       ? String(prevDateTenure.months) 
       : "",
     "Tenure at previous target (Year start to year end)": cleanField(tenurePrevious) || "",
-    "Companies": companies, // Array for Google Sheets script to parse
+    "Companies": companies, // Array - will be properly handled by API
     "Previous title(s)": cleanField(previousTitles),
-    "Total Years full time experience": totalYears || "",
-    "Universities": universities, // Array for Google Sheets script to parse
-    "Fields of Study": fields, // Array for Google Sheets script to parse
+    "Total Years full time experience": totalYears ? String(totalYears) : "",
+    "Universities": universities, // Array - will be properly handled by API
+    "Fields of Study": fields, // Array - will be properly handled by API
     "Degrees": cleanField(degrees),
-    "Year of Undergrad Graduation": undergradYear || "",
-    "Certifications": certifications.join("; "),
-    "Languages": languages.join("; "),
-    "Projects": projects.join("; "),
-    "Publications": publications.join("; "),
-    "Volunteer Organizations": volunteerOrgs.join("; "),
-    "Courses": courses.join("; "),
-    "Honors & Awards": honors.join("; "),
-    "Organizations": organizations.join("; "),
-    "Patents": patents.join("; "),
-    "Test Scores": testScores.join("; "),
-    "Emails": emails.join("; "),
-    "Phones": phones.join("; "),
-    "Social Links": socialLinkUrls.join("; "),
-    "Skills Count": skillsList.length || "",
-    "Experience Count": experienceList.length || "",
-    "Education Count": educationList.length || "",
-    "Raw Data": JSON.stringify(data) // Store original JSON including comprehensive_data
+    "Year of Undergrad Graduation": undergradYear ? String(undergradYear) : "",
+    "Certifications": certifications.length > 0 ? certifications.join("; ") : "",
+    "Languages": languages.length > 0 ? languages.join("; ") : "",
+    "Projects": projects.length > 0 ? projects.join("; ") : "",
+    "Publications": publications.length > 0 ? publications.join("; ") : "",
+    "Volunteer Organizations": volunteerOrgs.length > 0 ? volunteerOrgs.join("; ") : "",
+    "Courses": courses.length > 0 ? courses.join("; ") : "",
+    "Honors & Awards": honors.length > 0 ? honors.join("; ") : "",
+    "Organizations": organizations.length > 0 ? organizations.join("; ") : "",
+    "Patents": patents.length > 0 ? patents.join("; ") : "",
+    "Test Scores": testScores.length > 0 ? testScores.join("; ") : "",
+    "Emails": emails.length > 0 ? emails.join("; ") : "",
+    "Phones": phones.length > 0 ? phones.join("; ") : "",
+    "Social Links": socialLinkUrls.length > 0 ? socialLinkUrls.join("; ") : "",
+    "Skills Count": skillsList.length > 0 ? String(skillsList.length) : "",
+    "Experience Count": experienceList.length > 0 ? String(experienceList.length) : "",
+    "Education Count": educationList.length > 0 ? String(educationList.length) : "",
+    "Raw Data": JSON.stringify(data) // Store original JSON including comprehensive_data - preserve all data
   };
   
   // Add individual company columns (Company 1, Company 2, etc.) for compatibility
