@@ -129,6 +129,16 @@ export default async function JobDetailPage({
             )}
           </div>
 
+          {/* Match Analysis and Interview Prep Section - Moved to Top */}
+          <div className="px-8 py-6 space-y-6 border-b border-gray-200">
+            <div>
+              <JobMatchAnalysis jobId={job.id} />
+            </div>
+            <div>
+              <InterviewPrep jobId={job.id} jobTitle={job.title} />
+            </div>
+          </div>
+
           {/* Content Section */}
           <div className="px-8 py-6">
             <div className="mb-8">
@@ -264,16 +274,6 @@ export default async function JobDetailPage({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Match Analysis Section */}
-          <div className="mt-10">
-            <JobMatchAnalysis jobId={job.id} />
-          </div>
-
-          {/* Interview Prep Section */}
-          <div className="mt-10">
-            <InterviewPrep jobId={job.id} jobTitle={job.title} />
           </div>
 
           {/* Application Section */}
