@@ -1016,24 +1016,102 @@ export default function CandidatesContent({
                     <p className="text-gray-600 whitespace-pre-wrap">{selectedCandidate.notes}</p>
                   </div>
                 )}
-                {selectedCandidate.education && (
+                {(selectedCandidate.universities || selectedCandidate.fieldsOfStudy || selectedCandidate.degrees) && (
                   <div className="col-span-2">
                     <h3 className="font-semibold text-gray-900 mb-2">Education</h3>
-                    <pre className="text-xs text-gray-600 bg-gray-50 p-4 rounded overflow-auto">
-                      {typeof selectedCandidate.education === 'string'
-                        ? selectedCandidate.education
-                        : JSON.stringify(selectedCandidate.education, null, 2)}
-                    </pre>
+                    <div className="space-y-2">
+                      {selectedCandidate.universities && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Universities:</strong>
+                          <p className="text-sm text-gray-600">
+                            {(() => {
+                              try {
+                                const unis = JSON.parse(selectedCandidate.universities)
+                                return Array.isArray(unis) ? unis.join(", ") : selectedCandidate.universities
+                              } catch {
+                                return selectedCandidate.universities
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      {selectedCandidate.fieldsOfStudy && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Fields of Study:</strong>
+                          <p className="text-sm text-gray-600">
+                            {(() => {
+                              try {
+                                const fields = JSON.parse(selectedCandidate.fieldsOfStudy)
+                                return Array.isArray(fields) ? fields.join(", ") : selectedCandidate.fieldsOfStudy
+                              } catch {
+                                return selectedCandidate.fieldsOfStudy
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      {selectedCandidate.degrees && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Degrees:</strong>
+                          <p className="text-sm text-gray-600">{selectedCandidate.degrees}</p>
+                        </div>
+                      )}
+                      {selectedCandidate.undergradGraduationYear && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Undergrad Year:</strong>
+                          <p className="text-sm text-gray-600">{selectedCandidate.undergradGraduationYear}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-                {selectedCandidate.experience && (
+                {(selectedCandidate.companies || selectedCandidate.previousTitles || selectedCandidate.currentCompany) && (
                   <div className="col-span-2">
                     <h3 className="font-semibold text-gray-900 mb-2">Experience</h3>
-                    <pre className="text-xs text-gray-600 bg-gray-50 p-4 rounded overflow-auto">
-                      {typeof selectedCandidate.experience === 'string'
-                        ? selectedCandidate.experience
-                        : JSON.stringify(selectedCandidate.experience, null, 2)}
-                    </pre>
+                    <div className="space-y-2">
+                      {selectedCandidate.currentCompany && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Current Company:</strong>
+                          <p className="text-sm text-gray-600">{selectedCandidate.currentCompany}</p>
+                          {selectedCandidate.jobTitle && (
+                            <p className="text-xs text-gray-500">as {selectedCandidate.jobTitle}</p>
+                          )}
+                        </div>
+                      )}
+                      {selectedCandidate.previousTargetCompany && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Previous Company:</strong>
+                          <p className="text-sm text-gray-600">{selectedCandidate.previousTargetCompany}</p>
+                        </div>
+                      )}
+                      {selectedCandidate.companies && (
+                        <div>
+                          <strong className="text-sm text-gray-700">All Companies:</strong>
+                          <p className="text-sm text-gray-600">
+                            {(() => {
+                              try {
+                                const comps = JSON.parse(selectedCandidate.companies)
+                                return Array.isArray(comps) ? comps.join(", ") : selectedCandidate.companies
+                              } catch {
+                                return selectedCandidate.companies
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      {selectedCandidate.previousTitles && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Previous Titles:</strong>
+                          <p className="text-sm text-gray-600">{selectedCandidate.previousTitles}</p>
+                        </div>
+                      )}
+                      {selectedCandidate.totalYearsExperience && (
+                        <div>
+                          <strong className="text-sm text-gray-700">Total Experience:</strong>
+                          <p className="text-sm text-gray-600">{selectedCandidate.totalYearsExperience} years</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 {selectedCandidate.rawData && (
