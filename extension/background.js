@@ -46,8 +46,14 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Listen for alarms - this handles the 10-second delay for batch sending
+// Listen for alarms - this handles the 10-second delay for batch sending and keep-alive
 chrome.alarms.onAlarm.addListener((alarm) => {
+  // Handle keep-alive alarm (just wake up, do nothing)
+  if (alarm.name === "keepAlive") {
+    console.log("[DEBUG-BG] Keep-alive alarm triggered");
+    return;
+  }
+  
   console.log("[DEBUG-BG] ========== ALARM TRIGGERED ==========");
   console.log("[DEBUG-BG] Alarm name:", alarm.name);
   console.log("[DEBUG-BG] Alarm scheduled time:", alarm.scheduledTime);
@@ -151,13 +157,44 @@ function isExtensionContextValid() {
   }
 }
 
+// Keep service worker alive by setting up periodic alarms
+chrome.alarms.create("keepAlive", { periodInMinutes: 1 }, () => {
+  if (chrome.runtime.lastError) {
+    console.log("[DEBUG-BG] Could not create keepAlive alarm:", chrome.runtime.lastError);
+  }
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "keepAlive") {
+    // Just wake up the service worker, do nothing
+    console.log("[DEBUG-BG] Keep-alive alarm triggered");
+    return;
+  }
+});
+
 // Listen for messages from the content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("[DEBUG-BG] ========== Message listener called ==========");
+  console.log("[DEBUG-BG] Message type:", message?.type);
+  console.log("[DEBUG-BG] Has sendResponse:", typeof sendResponse === 'function');
+  console.log("[DEBUG-BG] Service worker active:", self.serviceWorker?.state || "unknown");
+  
   // Check extension context validity
   if (!isExtensionContextValid()) {
     console.error("[DEBUG-BG] ERROR: Extension context invalidated");
     try {
       sendResponse({ success: false, error: "Extension context invalidated. Please reload the extension." });
+    } catch (e) {
+      console.error("[DEBUG-BG] Could not send error response:", e);
+    }
+    return false;
+  }
+  
+  // Validate message
+  if (!message || !message.type) {
+    console.error("[DEBUG-BG] Invalid message received:", message);
+    try {
+      sendResponse({ success: false, error: "Invalid message format" });
     } catch (e) {
       console.error("[DEBUG-BG] Could not send error response:", e);
     }

@@ -102,12 +102,16 @@ ${truncatedRawData}${hasMoreData ? "\n\n[Note: Data truncated, but analyze what'
 TASK:
 1. VALIDATE existing data - check if fields are correctly placed:
    - Job titles should NOT be in company fields
+   - Company names should NOT be in job title fields (e.g., "AutogenAI" should not be a job title)
+   - Locations should NOT be in company fields (e.g., "England" should not be a company)
    - Names should NOT be in location fields
    - Dates should be in date fields, not text fields
-   - Companies should be actual company names, not job titles
-   - Locations should be actual locations (city, state, country), not names or other data
+   - Companies should be actual company names, not job titles or locations
+   - Locations should be actual locations (city, state, country), not names or company names
 
 2. CORRECT mismatched fields:
+   - If a COMPANY NAME is in the job title field (e.g., "AutogenAI" in title), move it to currentCompany and extract the correct title
+   - If a LOCATION is in the company field (e.g., "England" in company), move it to location and extract the correct company
    - If a job title is in the company field, move it to jobTitle and extract the correct company
    - If names are in location field, remove them and extract the correct location
    - If dates are in wrong fields, move them to correct date fields
@@ -128,7 +132,6 @@ Return JSON object with:
 - Fields you need to CORRECT (override existing incorrect values)
 - Include a "corrections" array listing what was corrected and why
 
-Structure:
 Structure:
 {
   "fullName": "string or null",

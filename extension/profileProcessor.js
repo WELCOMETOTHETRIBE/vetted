@@ -298,6 +298,143 @@ function containsJobTitle(text) {
 }
 
 /**
+ * Check if text looks like a company name (not a job title)
+ */
+function looksLikeCompanyName(text) {
+  if (!text) return false;
+  
+  const trimmed = text.trim();
+  
+  // Company name indicators
+  const companyIndicators = [
+    /Inc\.?$/i,
+    /LLC\.?$/i,
+    /Corp\.?$/i,
+    /Ltd\.?$/i,
+    /Limited$/i,
+    /Company$/i,
+    /Co\.?$/i,
+    /Technologies?$/i,
+    /Solutions?$/i,
+    /Systems?$/i,
+    /Group$/i,
+    /Capital$/i,
+    /Ventures?$/i,
+    /Partners?$/i,
+    /Studios?$/i,
+    /Labs?$/i,
+  ];
+  
+  // If it ends with company indicators, it's likely a company
+  if (companyIndicators.some(pattern => pattern.test(trimmed))) {
+    return true;
+  }
+  
+  // If it's a single capitalized word or short phrase (2-3 words) without title words, likely a company
+  const words = trimmed.split(/\s+/);
+  if (words.length <= 3 && words.length >= 1) {
+    // Check if it doesn't contain common title words
+    const titleWords = ['engineer', 'developer', 'manager', 'director', 'analyst', 'specialist', 
+                        'coordinator', 'associate', 'executive', 'senior', 'junior', 'lead', 
+                        'principal', 'staff', 'chief', 'head', 'recruiter', 'scientist', 
+                        'architect', 'consultant', 'advisor', 'strategist', 'researcher'];
+    const lowerText = trimmed.toLowerCase();
+    if (!titleWords.some(word => lowerText.includes(word))) {
+      // Check if it's capitalized properly (company names usually are)
+      if (/^[A-Z]/.test(trimmed)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Check if text looks like a location (not a company or name)
+ */
+function looksLikeLocation(text) {
+  if (!text) return false;
+  
+  const trimmed = text.trim();
+  
+  // Location indicators
+  const locationPatterns = [
+    /,\s*(United States|USA|US|UK|England|Scotland|Wales|Ireland|Canada|Australia|Germany|France|Spain|Italy|Netherlands|Belgium|Switzerland|Sweden|Norway|Denmark|Finland|Poland|Czech Republic|Austria|Portugal|Greece|Japan|China|India|Singapore|Hong Kong|South Korea|Brazil|Mexico|Argentina|Chile|Colombia|South Africa|Egypt|Israel|UAE|Saudi Arabia|Turkey|Russia)$/i,
+    /^(Greater|Metro|Greater Metro)\s+[A-Z][a-z]+\s+Area$/i,
+    /^[A-Z][a-z]+,\s+[A-Z][a-z]+$/,
+    /^[A-Z][a-z]+,\s+[A-Z][a-z]+,\s+[A-Z][a-z]+/,
+    /^(San Francisco|Los Angeles|New York|Chicago|Boston|Seattle|Austin|Denver|Portland|Miami|Atlanta|Dallas|Houston|Phoenix|San Diego|Washington|Philadelphia|Detroit|Minneapolis|Baltimore|Nashville|Charlotte|Raleigh|Indianapolis|Columbus|Milwaukee|Kansas City|Las Vegas|Sacramento|Oklahoma City|Memphis|Louisville|Jacksonville|Tucson|Fresno|Mesa|Virginia Beach|Oakland|Miami|Tulsa|Arlington|Tampa|New Orleans|Honolulu|Wichita|Cleveland|Bakersfield|Aurora|Anaheim|Santa Ana|St\.?\s*Louis|Corpus Christi|Riverside|Lexington|Henderson|Stockton|St\.?\s*Paul|Cincinnati|St\.?\s*Petersburg|Irvine|Greensboro|Lincoln|Plano|Anchorage|Norfolk|Orlando|Chandler|Laredo|Madison|Durham|Lubbock|Winston-Salem|Garland|Glendale|Hialeah|Reno|Chesapeake|Gilbert|Baton Rouge|Irving|Scottsdale|North Las Vegas|Fremont|Boise|Richmond|San Bernardino|Birmingham|Spokane|Rochester|Des Moines|Modesto|Fayetteville|Tacoma|Oxnard|Fontana|Columbus|Montgomery|Moreno Valley|Shreveport|Aurora|Yonkers|Akron|Huntington Beach|Little Rock|Augusta|Amarillo|Glendale|Mobile|Grand Rapids|Salt Lake City|Tallahassee|Huntsville|Grand Prairie|Knoxville|Worcester|Newport News|Brownsville|Overland Park|Santa Clarita|Providence|Garden Grove|Chattanooga|Oceanside|Jackson|Fort Lauderdale|Santa Rosa|Rancho Cucamonga|Port St\.?\s*Lucie|Tempe|Ontario|Vancouver|Sioux Falls|Springfield|Peoria|Pembroke Pines|Elk Grove|Salem|Lancaster|Corona|Eugene|Palmdale|Salinas|Springfield|Pasadena|Fort Collins|Hayward|Pomona|Cary|Rockford|Alexandria|Escondido|McKinney|Joliet|Kansas City|Torrance|Bridgeport|Paterson|Naperville|Syracuse|Lakewood|Hollywood|Sunnyvale|Macon|Pasadena|Orange|Fullerton|Mesquite|Dayton|Savannah|Clarksville|Orange|Pasadena|Killeen|McAllen|Joliet|Carrollton|Midland|Charleston|Waco|Visalia|Raleigh|Gainesville|Thousand Oaks|Cedar Rapids|Elizabeth|Stamford|Concord|Athens|Lafayette|Simi Valley|Santa Clara|Coral Springs|Fort Myers|Clearwater|Miami Beach|West Valley City|San Mateo|El Monte|Inglewood|Abilene|Richmond|Lowell|Wilmington|Arvada|Burbank|Palm Bay|Pueblo|High Point|West Covina|Round Rock|Davenport|Rialto|Brockton|Vista|Daly City|Tuscaloosa|Kenosha|Lakeland|Taylor|Lewisville|Tyler|Lawton|Meridian|Bellingham|Bend|Binghamton|Boca Raton|Boulder|Bremerton|Brentwood|Bristol|Broomfield|Brownsville|Bryan|Buffalo|Burlington|Caldwell|Cambridge|Camden|Canton|Cape Coral|Carlsbad|Carmel|Carrollton|Carson|Cary|Casper|Cedar Park|Cedar Rapids|Centennial|Champaign|Chandler|Chapel Hill|Charleston|Charlotte|Charlottesville|Chattanooga|Cheyenne|Chico|Chula Vista|Cicero|Cincinnati|Citrus Heights|Clarksville|Clearwater|Cleveland|Clifton|Clinton|Clovis|Coachella|Coconut Creek|College Station|Colorado Springs|Columbia|Columbus|Commerce City|Compton|Concord|Coral Gables|Coral Springs|Corona|Corpus Christi|Costa Mesa|Council Bluffs|Covina|Cranston|Cuyahoga Falls|Dallas|Daly City|Danbury|Danville|Davenport|Davis|Dayton|Daytona Beach|Dearborn|Decatur|Delano|Delray Beach|Deltona|Denton|Denver|Des Moines|Detroit|Diamond Bar|Downey|Dublin|Duluth|Durham|East Los Angeles|East Orange|East Providence|Eastvale|Edinburg|Edmond|Edmonds|El Cajon|El Centro|El Monte|El Paso|Elgin|Elizabeth|Elk Grove|Elmhurst|Elyria|Encinitas|Englewood|Erie|Escondido|Eugene|Euless|Evanston|Everett|Fairfield|Fargo|Farmington|Fayetteville|Federal Way|Findlay|Fishers|Flagstaff|Flint|Florence|Folsom|Fontana|Fort Collins|Fort Lauderdale|Fort Myers|Fort Smith|Fort Wayne|Fort Worth|Fountain Valley|Franklin|Fremont|Fresno|Frisco|Fullerton|Gainesville|Garden Grove|Garland|Gary|Gastonia|Georgetown|Germantown|Gilbert|Glenview|Glendale|Glendora|Goodyear|Grand Forks|Grand Island|Grand Junction|Grand Prairie|Grand Rapids|Greeley|Green Bay|Greensboro|Greenville|Greenwood|Gresham|Hackensack|Hagerstown|Hammond|Hampton|Hanford|Harlingen|Harrisburg|Harrisonburg|Hartford|Hattiesburg|Haverhill|Hawthorne|Hayward|Hemet|Henderson|Hesperia|Hialeah|Hickory|High Point|Highland|Hillsboro|Hoboken|Hollywood|Homestead|Honolulu|Hoover|Houston|Huntersville|Huntington|Huntington Beach|Huntsville|Hurst|Independence|Indianapolis|Inglewood|Iowa City|Irvine|Irving|Jackson|Jacksonville|Jefferson City|Jeffersonville|Jersey City|Johnson City|Joliet|Jonesboro|Joplin|Jupiter|Kalamazoo|Kannapolis|Kansas City|Kearny|Keller|Kenner|Kennewick|Kenosha|Kent|Kentwood|Kettering|Killeen|Kingsport|Kingston|Kirkland|Kissimmee|Knoxville|La Crosse|La Habra|La Mesa|La Mirada|La Quinta|Lafayette|Laguna Niguel|Lake Charles|Lake Elsinore|Lake Forest|Lakeland|Lakewood|Lancaster|Lansing|Laredo|Largo|Las Cruces|Las Vegas|Layton|League City|Lee's Summit|Leesburg|Lehi|Lenexa|Lewisville|Lexington|Lincoln|Little Rock|Livermore|Livonia|Lodi|Logan|Lombard|Long Beach|Longmont|Longview|Lorain|Los Angeles|Louisville|Loveland|Lowell|Lubbock|Lynchburg|Lynn|Lynwood|Macon|Madera|Madison|Madison Heights|Malden|Manchester|Manhattan|Mansfield|Maple Grove|Maplewood|Margate|Maricopa|Marietta|Marion|Marlborough|Martinez|Marysville|McAllen|McKinney|McLean|Medford|Melbourne|Memphis|Menifee|Merced|Meridian|Mesa|Mesquite|Miami|Miami Beach|Miami Gardens|Middletown|Midland|Midland|Milford|Millcreek|Milpitas|Milwaukee|Minneapolis|Miramar|Missoula|Missouri City|Mobile|Modesto|Monroe|Monterey|Monterey Park|Montgomery|Moore|Moreno Valley|Morgan Hill|Mount Pleasant|Mount Prospect|Mount Vernon|Mountain View|Muncie|Murfreesboro|Murrieta|Muskegon|Muskogee|Nampa|Napa|Naperville|Nashua|Nashville|National City|New Bedford|New Braunfels|New Haven|New Orleans|New Rochelle|New York|Newark|Newburgh|Newport Beach|Newport News|Newton|Niagara Falls|Noblesville|Norfolk|Normal|Norman|North Charleston|North Las Vegas|North Little Rock|North Miami|North Miami Beach|North Port|Norwalk|Novato|Novi|Oakland|Oakley|Ocala|Oceanside|Odessa|Ogden|Oklahoma City|Olathe|Olympia|Omaha|Ontario|Orange|Orange|Orem|Orlando|Oro Valley|Oshkosh|Overland Park|Owensboro|Oxnard|Palm Bay|Palm Beach Gardens|Palm Coast|Palm Desert|Palm Springs|Palmdale|Palo Alto|Panama City|Paradise|Paramount|Parker|Parma|Pasadena|Pasadena|Pasco|Passaic|Paterson|Pawtucket|Peabody|Pearland|Pembroke Pines|Pensacola|Peoria|Perris|Perth Amboy|Petaluma|Phenix City|Philadelphia|Phoenix|Pico Rivera|Pine Bluff|Pinellas Park|Pittsburgh|Pittsfield|Placentia|Plainfield|Plano|Plantation|Pleasanton|Plymouth|Pocatello|Pomona|Pompano Beach|Pontiac|Port Arthur|Port Charlotte|Port Orange|Port St\.?\s*Lucie|Portland|Portsmouth|Poway|Prescott|Providence|Provo|Pueblo|Punta Gorda|Quincy|Racine|Raleigh|Rancho Cordova|Rancho Cucamonga|Rapid City|Reading|Redding|Redlands|Redmond|Redondo Beach|Redwood City|Reno|Renton|Revere|Rialto|Richardson|Richland|Richmond|Richmond|Rio Rancho|Riverside|Roanoke|Rochester|Rochester|Rockford|Rock Hill|Rock Island|Rockville|Rocky Mount|Rome|Rosemead|Roseville|Roswell|Round Rock|Rowlett|Royal Oak|Sacramento|Saginaw|Salem|Salem|Salinas|Salt Lake City|San Angelo|San Antonio|San Bernardino|San Buenaventura|San Diego|San Francisco|San Jose|San Leandro|San Mateo|San Rafael|San Ramon|Santa Ana|Santa Barbara|Santa Clara|Santa Clarita|Santa Cruz|Santa Fe|Santa Maria|Santa Monica|Santa Rosa|Santee|Sarasota|Savannah|Scottsdale|Scranton|Seattle|Shreveport|Simi Valley|Sioux City|Sioux Falls|Smyrna|Somerville|South Bend|South Gate|South Jordan|South Lyon|South San Francisco|Sparks|Spokane|Springdale|Springfield|Springfield|Springfield|Springfield|Springfield|Springfield|Springfield|Springfield|St\.?\s*Charles|St\.?\s*Cloud|St\.?\s*Louis|St\.?\s*Paul|St\.?\s*Petersburg|Stamford|Stanton|Sterling Heights|Stockton|Stratford|Strongsville|Sunnyvale|Sunrise|Sunset|Surprise|Syracuse|Tacoma|Tallahassee|Tampa|Taunton|Taylor|Temecula|Tempe|Temple|Terre Haute|Texas City|Thornton|Thousand Oaks|Tigard|Titusville|Toledo|Topeka|Torrance|Trenton|Troy|Tucson|Tulare|Tulsa|Turlock|Tuscaloosa|Tustin|Twin Falls|Tyler|Union City|Upland|Urbana|Valdosta|Vallejo|Vancouver|Ventura|Vernon|Victorville|Virginia Beach|Visalia|Waco|Waldorf|Walla Walla|Warner Robins|Warren|Warwick|Washington|Waterbury|Waterloo|Watsonville|Waukegan|Waukesha|Wausau|Wauwatosa|Wellington|West Covina|West Des Moines|West Haven|West Jordan|West Palm Beach|West Sacramento|West Valley City|Westfield|Westland|Westminster|Westminster|Weston|Wheaton|Wichita|Wichita Falls|Wilmington|Wilmington|Wilson|Winston-Salem|Woodbury|Woodland|Worcester|Wylie|Yakima|Yonkers|Yorba Linda|York|Youngstown|Yuba City|Yucaipa|Yuma|Zephyrhills|Zion)$/i,
+  ];
+  
+  // Check for country names
+  const countries = ['United States', 'USA', 'US', 'UK', 'England', 'Scotland', 'Wales', 'Ireland', 
+                     'Canada', 'Australia', 'Germany', 'France', 'Spain', 'Italy', 'Netherlands', 
+                     'Belgium', 'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 
+                     'Czech Republic', 'Austria', 'Portugal', 'Greece', 'Japan', 'China', 'India', 
+                     'Singapore', 'Hong Kong', 'South Korea', 'Brazil', 'Mexico', 'Argentina', 
+                     'Chile', 'Colombia', 'South Africa', 'Egypt', 'Israel', 'UAE', 'Saudi Arabia', 
+                     'Turkey', 'Russia'];
+  
+  const lowerText = trimmed.toLowerCase();
+  if (countries.some(country => lowerText.includes(country.toLowerCase()))) {
+    return true;
+  }
+  
+  // Check location patterns
+  if (locationPatterns.some(pattern => pattern.test(trimmed))) {
+    return true;
+  }
+  
+  // Single word that's a known location (like "England")
+  const words = trimmed.split(/\s+/);
+  if (words.length === 1 && /^[A-Z][a-z]+$/.test(trimmed)) {
+    const knownLocations = ['England', 'Scotland', 'Wales', 'Ireland', 'London', 'Manchester', 
+                            'Birmingham', 'Liverpool', 'Leeds', 'Sheffield', 'Bristol', 'Edinburgh', 
+                            'Glasgow', 'Cardiff', 'Belfast', 'Newcastle', 'Nottingham', 'Leicester', 
+                            'Coventry', 'Bradford', 'Kingston', 'Plymouth', 'Stoke', 'Wolverhampton', 
+                            'Derby', 'Southampton', 'Southend', 'Reading', 'Northampton', 'Luton', 
+                            'Bolton', 'Bournemouth', 'Norwich', 'Swindon', 'Peterborough', 'Ipswich', 
+                            'Cambridge', 'Oxford', 'York', 'Exeter', 'Grimsby', 'Blackpool', 'Middlesbrough', 
+                            'Brighton', 'Hastings', 'Dover', 'Canterbury', 'Winchester', 'Salisbury', 
+                            'Bath', 'Gloucester', 'Cheltenham', 'Worcester', 'Hereford', 'Shrewsbury', 
+                            'Chester', 'Lancaster', 'Carlisle', 'Durham', 'Newcastle', 'Sunderland', 
+                            'Middlesbrough', 'Hartlepool', 'Scarborough', 'Whitby', 'Bridlington', 
+                            'Hull', 'Grimsby', 'Lincoln', 'Boston', 'Spalding', 'Wisbech', 'King\'s Lynn', 
+                            'Great Yarmouth', 'Lowestoft', 'Ipswich', 'Colchester', 'Chelmsford', 
+                            'Southend', 'Basildon', 'Gravesend', 'Dartford', 'Maidstone', 'Canterbury', 
+                            'Dover', 'Folkestone', 'Hastings', 'Eastbourne', 'Brighton', 'Worthing', 
+                            'Bognor Regis', 'Chichester', 'Portsmouth', 'Southampton', 'Winchester', 
+                            'Salisbury', 'Bath', 'Bristol', 'Gloucester', 'Cheltenham', 'Tewkesbury', 
+                            'Evesham', 'Stratford', 'Warwick', 'Leamington', 'Rugby', 'Northampton', 
+                            'Kettering', 'Corby', 'Wellingborough', 'Rushden', 'Higham Ferrers', 'Oundle', 
+                            'Peterborough', 'Stamford', 'Bourne', 'Spalding', 'Holbeach', 'Long Sutton', 
+                            'Wisbech', 'March', 'Chatteris', 'Ely', 'Soham', 'Newmarket', 'Bury St Edmunds', 
+                            'Thetford', 'Dereham', 'Fakenham', 'Walsingham', 'Holt', 'Cromer', 'Sheringham', 
+                            'Wells', 'Blakeney', 'Cley', 'Hunstanton', 'Snettisham', 'Dersingham', 
+                            'Heacham', 'Sandringham', 'King\'s Lynn', 'Downham Market', 'Stoke Ferry', 
+                            'Wereham', 'Wimbotsham', 'Stradsett', 'Cockley Cley', 'Gooderstone', 'Oxborough', 
+                            'Bodney', 'Hilborough', 'Hilgay', 'Feltwell', 'Methwold', 'Foulden', 'Shouldham', 
+                            'Shouldham Thorpe', 'Wormegay', 'Tilney', 'Tilney All Saints', 'Tilney St Lawrence', 
+                            'Tilney St Lawrence', 'Terrington', 'Terrington St Clement', 'Terrington St John', 
+                            'Walpole', 'Walpole St Andrew', 'Walpole St Peter', 'Walpole Highway', 'Tydd St Mary', 
+                            'Tydd St Giles', 'Leverington', 'Wisbech St Mary', 'Wisbech', 'Emneth', 'Outwell', 
+                            'Upwell', 'Nordelph', 'Downham Market', 'Stoke Ferry', 'Wereham', 'Wimbotsham', 
+                            'Stradsett', 'Cockley Cley', 'Gooderstone', 'Oxborough', 'Bodney', 'Hilborough', 
+                            'Hilgay', 'Feltwell', 'Methwold', 'Foulden', 'Shouldham', 'Shouldham Thorpe', 
+                            'Wormegay', 'Tilney', 'Tilney All Saints', 'Tilney St Lawrence', 'Terrington', 
+                            'Terrington St Clement', 'Terrington St John', 'Walpole', 'Walpole St Andrew', 
+                            'Walpole St Peter', 'Walpole Highway', 'Tydd St Mary', 'Tydd St Giles', 
+                            'Leverington', 'Wisbech St Mary', 'Emneth', 'Outwell', 'Upwell', 'Nordelph'];
+    if (knownLocations.some(loc => trimmed === loc)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Remove job title from company name if it's concatenated
  */
 function removeTitleFromCompany(company, title) {
@@ -1808,6 +1945,47 @@ function processProfileDocument(data) {
   
   // Extract social links
   const socialLinkUrls = socialLinks.map(link => link.href || link.url || '').filter(Boolean);
+
+  // VALIDATION: Fix common data placement errors before building result
+  // Check if company name is in title field
+  if (currentTitle && looksLikeCompanyName(currentTitle) && !containsJobTitle(currentTitle)) {
+    // Company name is in title field - swap them if we have a real title elsewhere
+    // Try to find the actual title from experience
+    if (currentExp && currentExp.title && containsJobTitle(currentExp.title)) {
+      // Found actual title, swap
+      const tempCompany = currentTitle;
+      currentTitle = currentExp.title;
+      if (!currentCompany) {
+        currentCompany = tempCompany;
+      }
+    } else if (!currentCompany) {
+      // No company found, move title to company
+      currentCompany = currentTitle;
+      currentTitle = "";
+    }
+  }
+  
+  // Check if location is in company field
+  if (currentCompany && looksLikeLocation(currentCompany) && !isValidCompanyName(currentCompany)) {
+    // Location is in company field - move it to location if location is empty
+    if (!location) {
+      location = currentCompany;
+      currentCompany = "";
+    } else {
+      // Location already exists, just clear the company
+      currentCompany = "";
+    }
+  }
+  
+  // Check if company name looks like a location (single country/region name)
+  if (currentCompany && looksLikeLocation(currentCompany) && !isValidCompanyName(currentCompany)) {
+    if (!location) {
+      location = currentCompany;
+      currentCompany = "";
+    } else {
+      currentCompany = "";
+    }
+  }
 
   // Build result object with all new columns - ensure all fields are populated
   // Use arrays for structured data to preserve all information

@@ -108,31 +108,52 @@
           return;
         }
 
+        // Check if background script is available
+        if (!chrome.runtime || !chrome.runtime.sendMessage) {
+          console.error("Chrome runtime not available");
+          showToast("Extension runtime not available. Please reload the extension.", true);
+          return;
+        }
+
+        console.log("[DEBUG-CS] Sending SAVE_PROFILE_DOCUMENT message...");
         chrome.runtime.sendMessage(
           { type: "SAVE_PROFILE_DOCUMENT", payload: profileDoc },
           (response) => {
+            // Check for runtime errors first
             if (chrome.runtime.lastError) {
               const errorMsg = chrome.runtime.lastError.message || "Error saving profile JSON";
-              console.error("Runtime error:", chrome.runtime.lastError);
+              console.error("[DEBUG-CS] Runtime error:", chrome.runtime.lastError);
+              console.error("[DEBUG-CS] Error message:", errorMsg);
               
               // Check if it's an invalidated context error
               if (errorMsg.includes("Extension context invalidated") || 
                   errorMsg.includes("message port closed") ||
+                  errorMsg.includes("Could not establish connection") ||
                   chrome.runtime.lastError.message === "Extension context invalidated.") {
                 showExtensionReloadMessage();
                 showToast("Extension was reloaded. Please refresh this page.", true);
                 return;
               }
               
-              showToast(`Error: ${errorMsg}`);
+              // Check if background script is not running
+              if (errorMsg.includes("Receiving end does not exist") || 
+                  errorMsg.includes("message port closed")) {
+                showToast("Background script not running. Please reload the extension.", true);
+                console.error("[DEBUG-CS] Background script appears to be inactive");
+                return;
+              }
+              
+              showToast(`Error: ${errorMsg}`, true);
               return;
             }
 
             if (!response) {
-              showToast("Error: No response from extension");
-              console.error("No response received");
+              console.error("[DEBUG-CS] No response received from background script");
+              showToast("Error: No response from extension. Background script may not be running.", true);
               return;
             }
+            
+            console.log("[DEBUG-CS] Response received:", response);
 
             if (response.success) {
               // Check if auto-send is enabled and queue for batch send
@@ -158,26 +179,80 @@
                   }
 
                   console.log("[DEBUG-CS] Sending QUEUE_FOR_VETTED message...");
+                  
+                  // Set a timeout to detect if background script isn't responding
+                  const messageTimeout = setTimeout(() => {
+                    console.error("[DEBUG-CS] Timeout waiting for QUEUE_FOR_VETTED response");
+                    showToast("Background script not responding. Try reloading the extension.", true);
+                  }, 5000); // 5 second timeout
+                  
                   // Queue profile for batch auto-send to Vetted
                   chrome.runtime.sendMessage({
                     type: "QUEUE_FOR_VETTED",
                     payload: profileDoc
                   }, (queueResponse) => {
-                    console.log("[DEBUG-CS] Queue response received:", queueResponse);
+                    clearTimeout(messageTimeout);
+                    
+                    // Check for runtime errors first
                     if (chrome.runtime.lastError) {
                       console.error("[DEBUG-CS] Queue error:", chrome.runtime.lastError);
                       const errorMsg = chrome.runtime.lastError.message || "Unknown error";
                       
                       // Check if it's an invalidated context error
                       if (errorMsg.includes("Extension context invalidated") || 
-                          errorMsg.includes("message port closed")) {
+                          errorMsg.includes("message port closed") ||
+                          errorMsg.includes("Could not establish connection") ||
+                          errorMsg.includes("Receiving end does not exist") ||
+                          errorMsg.includes("The message port closed before a response was received")) {
                         showExtensionReloadMessage();
                         showToast("Extension was reloaded. Please refresh this page.", true);
                         return;
                       }
                       
-                      showToast(`Profile saved but queue failed: ${errorMsg}`, true);
-                    } else if (queueResponse && !queueResponse.success) {
+                      // Try fallback: save to storage directly and let background script pick it up
+                      console.log("[DEBUG-CS] Attempting fallback: saving to storage directly");
+                      chrome.storage.local.get(["vettedQueue"], (data) => {
+                        if (chrome.runtime.lastError) {
+                          console.error("[DEBUG-CS] Fallback also failed:", chrome.runtime.lastError);
+                          showToast(`Profile saved but queue failed: ${errorMsg}`, true);
+                          return;
+                        }
+                        
+                        const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+                        queue.push(profileDoc);
+                        chrome.storage.local.set({ vettedQueue: queue }, () => {
+                          if (chrome.runtime.lastError) {
+                            console.error("[DEBUG-CS] Fallback save failed:", chrome.runtime.lastError);
+                            showToast(`Profile saved but queue failed: ${errorMsg}`, true);
+                          } else {
+                            console.log("[DEBUG-CS] Fallback successful, queued via storage");
+                            showToast(`Profile saved & queued for Vetted (${queue.length} in queue)`);
+                          }
+                        });
+                      });
+                      return;
+                    }
+                    
+                    if (!queueResponse) {
+                      console.error("[DEBUG-CS] No queue response received");
+                      // Try fallback
+                      chrome.storage.local.get(["vettedQueue"], (data) => {
+                        const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
+                        queue.push(profileDoc);
+                        chrome.storage.local.set({ vettedQueue: queue }, () => {
+                          if (!chrome.runtime.lastError) {
+                            showToast(`Profile saved & queued for Vetted (${queue.length} in queue)`);
+                          } else {
+                            showToast("Profile saved but queue failed: No response from background script", true);
+                          }
+                        });
+                      });
+                      return;
+                    }
+                    
+                    console.log("[DEBUG-CS] Queue response received:", queueResponse);
+                    
+                    if (!queueResponse.success) {
                       console.error("[DEBUG-CS] Queue failed:", queueResponse.error);
                       showToast(`Queue failed: ${queueResponse.error || "Unknown error"}`, true);
                     } else {
