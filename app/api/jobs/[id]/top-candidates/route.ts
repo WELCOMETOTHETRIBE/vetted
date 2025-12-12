@@ -162,7 +162,7 @@ Only return the top 5 matches.`
       
       // Get full candidate details for the matches
       const matchedCandidates = parsed.matches.slice(0, 5).map((match) => {
-        const candidate = candidates.find((c) => c.id === match.candidateId)
+        const candidate = candidates.find((c: any) => c.id === match.candidateId)
         return {
           ...match,
           candidateName: candidate?.fullName || match.candidateName,
