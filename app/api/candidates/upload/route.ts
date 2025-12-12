@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateCandidateSummary } from "@/lib/ai/candidate-ai"
+import { enrichCandidateDataWithAI, mergeEnrichedData } from "@/lib/ai/data-enrichment"
 
 /**
  * This endpoint accepts processed profile JSON from the extension
@@ -88,6 +89,64 @@ export async function POST(req: Request) {
         if (!fullName || fullName.trim().length < 2) {
           console.warn("Candidate has invalid or missing full name:", { linkedinUrl, fullName })
           // Don't fail, but log warning
+        }
+
+        // Extract raw HTML/text for AI enrichment
+        let rawHtml: string | undefined
+        let rawText: string | undefined
+        
+        if (candidateData["Raw Data"]) {
+          try {
+            const rawData = typeof candidateData["Raw Data"] === "string" 
+              ? JSON.parse(candidateData["Raw Data"]) 
+              : candidateData["Raw Data"]
+            
+            // Try to extract raw_html and raw_text from comprehensive_data or structured format
+            if (rawData.raw_html) {
+              rawHtml = rawData.raw_html
+            }
+            if (rawData.raw_text) {
+              rawText = rawData.raw_text
+            }
+            // Also check comprehensive_data array
+            if (rawData.comprehensive_data && Array.isArray(rawData.comprehensive_data)) {
+              const rawDataItem = rawData.comprehensive_data.find((item: any) => 
+                item.category === "raw_data" && item.type === "raw_html"
+              )
+              if (rawDataItem?.data?.html) {
+                rawHtml = rawDataItem.data.html
+              }
+              if (rawDataItem?.data?.text) {
+                rawText = rawDataItem.data.text
+              }
+            }
+          } catch (e) {
+            console.warn("Could not parse Raw Data for AI enrichment:", e)
+          }
+        }
+
+        // Check for missing fields that could benefit from AI enrichment
+        const hasMissingFields = !candidateData["Current Company"] && 
+          !candidateData["Job title"] && 
+          !candidateData["Location"] &&
+          !candidateData["Total Years full time experience"]
+
+        // Use AI enrichment if we have raw data and missing fields
+        let enrichedData = candidateData
+        if ((rawHtml || rawText) && hasMissingFields) {
+          console.log(`Attempting AI enrichment for ${fullName || linkedinUrl}`)
+          try {
+            const aiEnriched = await enrichCandidateDataWithAI(candidateData, rawHtml, rawText)
+            if (aiEnriched) {
+              console.log(`AI enrichment successful for ${fullName || linkedinUrl}, enriched fields:`, Object.keys(aiEnriched))
+              enrichedData = mergeEnrichedData(candidateData, aiEnriched)
+            } else {
+              console.log(`AI enrichment returned no data for ${fullName || linkedinUrl}`)
+            }
+          } catch (error) {
+            console.error(`AI enrichment failed for ${fullName || linkedinUrl}:`, error)
+            // Continue with original data if enrichment fails
+          }
         }
 
         // Check if candidate already exists
@@ -265,9 +324,10 @@ export async function POST(req: Request) {
           rawDataValue = rawDataValue.substring(0, MAX_RAWDATA_SIZE) + "\n... [TRUNCATED - Original size: " + rawDataValue.length + " bytes]"
         }
 
-        const allCompanies = extractAllCompanies(candidateData)
-        const allUniversities = extractAllUniversities(candidateData)
-        const allFieldsOfStudy = extractAllFieldsOfStudy(candidateData)
+        // Use enriched data for extraction
+        const allCompanies = extractAllCompanies(enrichedData)
+        const allUniversities = extractAllUniversities(enrichedData)
+        const allFieldsOfStudy = extractAllFieldsOfStudy(enrichedData)
 
         const candidatePayload = {
           linkedinUrl,
