@@ -1,5 +1,12 @@
 import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
 
+export interface Correction {
+  field: string
+  originalValue: string
+  correctedValue: string
+  reason: string
+}
+
 export interface EnrichedCandidateData {
   // Basic Info
   fullName?: string
@@ -44,6 +51,9 @@ export interface EnrichedCandidateData {
   skillsCount?: number
   experienceCount?: number
   educationCount?: number
+  
+  // Validation
+  corrections?: Correction[]
 }
 
 /**
@@ -81,22 +91,44 @@ export async function enrichCandidateDataWithAI(
     const truncatedRawData = rawDataText.substring(0, 8000) // Limit to 8000 chars
     const hasMoreData = rawDataText.length > 8000
 
-    const prompt = `You are an expert data extraction assistant. Analyze the raw HTML/text data from a LinkedIn profile and extract candidate information.
+    const prompt = `You are an expert data extraction and validation assistant. Analyze the raw HTML/text data from a LinkedIn profile to extract, validate, and correct candidate information.
 
-EXISTING DATA (already parsed):
+EXISTING DATA (already parsed - may contain errors):
 ${existingFields.length > 0 ? existingFields.join("\n") : "None"}
 
 RAW DATA (from LinkedIn profile):
 ${truncatedRawData}${hasMoreData ? "\n\n[Note: Data truncated, but analyze what's available]" : ""}
 
 TASK:
-1. Extract any missing fields that are not in the existing data
-2. Fill in gaps where existing data is incomplete or empty
-3. Parse dates, companies, education, and other structured information
-4. Extract arrays (companies, universities, fields of study) as JSON arrays
-5. Be precise and only extract information that is clearly present in the raw data
+1. VALIDATE existing data - check if fields are correctly placed:
+   - Job titles should NOT be in company fields
+   - Names should NOT be in location fields
+   - Dates should be in date fields, not text fields
+   - Companies should be actual company names, not job titles
+   - Locations should be actual locations (city, state, country), not names or other data
 
-Return JSON object with ONLY the fields you can extract/fill. Use null for fields you cannot determine.
+2. CORRECT mismatched fields:
+   - If a job title is in the company field, move it to jobTitle and extract the correct company
+   - If names are in location field, remove them and extract the correct location
+   - If dates are in wrong fields, move them to correct date fields
+   - Fix any other obvious data placement errors
+
+3. EXTRACT missing fields that are not in the existing data
+
+4. FILL gaps where existing data is incomplete or empty
+
+5. Parse dates, companies, education, and other structured information accurately
+
+6. Extract arrays (companies, universities, fields of study) as JSON arrays
+
+7. Be precise and only extract/correct information that is clearly present in the raw data
+
+Return JSON object with:
+- Fields you can extract/fill (use null if cannot determine)
+- Fields you need to CORRECT (override existing incorrect values)
+- Include a "corrections" array listing what was corrected and why
+
+Structure:
 Structure:
 {
   "fullName": "string or null",
@@ -130,16 +162,30 @@ Structure:
   "socialLinks": "string or null",
   "skillsCount": number or null,
   "experienceCount": number or null,
-  "educationCount": number or null
+  "educationCount": number or null,
+  "corrections": [
+    {
+      "field": "fieldName",
+      "originalValue": "what was wrong",
+      "correctedValue": "what it should be",
+      "reason": "why it was corrected"
+    }
+  ] or null
 }
 
 IMPORTANT:
-- Only include fields you can confidently extract from the raw data
+- VALIDATE and CORRECT existing data if it's clearly wrong
+- Only include fields you can confidently extract/correct from the raw data
 - Use null for fields you cannot determine
 - For arrays, use JSON array format: ["item1", "item2"]
 - For semicolon-separated strings, use: "item1; item2; item3"
 - Extract dates in formats like "Jan 2020", "2020-01", "2020-01-01"
-- Be conservative - only extract what's clearly present`
+- Be conservative - only extract/correct what's clearly present
+- Common errors to fix:
+  * Job titles in company fields (e.g., "Senior Engineer" should not be a company)
+  * Names in location fields (e.g., "John Smith" should not be a location)
+  * Duplicate concatenated data (e.g., "DirectorDirector" should be "Director")
+  * Dates in wrong format or wrong field`
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -166,13 +212,36 @@ IMPORTANT:
 
     // Validate and clean the response
     const enriched: EnrichedCandidateData = {}
+    const corrections: Correction[] = []
 
-    // Only include non-null fields
+    // Process corrections first
+    if (parsed.corrections && Array.isArray(parsed.corrections)) {
+      parsed.corrections.forEach((correction: any) => {
+        if (correction.field && correction.originalValue && correction.correctedValue) {
+          corrections.push({
+            field: correction.field,
+            originalValue: String(correction.originalValue),
+            correctedValue: String(correction.correctedValue),
+            reason: String(correction.reason || "Data validation correction")
+          })
+        }
+      })
+    }
+
+    // Only include non-null fields (except corrections which we handle separately)
     Object.entries(parsed).forEach(([key, value]) => {
+      if (key === "corrections") {
+        return // Handle corrections separately
+      }
       if (value !== null && value !== undefined && value !== "") {
         enriched[key as keyof EnrichedCandidateData] = value
       }
     })
+
+    // Add corrections if any
+    if (corrections.length > 0) {
+      enriched.corrections = corrections
+    }
 
     return Object.keys(enriched).length > 0 ? enriched : null
   } catch (error: any) {
@@ -182,13 +251,38 @@ IMPORTANT:
 }
 
 /**
- * Merge enriched data with existing data, prioritizing enriched data for missing fields
+ * Merge enriched data with existing data, applying corrections and prioritizing enriched data
  */
 export function mergeEnrichedData(
   existingData: Record<string, any>,
   enrichedData: EnrichedCandidateData
 ): Record<string, any> {
   const merged = { ...existingData }
+
+  // Apply corrections first (these override existing data)
+  if (enrichedData.corrections && enrichedData.corrections.length > 0) {
+    console.log(`Applying ${enrichedData.corrections.length} corrections:`)
+    enrichedData.corrections.forEach((correction) => {
+      console.log(`  - ${correction.field}: "${correction.originalValue}" → "${correction.correctedValue}" (${correction.reason})`)
+      
+      // Map correction field names to our data structure
+      const fieldMap: Record<string, string> = {
+        "currentCompany": "Current Company",
+        "jobTitle": "Job title",
+        "location": "Location",
+        "fullName": "Full Name",
+      }
+      
+      const mappedField = fieldMap[correction.field] || correction.field
+      
+      // Apply correction - override existing value
+      if (enrichedData[correction.field as keyof EnrichedCandidateData]) {
+        merged[mappedField] = enrichedData[correction.field as keyof EnrichedCandidateData]
+      } else {
+        merged[mappedField] = correction.correctedValue
+      }
+    })
+  }
 
   // Merge arrays intelligently
   if (enrichedData.companies && Array.isArray(enrichedData.companies)) {
@@ -215,14 +309,20 @@ export function mergeEnrichedData(
     merged.fieldsOfStudy = allFields.length > 0 ? allFields : undefined
   }
 
-  // Merge other fields - only fill if existing is empty/null
+  // Merge other fields - prioritize corrections, then fill if existing is empty/null
   Object.entries(enrichedData).forEach(([key, value]) => {
-    if (key === "companies" || key === "universities" || key === "fieldsOfStudy") {
+    if (key === "companies" || key === "universities" || key === "fieldsOfStudy" || key === "corrections") {
       return // Already handled above
     }
 
     const existingValue = merged[key]
-    if (!existingValue || existingValue === "" || existingValue === null) {
+    
+    // If this field was corrected, use the corrected value
+    const wasCorrected = enrichedData.corrections?.some(c => c.field === key)
+    if (wasCorrected) {
+      merged[key] = value
+    } else if (!existingValue || existingValue === "" || existingValue === null) {
+      // Only fill if existing is empty/null (don't override existing good data)
       merged[key] = value
     }
   })
