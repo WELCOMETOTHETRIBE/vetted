@@ -1002,19 +1002,12 @@ export default function CandidatesContent({
                   <h3 className="font-semibold text-gray-900 mb-2">Experience</h3>
                   <p className="text-gray-600">{selectedCandidate.totalYearsExperience || "-"}</p>
                 </div>
-                {selectedCandidate.skills && selectedCandidate.skills.length > 0 && (
+                {selectedCandidate.skillsCount && selectedCandidate.skillsCount > 0 && (
                   <div className="col-span-2">
                     <h3 className="font-semibold text-gray-900 mb-2">Skills</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCandidate.skills.map((skill, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-gray-600">
+                      {selectedCandidate.skillsCount} skill{selectedCandidate.skillsCount !== 1 ? 's' : ''} listed
+                    </p>
                   </div>
                 )}
                 {selectedCandidate.notes && (
