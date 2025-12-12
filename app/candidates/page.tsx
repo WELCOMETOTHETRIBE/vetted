@@ -47,11 +47,32 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
     prisma.candidate.count({ where }),
   ])
 
+  // Also log all candidates in database for debugging
+  const allCandidates = await prisma.candidate.findMany({
+    select: {
+      id: true,
+      fullName: true,
+      linkedinUrl: true,
+      status: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10, // Just the latest 10 for debugging
+  })
+
   console.log("Candidates page - Found candidates:", {
     total,
     count: candidates.length,
     candidateIds: candidates.map((c: { id: string; fullName: string }) => c.id),
-    candidateNames: candidates.map((c: { id: string; fullName: string }) => c.fullName)
+    candidateNames: candidates.map((c: { id: string; fullName: string }) => c.fullName),
+    whereClause: where,
+    allCandidatesInDB: allCandidates.map((c: { id: string; fullName: string; linkedinUrl: string; status: string; createdAt: Date }) => ({
+      id: c.id,
+      name: c.fullName,
+      url: c.linkedinUrl,
+      status: c.status,
+      createdAt: c.createdAt
+    }))
   })
 
   return { candidates, total, page, limit }

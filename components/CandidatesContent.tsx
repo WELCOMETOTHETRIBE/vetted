@@ -77,16 +77,28 @@ export default function CandidatesContent({
       if (statusFilter) params.set("status", statusFilter)
       params.set("page", page.toString())
       params.set("limit", initialLimit.toString())
+      // Add cache-busting timestamp to ensure fresh data
+      params.set("_t", Date.now().toString())
 
-      const response = await fetch(`/api/candidates?${params.toString()}`)
+      console.log("[CandidatesContent] Fetching candidates with params:", params.toString())
+      const response = await fetch(`/api/candidates?${params.toString()}`, {
+        cache: "no-store", // Ensure we get fresh data
+      })
       if (response.ok) {
         const data = await response.json()
-        setCandidates(data.candidates)
-        setTotal(data.pagination.total)
+        console.log("[CandidatesContent] Received candidates:", {
+          count: data.candidates?.length || 0,
+          total: data.pagination?.total || 0,
+          candidateNames: data.candidates?.map((c: Candidate) => c.fullName) || []
+        })
+        setCandidates(data.candidates || [])
+        setTotal(data.pagination?.total || 0)
         router.push(`/candidates?${params.toString()}`)
+      } else {
+        console.error("[CandidatesContent] Failed to fetch candidates:", response.status, response.statusText)
       }
     } catch (error) {
-      console.error("Error fetching candidates:", error)
+      console.error("[CandidatesContent] Error fetching candidates:", error)
     } finally {
       setLoading(false)
     }
