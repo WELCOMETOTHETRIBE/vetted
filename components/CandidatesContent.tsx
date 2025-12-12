@@ -9,29 +9,59 @@ interface Candidate {
   linkedinUrl: string
   fullName: string
   currentCompany: string | null
+  currentCompanyStartDate: string | null
+  currentCompanyEndDate: string | null
+  currentCompanyTenureYears: string | null
+  currentCompanyTenureMonths: string | null
   jobTitle: string | null
   location: string | null
+  previousTargetCompany: string | null
+  previousTargetCompanyStartDate: string | null
+  previousTargetCompanyEndDate: string | null
+  previousTargetCompanyTenureYears: string | null
+  previousTargetCompanyTenureMonths: string | null
+  tenurePreviousTarget: string | null
+  previousTitles: string | null
   totalYearsExperience: string | null
-  skills: string[]
+  universities: string | null // JSON array as string
+  fieldsOfStudy: string | null // JSON array as string
+  degrees: string | null
+  undergradGraduationYear: string | null
+  certifications: string | null
+  languages: string | null
+  projects: string | null
+  publications: string | null
+  volunteerOrganizations: string | null
+  courses: string | null
+  honorsAwards: string | null
+  organizations: string | null
+  patents: string | null
+  testScores: string | null
+  emails: string | null
+  phones: string | null
+  socialLinks: string | null
+  skillsCount: number | null
+  experienceCount: number | null
+  educationCount: number | null
+  companies: string | null // JSON array as string
+  rawData: string | null
+  addedById: string | null
   status: "ACTIVE" | "CONTACTED" | "HIRED" | "REJECTED" | "ARCHIVED"
   notes: string | null
   createdAt: Date
   updatedAt: Date
-  education?: any
-  experience?: any
-  rawData?: any
   addedBy?: {
     id: string
     name: string | null
     email: string
   }
   // AI-generated fields
-  aiSummary?: string | null
-  aiKeyStrengths?: string | null
-  aiBestFitRoles?: string | null
-  aiHighlights?: string | null
-  aiConcerns?: string | null
-  aiSummaryGeneratedAt?: Date | null
+  aiSummary: string | null
+  aiKeyStrengths: string | null
+  aiBestFitRoles: string | null
+  aiHighlights: string | null
+  aiConcerns: string | null
+  aiSummaryGeneratedAt: Date | null
 }
 
 interface CandidatesContentProps {
@@ -59,6 +89,77 @@ export default function CandidatesContent({
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [aiLoading, setAiLoading] = useState<string | null>(null) // Track which AI action is loading
   const [aiResults, setAiResults] = useState<any>(null) // Store AI results
+  const [showColumnSelector, setShowColumnSelector] = useState(false)
+  
+  // Define all available columns with display names
+  const allColumns = [
+    { key: "fullName", label: "Name", default: true },
+    { key: "jobTitle", label: "Title", default: true },
+    { key: "currentCompany", label: "Company", default: true },
+    { key: "location", label: "Location", default: true },
+    { key: "totalYearsExperience", label: "Experience", default: true },
+    { key: "status", label: "Status", default: true },
+    { key: "linkedinUrl", label: "LinkedIn URL", default: false },
+    { key: "currentCompanyStartDate", label: "Current Company Start", default: false },
+    { key: "currentCompanyEndDate", label: "Current Company End", default: false },
+    { key: "currentCompanyTenureYears", label: "Current Tenure (Years)", default: false },
+    { key: "currentCompanyTenureMonths", label: "Current Tenure (Months)", default: false },
+    { key: "previousTargetCompany", label: "Previous Company", default: false },
+    { key: "previousTargetCompanyStartDate", label: "Previous Company Start", default: false },
+    { key: "previousTargetCompanyEndDate", label: "Previous Company End", default: false },
+    { key: "previousTargetCompanyTenureYears", label: "Previous Tenure (Years)", default: false },
+    { key: "previousTargetCompanyTenureMonths", label: "Previous Tenure (Months)", default: false },
+    { key: "tenurePreviousTarget", label: "Tenure at Previous", default: false },
+    { key: "previousTitles", label: "Previous Titles", default: false },
+    { key: "universities", label: "Universities", default: false },
+    { key: "fieldsOfStudy", label: "Fields of Study", default: false },
+    { key: "degrees", label: "Degrees", default: false },
+    { key: "undergradGraduationYear", label: "Undergrad Year", default: false },
+    { key: "certifications", label: "Certifications", default: false },
+    { key: "languages", label: "Languages", default: false },
+    { key: "projects", label: "Projects", default: false },
+    { key: "publications", label: "Publications", default: false },
+    { key: "volunteerOrganizations", label: "Volunteer Orgs", default: false },
+    { key: "courses", label: "Courses", default: false },
+    { key: "honorsAwards", label: "Honors & Awards", default: false },
+    { key: "organizations", label: "Organizations", default: false },
+    { key: "patents", label: "Patents", default: false },
+    { key: "testScores", label: "Test Scores", default: false },
+    { key: "emails", label: "Emails", default: false },
+    { key: "phones", label: "Phones", default: false },
+    { key: "socialLinks", label: "Social Links", default: false },
+    { key: "skillsCount", label: "Skills Count", default: false },
+    { key: "experienceCount", label: "Experience Count", default: false },
+    { key: "educationCount", label: "Education Count", default: false },
+    { key: "companies", label: "Companies", default: false },
+    { key: "notes", label: "Notes", default: false },
+    { key: "aiSummary", label: "AI Summary", default: false },
+    { key: "createdAt", label: "Created At", default: false },
+    { key: "updatedAt", label: "Updated At", default: false },
+  ]
+  
+  // Load selected columns from localStorage or use defaults
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("candidateColumns")
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {
+          // Fallback to defaults
+        }
+      }
+    }
+    // Return default columns
+    return allColumns.filter(col => col.default).map(col => col.key)
+  })
+  
+  // Save selected columns to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("candidateColumns", JSON.stringify(selectedColumns))
+    }
+  }, [selectedColumns])
 
   // Initialize search params from URL on client side
   useEffect(() => {
@@ -206,6 +307,47 @@ export default function CandidatesContent({
 
   const totalPages = Math.ceil(total / initialLimit)
 
+  // Helper function to format cell values
+  const formatCellValue = (value: any, columnKey: string): string => {
+    if (value === null || value === undefined) return "-"
+    
+    // Handle dates
+    if (columnKey === "createdAt" || columnKey === "updatedAt" || columnKey === "aiSummaryGeneratedAt") {
+      if (value instanceof Date || typeof value === "string") {
+        try {
+          const date = new Date(value)
+          return date.toLocaleDateString()
+        } catch {
+          return String(value)
+        }
+      }
+    }
+    
+    // Handle JSON arrays (universities, companies, fieldsOfStudy)
+    if (columnKey === "universities" || columnKey === "companies" || columnKey === "fieldsOfStudy") {
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            return parsed.slice(0, 3).join(", ") + (parsed.length > 3 ? ` (+${parsed.length - 3} more)` : "")
+          }
+        } catch {
+          // Not JSON, return as-is
+        }
+      }
+    }
+    
+    // Handle long text fields (truncate)
+    if (typeof value === "string" && value.length > 100) {
+      return value.substring(0, 100) + "..."
+    }
+    
+    return String(value)
+  }
+
+  // Get visible columns (always include Actions)
+  const visibleColumns = allColumns.filter(col => selectedColumns.includes(col.key))
+
   return (
     <div>
       {/* Header Actions */}
@@ -267,6 +409,82 @@ export default function CandidatesContent({
           >
             📤 Upload CSV/JSON
           </button>
+
+          {/* Column Selector Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowColumnSelector(!showColumnSelector)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 whitespace-nowrap flex items-center gap-2"
+              title="Configure columns"
+            >
+              ⚙️ Columns
+            </button>
+            
+            {/* Column Selector Dropdown */}
+            {showColumnSelector && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowColumnSelector(false)}
+                />
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                  <div className="p-4 border-b border-gray-200">
+                    <h3 className="font-semibold text-gray-900">Select Columns</h3>
+                    <p className="text-xs text-gray-500 mt-1">Choose which columns to display</p>
+                  </div>
+                  <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+                    {allColumns.map((column) => (
+                      <label
+                        key={column.key}
+                        className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedColumns.includes(column.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedColumns([...selectedColumns, column.key])
+                            } else {
+                              setSelectedColumns(selectedColumns.filter((key) => key !== column.key))
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{column.label}</span>
+                        {column.default && (
+                          <span className="text-xs text-gray-400">(default)</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="p-4 border-t border-gray-200 flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedColumns(allColumns.filter(col => col.default).map(col => col.key))
+                      }}
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      Reset to Defaults
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedColumns(allColumns.map(col => col.key))
+                      }}
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={() => setShowColumnSelector(false)}
+                      className="ml-auto px-4 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -319,25 +537,15 @@ export default function CandidatesContent({
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Title
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Company
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Experience
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {visibleColumns.map((column) => (
+                    <th
+                      key={column.key}
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {column.label}
+                    </th>
+                  ))}
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -345,58 +553,84 @@ export default function CandidatesContent({
               <tbody className="bg-white divide-y divide-gray-200">
                 {candidates.map((candidate) => (
                   <tr key={candidate.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                          {candidate.fullName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {candidate.fullName}
-                          </div>
-                          <div className="text-sm text-gray-500">
+                    {visibleColumns.map((column) => {
+                      const value = (candidate as any)[column.key]
+                      
+                      // Special handling for certain columns
+                      if (column.key === "fullName") {
+                        return (
+                          <td key={column.key} className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
+                                {candidate.fullName?.charAt(0).toUpperCase() || "?"}
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {candidate.fullName || "-"}
+                                </div>
+                                {candidate.linkedinUrl && (
+                                  <div className="text-xs text-gray-500">
+                                    <a
+                                      href={candidate.linkedinUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="hover:text-blue-600"
+                                    >
+                                      View LinkedIn
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        )
+                      }
+                      
+                      if (column.key === "status") {
+                        return (
+                          <td key={column.key} className="px-4 py-4 whitespace-nowrap">
+                            <select
+                              value={candidate.status}
+                              onChange={(e) =>
+                                handleStatusChange(candidate.id, e.target.value as Candidate["status"])
+                              }
+                              className={`text-xs font-medium px-2 py-1 rounded ${statusColors[candidate.status]}`}
+                            >
+                              <option value="ACTIVE">Active</option>
+                              <option value="CONTACTED">Contacted</option>
+                              <option value="HIRED">Hired</option>
+                              <option value="REJECTED">Rejected</option>
+                              <option value="ARCHIVED">Archived</option>
+                            </select>
+                          </td>
+                        )
+                      }
+                      
+                      if (column.key === "linkedinUrl") {
+                        return (
+                          <td key={column.key} className="px-4 py-4">
                             <a
-                              href={candidate.linkedinUrl}
+                              href={value}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:text-blue-600"
+                              className="text-sm text-blue-600 hover:text-blue-800 break-all"
                             >
-                              View LinkedIn
+                              {value || "-"}
                             </a>
+                          </td>
+                        )
+                      }
+                      
+                      // Default cell rendering
+                      return (
+                        <td key={column.key} className="px-4 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs">
+                            {formatCellValue(value, column.key)}
                           </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{candidate.jobTitle || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{candidate.currentCompany || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{candidate.location || "-"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {candidate.totalYearsExperience || "-"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={candidate.status}
-                        onChange={(e) =>
-                          handleStatusChange(candidate.id, e.target.value as Candidate["status"])
-                        }
-                        className={`text-xs font-medium px-2 py-1 rounded ${statusColors[candidate.status]}`}
-                      >
-                        <option value="ACTIVE">Active</option>
-                        <option value="CONTACTED">Contacted</option>
-                        <option value="HIRED">Hired</option>
-                        <option value="REJECTED">Rejected</option>
-                        <option value="ARCHIVED">Archived</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        </td>
+                      )
+                    })}
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => loadCandidateDetails(candidate.id)}
                         className="text-blue-600 hover:text-blue-900"
