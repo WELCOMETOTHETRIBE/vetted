@@ -331,7 +331,7 @@ export async function POST(req: Request) {
 
         const candidatePayload = {
           linkedinUrl,
-          fullName: candidateData["Full Name"] || candidateData.fullName || "",
+          fullName: enrichedData.fullName || candidateData["Full Name"] || candidateData.fullName || "",
           currentCompany: safeStringify(enrichedData.currentCompany || candidateData["Current Company"] || candidateData.currentCompany) || null,
           currentCompanyStartDate: safeStringify(enrichedData.currentCompanyStartDate || candidateData["Current Company Start Date"]) || null,
           currentCompanyEndDate: safeStringify(enrichedData.currentCompanyEndDate || candidateData["Current Company End Date"]) || null,
