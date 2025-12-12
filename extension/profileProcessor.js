@@ -122,13 +122,16 @@ function parseDuration(durationStr) {
 
 /**
  * Calculate total years of full-time experience
+ * Handles overlapping periods correctly by tracking date ranges
  */
 function calculateTotalYearsExperience(experienceList) {
   if (!experienceList || experienceList.length === 0) {
     return null;
   }
 
-  let totalYears = 0;
+  // Track all date ranges to avoid double-counting overlaps
+  const dateRanges = [];
+  
   for (const exp of experienceList) {
     const duration = exp.duration || "";
     if (!duration) continue;
@@ -146,16 +149,74 @@ function calculateTotalYearsExperience(experienceList) {
       continue;
     }
 
-    const [, , yearsInRole] = parseDuration(duration);
-    if (yearsInRole) {
-      totalYears += yearsInRole;
-    } else {
-      const [startYear, endYear] = parseDuration(duration);
-      if (startYear && endYear) {
-        totalYears += (endYear - startYear);
-      }
+    // Get start and end dates
+    const [startYear, endYear] = parseDuration(duration);
+    const isPresent = /Present/i.test(duration);
+    
+    if (startYear) {
+      const end = isPresent ? new Date().getFullYear() : (endYear || new Date().getFullYear());
+      dateRanges.push({
+        start: startYear,
+        end: end,
+        startMonth: exp.start_month || 1,
+        endMonth: isPresent ? new Date().getMonth() + 1 : (exp.end_month || 12)
+      });
     }
   }
+
+  if (dateRanges.length === 0) {
+    return null;
+  }
+
+  // Sort by start date
+  dateRanges.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    return a.startMonth - b.startMonth;
+  });
+
+  // Merge overlapping periods
+  const mergedRanges = [];
+  for (const range of dateRanges) {
+    if (mergedRanges.length === 0) {
+      mergedRanges.push({ ...range });
+      continue;
+    }
+
+    const lastRange = mergedRanges[mergedRanges.length - 1];
+    
+    // Check if ranges overlap or are adjacent
+    const lastEndYear = lastRange.end;
+    const lastEndMonth = lastRange.endMonth;
+    const currentStartYear = range.start;
+    const currentStartMonth = range.startMonth;
+    
+    // Convert to months for easier comparison
+    const lastEndMonths = lastEndYear * 12 + lastEndMonth;
+    const currentStartMonths = currentStartYear * 12 + currentStartMonth;
+    
+    // If current range starts before or at the same time as last range ends, merge them
+    if (currentStartMonths <= lastEndMonths + 1) {
+      // Merge: extend the last range to the later end date
+      if (range.end > lastRange.end || (range.end === lastRange.end && range.endMonth > lastRange.endMonth)) {
+        lastRange.end = range.end;
+        lastRange.endMonth = range.endMonth;
+      }
+    } else {
+      // No overlap, add as new range
+      mergedRanges.push({ ...range });
+    }
+  }
+
+  // Calculate total years from merged ranges
+  let totalMonths = 0;
+  for (const range of mergedRanges) {
+    const startMonths = range.start * 12 + (range.startMonth || 1);
+    const endMonths = range.end * 12 + (range.endMonth || 12);
+    totalMonths += (endMonths - startMonths + 1); // +1 to include both start and end months
+  }
+
+  // Convert months to years (round to nearest year)
+  const totalYears = Math.round(totalMonths / 12);
 
   return totalYears > 0 ? totalYears : null;
 }
@@ -928,24 +989,88 @@ function cleanField(value) {
 }
 
 /**
+ * Check if text looks like a person's name (not a location)
+ */
+function looksLikeName(text) {
+  if (!text) return false;
+  
+  const trimmed = text.trim();
+  
+  // Common name patterns
+  const namePatterns = [
+    /^[A-Z][a-z]+\s+[A-Z][a-z]+$/, // "John Smith"
+    /^[A-Z][a-z]+\s+[A-Z][a-z]+\s+[A-Z][a-z]+$/, // "John Michael Smith"
+    /^[A-Z][a-z]+,\s+[A-Z][a-z]+(,\s+[A-Z][a-z]+)?$/, // "Smith, John" or "Smith, John, Michael"
+  ];
+  
+  // If it matches name patterns and doesn't have location indicators, it's likely a name
+  if (namePatterns.some(pattern => pattern.test(trimmed))) {
+    // Check if it has location indicators
+    const locationIndicators = [
+      'united states', 'california', 'new york', 'texas', 'florida', 'washington',
+      'massachusetts', 'boston', 'los angeles', 'san francisco', 'seattle',
+      'area', 'region', 'metro', 'city', 'state', 'country'
+    ];
+    
+    const lowerText = trimmed.toLowerCase();
+    const hasLocationIndicator = locationIndicators.some(indicator => lowerText.includes(indicator));
+    
+    // If it looks like a name pattern but has no location indicators, it's probably a name
+    if (!hasLocationIndicator) {
+      return true;
+    }
+  }
+  
+  // Check for comma-separated names (common pattern: "Name1, Name2, Name3")
+  const commaParts = trimmed.split(',').map(p => p.trim());
+  if (commaParts.length >= 2 && commaParts.length <= 5) {
+    // Check if all parts look like names (capitalized, 2-20 chars, no location words)
+    const allLookLikeNames = commaParts.every(part => {
+      return /^[A-Z][a-z]+(\s+[A-Z][a-z]+)?$/.test(part) && 
+             part.length >= 2 && 
+             part.length <= 20 &&
+             !part.toLowerCase().includes('united states') &&
+             !part.toLowerCase().includes('california') &&
+             !part.toLowerCase().includes('new york');
+    });
+    
+    if (allLookLikeNames) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Extract and clean location from profile data - Enhanced
  */
 function extractLocation(data, rawText) {
   let location = data.personal_info?.location || "";
 
+  // FIRST: Check if location looks like names and reject it
+  if (location && looksLikeName(location)) {
+    location = "";
+  }
+
   // If location has newlines, try to extract the proper location
   if (location && location.includes('\n')) {
     const parts = location.split('\n').map(p => p.trim()).filter(p => p);
     
-    // Look for the part that looks like a proper location (has commas)
+    // Look for the part that looks like a proper location (has commas, not names)
     for (const part of parts) {
+      // Skip if it looks like names
+      if (looksLikeName(part)) {
+        continue;
+      }
+      
       if (part.includes(',') && part.length > 10) {
         const commaParts = part.split(',');
         if (commaParts.length >= 2) {
           // Check if it looks like a location
           const lastPart = commaParts[commaParts.length - 1].trim();
           if (lastPart.includes('United States') || lastPart.length === 2 || 
-              ['California', 'New York', 'Massachusetts', 'Texas', 'Florida', 'Washington'].some(state => lastPart.includes(state))) {
+              ['California', 'New York', 'Massachusetts', 'Texas', 'Florida', 'Washington', 'Illinois', 'Pennsylvania', 'Georgia', 'North Carolina', 'Virginia', 'Arizona', 'Colorado', 'Michigan', 'Ohio', 'Tennessee', 'Indiana', 'Wisconsin', 'Minnesota', 'Missouri', 'Maryland', 'Louisiana', 'Oregon', 'Alabama', 'Kentucky', 'Connecticut', 'Utah', 'Iowa', 'Nevada', 'Arkansas', 'Mississippi', 'Kansas', 'New Mexico', 'Nebraska', 'West Virginia', 'Idaho', 'Hawaii', 'New Hampshire', 'Maine', 'Montana', 'Rhode Island', 'Delaware', 'South Dakota', 'North Dakota', 'Alaska', 'Vermont', 'Wyoming'].some(state => lastPart.includes(state))) {
             location = part;
             break;
           }
@@ -953,26 +1078,36 @@ function extractLocation(data, rawText) {
       }
     }
     
-    // If no comma-separated location found, try to find one in raw_text
-    if (!location.includes(',')) {
+    // If no valid location found, clear it
+    if (looksLikeName(location) || !location.includes(',')) {
       location = "";
     }
   }
 
   // Try to extract from raw_text
-  if (rawText && (!location || location.length < 10 || !location.includes(','))) {
+  if (rawText && (!location || location.length < 10 || !location.includes(',') || looksLikeName(location))) {
     const locationPatterns = [
       /Los Angeles, California, United States/,
       /New York, New York, United States/,
       /Seattle, Washington, United States/,
+      /San Francisco, California, United States/,
+      /Austin, Texas, United States/,
+      /Boston, Massachusetts, United States/,
+      /Chicago, Illinois, United States/,
       /([A-Z][a-zA-Z\s]+,\s+[A-Z][a-zA-Z\s]+,\s+United States)/,
       /([A-Z][a-zA-Z\s]+,\s+[A-Z][a-zA-Z\s]+,\s+[A-Z][a-zA-Z\s]+)/,
     ];
 
     for (const pattern of locationPatterns) {
-      const match = rawText.substring(0, 3000).match(pattern);
+      const match = rawText.substring(0, 5000).match(pattern);
       if (match) {
         const potentialLocation = match[0] || match[1];
+        
+        // Reject if it looks like names
+        if (looksLikeName(potentialLocation)) {
+          continue;
+        }
+        
         const parts = potentialLocation.split(',');
         if (parts.length >= 2 && potentialLocation.length > 10) {
           const skipWords = ['contact info', 'connections', 'connect message', 'he/him', 'she/her', 'they/them', 'sign in', 'message', 'more', 'university', 'college'];
@@ -985,8 +1120,13 @@ function extractLocation(data, rawText) {
     }
   }
 
-  // Final cleanup
+  // Final cleanup and validation
   if (location) {
+    // Reject if it still looks like names
+    if (looksLikeName(location)) {
+      return "";
+    }
+    
     location = location.replace(/[\n\r]/g, " ").trim();
     
     // Remove university/company names from location
@@ -997,15 +1137,11 @@ function extractLocation(data, rawText) {
     
     for (const pattern of skipPatterns) {
       if (location.toLowerCase().includes(pattern)) {
-        // Try to extract just the location part after the skip pattern
         const index = location.toLowerCase().indexOf(pattern);
         if (index > 0) {
-          // Take the part after the pattern
           location = location.substring(index + pattern.length).trim();
-          // Remove leading commas/spaces
           location = location.replace(/^[,\s]+/, '').trim();
         } else if (index === 0) {
-          // Pattern is at start, remove it
           location = location.substring(pattern.length).trim();
           location = location.replace(/^[,\s]+/, '').trim();
         }
@@ -1015,14 +1151,18 @@ function extractLocation(data, rawText) {
     // Normalize whitespace
     location = location.replace(/\s+/g, " ").trim();
     
-    // Validate it has proper structure
-    if (location && !location.includes(',') && location.length < 20) {
-      // Might be incomplete, try to find better one
+    // Final validation: must have comma and look like a location
+    if (location && (!location.includes(',') || location.length < 10 || looksLikeName(location))) {
+      // Try to find better one in raw_text
       if (rawText) {
         const betterMatch = rawText.match(/([A-Z][a-zA-Z\s]+,\s+[A-Z][a-zA-Z\s]+,\s+United States)/);
-        if (betterMatch) {
+        if (betterMatch && !looksLikeName(betterMatch[1])) {
           location = betterMatch[1];
+        } else {
+          location = "";
         }
+      } else {
+        location = "";
       }
     }
   }
