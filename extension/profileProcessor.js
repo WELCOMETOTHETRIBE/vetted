@@ -180,7 +180,20 @@ function isValidCompanyName(company) {
     /^New York, New York, United States$/,
   ];
   
-  return !invalidPatterns.some(pattern => pattern.test(company.trim()));
+  // Check if it contains job title patterns (but allow if it's a valid company name with title words)
+  // Only reject if it's clearly a job title, not a company name that happens to contain title words
+  const trimmed = company.trim();
+  const titleOnlyPatterns = [
+    /^(Senior|Junior|Lead|Principal|Staff|Chief|Head|Director|Manager|Engineer|Developer|Designer|Analyst|Specialist|Coordinator|Associate|Executive|Vice President|VP|President|Founder|Co-founder|Co-Founder)\s+(Engineer|Developer|Designer|Manager|Director|Analyst|Specialist|Coordinator|Associate|Executive|Recruiter|Scientist|Architect|Consultant|Advisor|Strategist|Researcher|Writer|Editor|Producer|Coordinator|Representative|Assistant|Intern)$/i,
+    /^(Software|Hardware|Frontend|Backend|Full.?Stack|DevOps|SRE|QA|Product|Marketing|Sales|Business|Data|Machine Learning|ML|AI|Security|Cloud|Infrastructure|Systems|Network|Database|Mobile|Web|UI|UX|Graphic|Visual|Content|Social Media|Growth|Operations|HR|Human Resources|Talent|Recruiting|Recruitment)\s+(Engineer|Developer|Designer|Manager|Director|Analyst|Specialist|Coordinator|Associate|Executive|Recruiter|Scientist|Architect|Consultant|Advisor|Strategist|Researcher|Writer|Editor|Producer|Coordinator|Representative|Assistant|Intern)$/i,
+  ];
+  
+  // If it matches a title-only pattern and doesn't look like a company, reject it
+  if (titleOnlyPatterns.some(pattern => pattern.test(trimmed)) && !trimmed.includes('Inc') && !trimmed.includes('LLC') && !trimmed.includes('Corp') && !trimmed.includes('Ltd') && trimmed.length < 40) {
+    return false;
+  }
+  
+  return !invalidPatterns.some(pattern => pattern.test(trimmed));
 }
 
 /**
@@ -209,14 +222,109 @@ function isDateOrTenureOnly(text) {
 }
 
 /**
+ * Check if text contains a job title pattern
+ */
+function containsJobTitle(text) {
+  if (!text) return false;
+  
+  const titlePatterns = [
+    /^(Senior|Junior|Lead|Principal|Staff|Chief|Head|Director|Manager|Engineer|Developer|Designer|Analyst|Specialist|Coordinator|Associate|Executive|Vice President|VP|President|Founder|Co-founder|Co-Founder)/i,
+    /(Engineer|Developer|Designer|Manager|Director|Analyst|Specialist|Coordinator|Associate|Executive|Recruiter|Scientist|Architect|Consultant|Advisor|Strategist|Researcher|Writer|Editor|Producer|Coordinator|Representative|Assistant|Intern)$/i,
+    /\b(Software|Hardware|Frontend|Backend|Full.?Stack|Full.?Stack|DevOps|SRE|QA|Product|Marketing|Sales|Business|Data|Machine Learning|ML|AI|Security|Cloud|Infrastructure|Systems|Network|Database|Mobile|Web|UI|UX|Graphic|Visual|Content|Social Media|Growth|Operations|HR|Human Resources|Talent|Recruiting|Recruitment)\s+(Engineer|Developer|Designer|Manager|Director|Analyst|Specialist|Coordinator|Associate|Executive|Recruiter|Scientist|Architect|Consultant|Advisor|Strategist|Researcher|Writer|Editor|Producer|Coordinator|Representative|Assistant|Intern)/i,
+  ];
+  
+  return titlePatterns.some(pattern => pattern.test(text.trim()));
+}
+
+/**
+ * Remove job title from company name if it's concatenated
+ */
+function removeTitleFromCompany(company, title) {
+  if (!company || !title) return company;
+  
+  const titleLower = title.toLowerCase().trim();
+  const companyLower = company.toLowerCase().trim();
+  const titleEscaped = escapeRegex(title);
+  
+  // Pattern 1: Company starts with title (possibly duplicated)
+  // "Director of RecruitingDirector of Recruiting Quantum" -> "Quantum"
+  if (companyLower.startsWith(titleLower)) {
+    // Remove the title prefix
+    let cleaned = company.substring(title.length).trim();
+    // If title appears twice consecutively, remove both
+    if (cleaned.toLowerCase().startsWith(titleLower)) {
+      cleaned = cleaned.substring(title.length).trim();
+    }
+    // If there's still more title, remove it (handles triple+ occurrences)
+    while (cleaned.toLowerCase().startsWith(titleLower) && cleaned.length > title.length) {
+      cleaned = cleaned.substring(title.length).trim();
+    }
+    return cleaned;
+  }
+  
+  // Pattern 2: Title appears twice consecutively in the middle
+  // "Senior Software EngineerSenior Software Engineer Airbnb" -> "Airbnb"
+  const doubleTitle = title + title;
+  const doubleTitleLower = doubleTitle.toLowerCase();
+  if (companyLower.includes(doubleTitleLower)) {
+    // Find where the double title ends and take everything after it
+    const doubleTitleIndex = companyLower.indexOf(doubleTitleLower);
+    if (doubleTitleIndex >= 0) {
+      return company.substring(doubleTitleIndex + doubleTitle.length).trim();
+    }
+  }
+  
+  // Pattern 3: Title appears at start with optional duplication
+  // Use regex to match title at start, optionally followed by same title
+  const titleAtStartRegex = new RegExp(`^${titleEscaped}\\s*${titleEscaped}?\\s*`, 'i');
+  if (titleAtStartRegex.test(company)) {
+    return company.replace(titleAtStartRegex, '').trim();
+  }
+  
+  // Pattern 4: Title appears anywhere - only remove if it's clearly a prefix
+  // This is more conservative to avoid removing valid company names
+  if (companyLower.includes(titleLower)) {
+    // Only remove if title is at the very start (with possible duplication)
+    const startMatch = company.match(new RegExp(`^(${titleEscaped}\\s*)+`, 'i'));
+    if (startMatch) {
+      return company.substring(startMatch[0].length).trim();
+    }
+  }
+  
+  return company;
+}
+
+/**
  * Extract company name from various fields using heuristics
  */
 function extractCompanyFromFields(exp, rawText, title) {
   let company = exp.company || "";
   
+  // FIRST: Remove title if it's concatenated with company
+  if (company && title) {
+    company = removeTitleFromCompany(company, title);
+  }
+  
   // Check if company field contains only dates/tenure (common LinkedIn parsing issue)
   if (isDateOrTenureOnly(company)) {
     company = "";
+  }
+  
+  // Check if company field contains a job title (shouldn't be in company field)
+  if (company && containsJobTitle(company)) {
+    // If it's just a title with no company, clear it
+    if (containsJobTitle(company) && !isValidCompanyName(company)) {
+      company = "";
+    } else {
+      // Try to extract company part if title is concatenated
+      if (title) {
+        company = removeTitleFromCompany(company, title);
+      }
+      // If still looks like a title, clear it
+      if (containsJobTitle(company) && company.length < 50) {
+        company = "";
+      }
+    }
   }
   
   // If company field looks invalid, try other fields
@@ -341,8 +449,18 @@ function extractCompanyFromFields(exp, rawText, title) {
     }
   }
   
-  // Final validation - make sure we didn't extract dates/tenure
+  // Final validation - make sure we didn't extract dates/tenure or job titles
   if (company && isDateOrTenureOnly(company)) {
+    return null;
+  }
+  
+  // Final check: remove title if still present
+  if (company && title) {
+    company = removeTitleFromCompany(company, title);
+  }
+  
+  // Final validation: if it still looks like a job title, reject it
+  if (company && containsJobTitle(company) && !isValidCompanyName(company)) {
     return null;
   }
   

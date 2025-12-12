@@ -998,6 +998,31 @@
           expLocation = itemText.match(/([A-Z][a-z]+(?:,\s*[A-Z]{2})?)/)?.[0] || null;
         }
 
+        // Remove title from company if it's concatenated (e.g., "Director of RecruitingDirector of Recruiting Quantum")
+        if (cleanCompany && title) {
+          const titleLower = title.toLowerCase().trim();
+          const companyLower = cleanCompany.toLowerCase().trim();
+          
+          // Check if company starts with title (possibly duplicated)
+          if (companyLower.startsWith(titleLower)) {
+            // Remove the title prefix
+            let cleaned = cleanCompany.substring(title.length).trim();
+            // If title appears twice, remove both
+            if (cleaned.toLowerCase().startsWith(titleLower)) {
+              cleaned = cleaned.substring(title.length).trim();
+            }
+            cleanCompany = cleaned;
+          } else if (companyLower.includes(titleLower + titleLower)) {
+            // Title appears twice in the middle
+            const doubleTitle = title + title;
+            cleanCompany = cleanCompany.replace(new RegExp(doubleTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+          } else if (companyLower.includes(titleLower) && companyLower.length > titleLower.length * 1.5) {
+            // Title is somewhere in the company name, try to remove it
+            const titleRegex = new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?`, 'i');
+            cleanCompany = cleanCompany.replace(titleRegex, '').trim();
+          }
+        }
+        
         if (title || cleanCompany || itemText.length > 20) {
           // Ensure cleanCompany is properly set - this is the final cleaned company name
           // Example: "Clark Atlanta University · Full-time" -> "Clark Atlanta University"
@@ -1009,6 +1034,19 @@
             cleanCompany = cleanCompany
               .replace(/\s*[·•]\s*(?:Full-time|Part-time|Contract|Internship|Freelance|Self-employed|Volunteer).*$/i, '')
               .trim();
+            
+            // Remove title if it's in the company
+            if (cleanCompany && title) {
+              const titleLower = title.toLowerCase().trim();
+              const companyLower = cleanCompany.toLowerCase().trim();
+              if (companyLower.startsWith(titleLower)) {
+                let cleaned = cleanCompany.substring(title.length).trim();
+                if (cleaned.toLowerCase().startsWith(titleLower)) {
+                  cleaned = cleaned.substring(title.length).trim();
+                }
+                cleanCompany = cleaned;
+              }
+            }
           }
           
           structured.experience.push({
