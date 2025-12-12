@@ -832,7 +832,7 @@
       }
     }
 
-    // Location
+    // Location - Enhanced to avoid capturing names
     const locationSelectors = [
       ".text-body-small.inline.t-black--light.break-words",
       ".pv-text-details__left-panel .text-body-small",
@@ -842,8 +842,21 @@
     for (const selector of locationSelectors) {
       const el = document.querySelector(selector);
       if (el) {
-        structured.personal_info.location = getTextContent(el);
-        break;
+        const locationText = getTextContent(el);
+        
+        // Validate it's actually a location, not names
+        // Locations typically have commas and location words
+        if (locationText) {
+          const hasComma = locationText.includes(',');
+          const hasLocationWords = /united states|california|new york|texas|florida|washington|massachusetts|area|region|metro|city|state|country/i.test(locationText);
+          const looksLikeNames = /^[A-Z][a-z]+\s+[A-Z][a-z]+(,\s+[A-Z][a-z]+\s+[A-Z][a-z]+)*$/.test(locationText.trim());
+          
+          // Only use if it has location indicators and doesn't look like just names
+          if (hasComma && (hasLocationWords || !looksLikeNames)) {
+            structured.personal_info.location = locationText;
+            break;
+          }
+        }
       }
     }
 
