@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-export default function CandidateResumeUpload({ onSuccess }: { onSuccess?: () => void }) {
+export default function CandidateResumeUpload() {
   const [resumeText, setResumeText] = useState("")
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [linkedinUrl, setLinkedinUrl] = useState("")
@@ -68,9 +68,7 @@ export default function CandidateResumeUpload({ onSuccess }: { onSuccess?: () =>
       setTimeout(() => {
         setShowForm(false)
         setSuccess(false)
-        if (onSuccess) {
-          onSuccess()
-        }
+        window.location.reload()
       }, 2000)
     } catch (err: any) {
       setError(err.message || "An error occurred")

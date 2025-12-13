@@ -117,7 +117,7 @@ export default async function CandidatesPage({
             Total: {data.total} candidates
           </div>
         </div>
-        <CandidateResumeUpload onSuccess={() => window.location.reload()} />
+        <CandidateResumeUpload />
         <Suspense fallback={<div className="p-8 text-center text-gray-600">Loading...</div>}>
           <CandidatesContent
             initialCandidates={data.candidates}

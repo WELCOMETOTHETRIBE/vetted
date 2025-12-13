@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import ReferralSystem from "@/components/ReferralSystem"
 
@@ -15,16 +16,71 @@ interface LeaderboardEntry {
 
 async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/referrals?type=leaderboard&limit=20`, {
-      cache: "no-store",
+    // Directly query the database instead of HTTP fetch
+    const referrals = await prisma.referral.findMany({
+      include: {
+        referrer: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
     })
-    if (!response.ok) {
-      return []
+
+    // Aggregate by user
+    const userStats = new Map<string, {
+      userId: string
+      userName: string
+      userImage: string | null
+      totalReferrals: number
+      hiredReferrals: number
+      totalRewards: number
+    }>()
+
+    for (const referral of referrals) {
+      const userId = referral.referrerId
+      const existing = userStats.get(userId) || {
+        userId,
+        userName: referral.referrer.name || "Unknown",
+        userImage: referral.referrer.image,
+        totalReferrals: 0,
+        hiredReferrals: 0,
+        totalRewards: 0,
+      }
+
+      existing.totalReferrals++
+      if (referral.status === "HIRED") {
+        existing.hiredReferrals++
+      }
+      if (referral.rewardStatus === "PAID" && referral.rewardAmount) {
+        existing.totalRewards += referral.rewardAmount
+      }
+
+      userStats.set(userId, existing)
     }
-    const data = await response.json()
-    return data.leaderboard || []
-  } catch (error) {
-    console.error("Error fetching leaderboard:", error)
+
+    // Convert to array and calculate hire rate
+    const leaderboard: LeaderboardEntry[] = Array.from(userStats.values())
+      .map((stats) => ({
+        ...stats,
+        hireRate: stats.totalReferrals > 0
+          ? Math.round((stats.hiredReferrals / stats.totalReferrals) * 100 * 10) / 10
+          : 0,
+      }))
+      .sort((a, b) => {
+        // Sort by hired referrals first, then total referrals
+        if (b.hiredReferrals !== a.hiredReferrals) {
+          return b.hiredReferrals - a.hiredReferrals
+        }
+        return b.totalReferrals - a.totalReferrals
+      })
+      .slice(0, 20) // Top 20
+
+    return leaderboard
+  } catch (error: any) {
+    console.error("Error fetching leaderboard:", error.message || error)
     return []
   }
 }
