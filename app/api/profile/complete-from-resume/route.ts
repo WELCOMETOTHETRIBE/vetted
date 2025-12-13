@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     // Update profile fields from parsed resume
     if (parsed.headline) updateData.headline = parsed.headline
     if (parsed.location) updateData.location = parsed.location
-    if (parsed.about || parsed.summary) updateData.about = parsed.summary || parsed.about
+    if (parsed.summary) updateData.about = parsed.summary
     if (parsed.phone) updateData.phone = parsed.phone
     if (parsed.website) updateData.website = parsed.website
     if (parsed.currentTitle) updateData.currentTitle = parsed.currentTitle
