@@ -39,7 +39,7 @@ const updateStatusSchema = z.object({
     "FAILED",
     "CANCELLED",
   ]),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 })
 
 export async function PATCH(req: Request) {
