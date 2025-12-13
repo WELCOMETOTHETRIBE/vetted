@@ -51,18 +51,60 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
     prisma.candidate.count({ where }),
   ])
 
-  // Also log all candidates in database for debugging
-  const allCandidates = await prisma.candidate.findMany({
-    select: {
-      id: true,
-      fullName: true,
-      linkedinUrl: true,
-      status: true,
-      createdAt: true,
-    },
+  // Log comprehensive candidate data for debugging
+  const debugCandidates = await prisma.candidate.findMany({
+    where,
     orderBy: { createdAt: "desc" },
-    take: 10, // Just the latest 10 for debugging
+    take: 5, // Just the latest 5 for debugging
   })
+
+  console.log(`\n========== [CANDIDATES PAGE] Loading candidates ==========`)
+  console.log(`[QUERY] Found ${candidates.length} candidates (showing ${skip + 1}-${skip + candidates.length} of ${total})`)
+  
+  if (debugCandidates.length > 0) {
+    console.log(`[DATABASE] Sample candidate data (latest ${debugCandidates.length}):`)
+    debugCandidates.forEach((candidate, idx) => {
+      console.log(`\n  Candidate ${idx + 1}: ${candidate.linkedinUrl}`)
+      console.log(`    - ID: ${candidate.id}`)
+      console.log(`    - Full Name: ${candidate.fullName || "NULL"}`)
+      console.log(`    - Job Title: ${candidate.jobTitle || "NULL"}`)
+      console.log(`    - Current Company: ${candidate.currentCompany || "NULL"}`)
+      console.log(`    - Location: ${candidate.location || "NULL"}`)
+      console.log(`    - Total Years Experience: ${candidate.totalYearsExperience || "NULL"}`)
+      console.log(`    - Companies: ${candidate.companies || "NULL"}`)
+      console.log(`    - Universities: ${candidate.universities || "NULL"}`)
+      console.log(`    - Fields of Study: ${candidate.fieldsOfStudy || "NULL"}`)
+      console.log(`    - Certifications: ${candidate.certifications ? candidate.certifications.substring(0, 100) + "..." : "NULL"}`)
+      console.log(`    - Languages: ${candidate.languages || "NULL"}`)
+      console.log(`    - Projects: ${candidate.projects ? candidate.projects.substring(0, 100) + "..." : "NULL"}`)
+      console.log(`    - Publications: ${candidate.publications ? candidate.publications.substring(0, 100) + "..." : "NULL"}`)
+      console.log(`    - Raw Data: ${candidate.rawData ? `${candidate.rawData.length} chars` : "NULL"}`)
+      console.log(`    - Skills Count: ${candidate.skillsCount || "NULL"}`)
+      console.log(`    - Experience Count: ${candidate.experienceCount || "NULL"}`)
+      console.log(`    - Education Count: ${candidate.educationCount || "NULL"}`)
+      
+      // Check if rawData contains comprehensive_data
+      if (candidate.rawData) {
+        try {
+          const rawDataParsed = JSON.parse(candidate.rawData)
+          console.log(`    - Raw Data structure:`, {
+            hasPersonalInfo: !!rawDataParsed.personal_info,
+            hasExperience: !!rawDataParsed.experience,
+            experienceCount: rawDataParsed.experience?.length || 0,
+            hasEducation: !!rawDataParsed.education,
+            educationCount: rawDataParsed.education?.length || 0,
+            hasSkills: !!rawDataParsed.skills,
+            skillsCount: rawDataParsed.skills?.length || 0,
+            hasComprehensiveData: !!rawDataParsed.comprehensive_data,
+            comprehensiveDataLength: rawDataParsed.comprehensive_data?.length || 0,
+          })
+        } catch (e) {
+          console.log(`    - Raw Data parse error:`, e)
+        }
+      }
+    })
+  }
+  console.log(`========== [CANDIDATES PAGE] Complete ==========\n`)
 
   console.log("Candidates page - Found candidates:", {
     total,

@@ -155,34 +155,72 @@ export async function POST(req: Request) {
             // Process the profile document
             const processed = profileProcessor.processProfileDocument(profileDocument)
             
-            // Log what we extracted for debugging
-            console.log(`[profile-processor] Extracted data for ${profile.linkedin_url}:`, {
-              hasName: !!profileDocument.personal_info?.name,
-              name: profileDocument.personal_info?.name,
-              hasLocation: !!profileDocument.personal_info?.location,
-              location: profileDocument.personal_info?.location,
-              experienceCount: profileDocument.experience?.length || 0,
-              educationCount: profileDocument.education?.length || 0,
-              rawTextLength: profileDocument.raw_text?.length || 0,
-            })
+            // Log what we extracted for debugging - COMPREHENSIVE
+            console.log(`\n========== [LINKEDIN IMPORT] Processing ${profile.linkedin_url} ==========`)
+            console.log(`[STEP 1] HTML Extraction Results:`)
+            console.log(`  - Name: ${profileDocument.personal_info?.name || "NOT FOUND"}`)
+            console.log(`  - Headline: ${profileDocument.personal_info?.headline || "NOT FOUND"}`)
+            console.log(`  - Location: ${profileDocument.personal_info?.location || "NOT FOUND"}`)
+            console.log(`  - Experience items: ${profileDocument.experience?.length || 0}`)
+            if (profileDocument.experience && profileDocument.experience.length > 0) {
+              console.log(`  - First experience:`, JSON.stringify(profileDocument.experience[0], null, 2))
+            }
+            console.log(`  - Education items: ${profileDocument.education?.length || 0}`)
+            if (profileDocument.education && profileDocument.education.length > 0) {
+              console.log(`  - First education:`, JSON.stringify(profileDocument.education[0], null, 2))
+            }
+            console.log(`  - Skills items: ${profileDocument.skills?.length || 0}`)
+            console.log(`  - Raw text length: ${profileDocument.raw_text?.length || 0} chars`)
+            console.log(`  - Raw HTML length: ${profileDocument.raw_html?.length || 0} chars`)
+            
+            // Process the profile document
+            const processed = profileProcessor.processProfileDocument(profileDocument)
+            
+            console.log(`[STEP 2] ProfileProcessor Results:`)
+            if (processed) {
+              console.log(`  - Full Name: ${processed["Full Name"] || "NOT FOUND"}`)
+              console.log(`  - Job Title: ${processed["Job title"] || "NOT FOUND"}`)
+              console.log(`  - Current Company: ${processed["Current Company"] || "NOT FOUND"}`)
+              console.log(`  - Location: ${processed["Location"] || "NOT FOUND"}`)
+              console.log(`  - Total Years Experience: ${processed["Total Years full time experience"] || "NOT FOUND"}`)
+              console.log(`  - Companies: ${processed["Companies"] ? JSON.stringify(processed["Companies"]) : "NOT FOUND"}`)
+              console.log(`  - Universities: ${processed["Universities"] ? JSON.stringify(processed["Universities"]) : "NOT FOUND"}`)
+              console.log(`  - Fields of Study: ${processed["Fields of Study"] ? JSON.stringify(processed["Fields of Study"]) : "NOT FOUND"}`)
+              console.log(`  - Certifications: ${processed["Certifications"] || "NOT FOUND"}`)
+              console.log(`  - Languages: ${processed["Languages"] || "NOT FOUND"}`)
+              console.log(`  - Projects: ${processed["Projects"] || "NOT FOUND"}`)
+              console.log(`  - Publications: ${processed["Publications"] || "NOT FOUND"}`)
+              console.log(`  - All processed fields:`, Object.keys(processed))
+              console.log(`  - Raw Data included: ${!!processed["Raw Data"]}`)
+              if (processed["Raw Data"]) {
+                try {
+                  const rawDataParsed = JSON.parse(processed["Raw Data"])
+                  console.log(`  - Raw Data structure:`, {
+                    hasPersonalInfo: !!rawDataParsed.personal_info,
+                    hasExperience: !!rawDataParsed.experience,
+                    hasEducation: !!rawDataParsed.education,
+                    hasSkills: !!rawDataParsed.skills,
+                    hasComprehensiveData: !!rawDataParsed.comprehensive_data,
+                    comprehensiveDataLength: rawDataParsed.comprehensive_data?.length || 0,
+                  })
+                } catch (e) {
+                  console.log(`  - Raw Data parse error:`, e)
+                }
+              }
+            } else {
+              console.log(`  - ProfileProcessor returned NULL (invalid profile)`)
+            }
             
             if (processed && processed["Full Name"]) {
               // Use the processed data directly - it's already in the correct format
               candidateData = processed
-              console.log(`Successfully processed profile ${profile.linkedin_url} using profileProcessor:`, {
-                fullName: processed["Full Name"],
-                currentCompany: processed["Current Company"],
-                jobTitle: processed["Job title"],
-                location: processed["Location"],
-              })
+              console.log(`[STEP 3] Using processed data - SUCCESS`)
+              console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             } else {
               // Fallback: include raw data for AI enrichment
               candidateData["Raw Data"] = JSON.stringify(profileDocument)
-              console.log(`Profile ${profile.linkedin_url} processed but missing fields. Extracted:`, {
-                personalInfo: profileDocument.personal_info,
-                experienceCount: profileDocument.experience?.length || 0,
-                educationCount: profileDocument.education?.length || 0,
-              })
+              console.log(`[STEP 3] Using fallback (AI enrichment) - processed data missing fields`)
+              console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             }
           } catch (processError: any) {
             console.warn(`Error processing profile ${profile.linkedin_url}:`, processError)

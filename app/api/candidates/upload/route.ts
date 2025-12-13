@@ -62,20 +62,44 @@ export async function POST(req: Request) {
         const linkedinUrl = candidateData["Linkedin URL"] || candidateData.linkedinUrl
         const fullName = candidateData["Full Name"] || candidateData.fullName
         
-        console.log("Processing candidate data:", {
-          keys: dataKeys,
-          linkedinUrl,
-          fullName,
-          hasRawData: !!candidateData["Raw Data"],
-          hasCompanies: !!candidateData["Companies"],
-          hasUniversities: !!candidateData["Universities"],
-          hasFieldsOfStudy: !!candidateData["Fields of Study"],
-          sampleFields: {
-            currentCompany: candidateData["Current Company"],
-            jobTitle: candidateData["Job title"],
-            location: candidateData["Location"]
+        console.log(`\n========== [CANDIDATE UPLOAD] Processing ${linkedinUrl || "unknown"} ==========`)
+        console.log(`[INPUT] Incoming candidate data structure:`)
+        console.log(`  - All keys:`, dataKeys)
+        console.log(`  - Full Name: ${fullName || "NOT FOUND"}`)
+        console.log(`  - LinkedIn URL: ${linkedinUrl || "NOT FOUND"}`)
+        console.log(`  - Current Company: ${candidateData["Current Company"] || "NOT FOUND"}`)
+        console.log(`  - Job Title: ${candidateData["Job title"] || "NOT FOUND"}`)
+        console.log(`  - Location: ${candidateData["Location"] || "NOT FOUND"}`)
+        console.log(`  - Total Years Experience: ${candidateData["Total Years full time experience"] || "NOT FOUND"}`)
+        console.log(`  - Companies: ${candidateData["Companies"] ? JSON.stringify(candidateData["Companies"]) : "NOT FOUND"}`)
+        console.log(`  - Universities: ${candidateData["Universities"] ? JSON.stringify(candidateData["Universities"]) : "NOT FOUND"}`)
+        console.log(`  - Fields of Study: ${candidateData["Fields of Study"] ? JSON.stringify(candidateData["Fields of Study"]) : "NOT FOUND"}`)
+        console.log(`  - Certifications: ${candidateData["Certifications"] || "NOT FOUND"}`)
+        console.log(`  - Languages: ${candidateData["Languages"] || "NOT FOUND"}`)
+        console.log(`  - Projects: ${candidateData["Projects"] || "NOT FOUND"}`)
+        console.log(`  - Publications: ${candidateData["Publications"] || "NOT FOUND"}`)
+        console.log(`  - Has Raw Data: ${!!candidateData["Raw Data"]}`)
+        if (candidateData["Raw Data"]) {
+          try {
+            const rawDataParsed = typeof candidateData["Raw Data"] === "string" 
+              ? JSON.parse(candidateData["Raw Data"]) 
+              : candidateData["Raw Data"]
+            console.log(`  - Raw Data structure:`, {
+              hasPersonalInfo: !!rawDataParsed.personal_info,
+              personalInfoKeys: rawDataParsed.personal_info ? Object.keys(rawDataParsed.personal_info) : [],
+              hasExperience: !!rawDataParsed.experience,
+              experienceCount: rawDataParsed.experience?.length || 0,
+              hasEducation: !!rawDataParsed.education,
+              educationCount: rawDataParsed.education?.length || 0,
+              hasSkills: !!rawDataParsed.skills,
+              skillsCount: rawDataParsed.skills?.length || 0,
+              hasComprehensiveData: !!rawDataParsed.comprehensive_data,
+              comprehensiveDataLength: rawDataParsed.comprehensive_data?.length || 0,
+            })
+          } catch (e) {
+            console.log(`  - Raw Data parse error:`, e)
           }
-        })
+        }
 
         if (!linkedinUrl) {
           console.error("Missing LinkedIn URL in candidate data. Available keys:", dataKeys)

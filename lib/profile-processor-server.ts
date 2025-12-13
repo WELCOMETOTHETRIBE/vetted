@@ -265,6 +265,32 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
   // Extract raw text for additional parsing
   structured.raw_text = document.body?.textContent || ""
 
+  // Log extraction results for debugging
+  console.log(`\n========== [HTML EXTRACTION] Results for ${url} ==========`)
+  console.log(`  - Name extracted: ${structured.personal_info.name || "NOT FOUND"}`)
+  console.log(`  - Headline extracted: ${structured.personal_info.headline || "NOT FOUND"}`)
+  console.log(`  - Location extracted: ${structured.personal_info.location || "NOT FOUND"}`)
+  console.log(`  - Experience items: ${structured.experience.length}`)
+  if (structured.experience.length > 0) {
+    console.log(`  - First experience:`, {
+      title: structured.experience[0].title,
+      company: structured.experience[0].company,
+      dateRange: structured.experience[0].dateRange,
+      isCurrent: structured.experience[0].isCurrent,
+    })
+  }
+  console.log(`  - Education items: ${structured.education.length}`)
+  if (structured.education.length > 0) {
+    console.log(`  - First education:`, {
+      school: structured.education[0].school,
+      degree: structured.education[0].degree,
+      dateRange: structured.education[0].dateRange,
+    })
+  }
+  console.log(`  - Skills items: ${structured.skills.length}`)
+  console.log(`  - Raw text length: ${structured.raw_text.length} chars`)
+  console.log(`========== [HTML EXTRACTION] Complete ==========\n`)
+
   return structured
 }
 
