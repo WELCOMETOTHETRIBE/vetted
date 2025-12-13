@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { readFile } from "fs/promises"
+import { readFile, readFileSync } from "fs/promises"
+import { readFileSync as readFileSyncSync } from "fs"
 import { join } from "path"
+import { createRequire } from "module"
+import vm from "vm"
 
 /**
  * POST /api/linkedin-profiles/import
@@ -105,12 +108,50 @@ export async function POST(req: Request) {
             const profileDocument = buildProfileDocumentFromHTML(profile.html, profile.linkedin_url)
             
             // Step 2: Process using profileProcessor.js (like the extension does)
-            // Use require for CommonJS module (Next.js API routes run in Node.js context)
-            // Use absolute path that works in both dev and production
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            // Load the JavaScript file dynamically using vm (like Prisma client loading)
             const profileProcessorPath = join(process.cwd(), "lib", "profile-processor.js")
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const profileProcessor = require(profileProcessorPath)
+            
+            // Try require first (works in dev), fallback to vm evaluation (works in production)
+            let profileProcessor: any
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
+              profileProcessor = require(profileProcessorPath)
+            } catch (requireError: any) {
+              // If require fails, read and evaluate the file
+              try {
+                const profileProcessorCode = readFileSyncSync(profileProcessorPath, "utf-8")
+                const moduleExports: any = {}
+                const moduleObj = { exports: moduleExports }
+                const requireFunc = (id: string) => {
+                  if (id.startsWith("./") || id.startsWith("../")) {
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
+                    return require(join(profileProcessorPath, "..", id))
+                  }
+                  // eslint-disable-next-line @typescript-eslint/no-require-imports
+                  return require(id)
+                }
+                const context = {
+                  exports: moduleExports,
+                  module: moduleObj,
+                  require: requireFunc,
+                  __filename: profileProcessorPath,
+                  __dirname: join(profileProcessorPath, ".."),
+                  console: console,
+                  Buffer: Buffer,
+                  process: process,
+                  global: global,
+                  setTimeout: setTimeout,
+                  setInterval: setInterval,
+                  clearTimeout: clearTimeout,
+                  clearInterval: clearInterval,
+                }
+                const script = new vm.Script(profileProcessorCode)
+                script.runInNewContext(context)
+                profileProcessor = context.module.exports || context.exports
+              } catch (vmError: any) {
+                throw new Error(`Failed to load profileProcessor: ${requireError.message}, ${vmError.message}`)
+              }
+            }
             
             // Process the profile document
             const processed = profileProcessor.processProfileDocument(profileDocument)
