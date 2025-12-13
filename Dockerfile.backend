@@ -13,6 +13,10 @@ COPY backend/ ./backend/
 # Expose port (Railway will set PORT env var)
 EXPOSE 8000
 
+# Set Python as the default runtime (prevents Node.js detection)
+ENV PYTHONUNBUFFERED=1
+
 # Run FastAPI with uvicorn (Railway sets PORT env var)
-# Using shell form to expand $PORT
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Using ENTRYPOINT to prevent Railway from overriding with node server.js
+ENTRYPOINT ["sh", "-c"]
+CMD ["uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
