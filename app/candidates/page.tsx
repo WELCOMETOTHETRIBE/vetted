@@ -63,7 +63,7 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
   
   if (debugCandidates.length > 0) {
     console.log(`[DATABASE] Sample candidate data (latest ${debugCandidates.length}):`)
-    debugCandidates.forEach((candidate, idx) => {
+    debugCandidates.forEach((candidate: typeof debugCandidates[0], idx: number) => {
       console.log(`\n  Candidate ${idx + 1}: ${candidate.linkedinUrl}`)
       console.log(`    - ID: ${candidate.id}`)
       console.log(`    - Full Name: ${candidate.fullName || "NULL"}`)
