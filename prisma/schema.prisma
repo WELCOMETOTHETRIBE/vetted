@@ -575,6 +575,12 @@ model Candidate {
   aiHighlights                      String?         @db.Text // Notable experience highlights
   aiConcerns                        String?         @db.Text // Potential concerns or gaps
   aiSummaryGeneratedAt              DateTime?       // When AI summary was generated
+  // Predictive scoring fields
+  predictiveScore                   Float?          // 0-100 success probability score
+  scoreConfidence                   String?         // HIGH, MEDIUM, LOW
+  scoreRiskFactors                  String?         @db.Text // JSON array of risk factors
+  scoreGeneratedAt                  DateTime?       // When score was generated
+  scoreJobId                        String?         // Score is job-specific
   createdAt                         DateTime        @default(now())
   updatedAt                         DateTime        @updatedAt
 

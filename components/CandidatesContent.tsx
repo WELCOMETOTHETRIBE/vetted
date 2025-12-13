@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import PredictiveScore from "./PredictiveScore"
 
 interface Candidate {
   id: string
@@ -62,6 +63,12 @@ interface Candidate {
   aiHighlights: string | null
   aiConcerns: string | null
   aiSummaryGeneratedAt: Date | null
+  // Predictive scoring fields
+  predictiveScore: number | null
+  scoreConfidence: string | null
+  scoreRiskFactors: string | null
+  scoreGeneratedAt: Date | null
+  scoreJobId: string | null
 }
 
 interface CandidatesContentProps {
@@ -231,7 +238,15 @@ export default function CandidatesContent({
       const response = await fetch(`/api/candidates/${candidateId}`)
       if (response.ok) {
         const candidate = await response.json()
-        setSelectedCandidate(candidate)
+        setSelectedCandidate({
+          ...candidate,
+          // Ensure predictive score fields are included
+          predictiveScore: candidate.predictiveScore ?? null,
+          scoreConfidence: candidate.scoreConfidence ?? null,
+          scoreRiskFactors: candidate.scoreRiskFactors ?? null,
+          scoreGeneratedAt: candidate.scoreGeneratedAt ? new Date(candidate.scoreGeneratedAt) : null,
+          scoreJobId: candidate.scoreJobId ?? null,
+        })
       }
     } catch (error) {
       console.error("Error loading candidate details:", error)
@@ -829,6 +844,15 @@ export default function CandidatesContent({
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Predictive Score Section */}
+              <PredictiveScore
+                candidateId={selectedCandidate.id}
+                onScoreCalculated={(score) => {
+                  // Refresh candidate data to show updated score
+                  loadCandidateDetails(selectedCandidate.id)
+                }}
+              />
+
               {/* AI Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 <button
@@ -1060,6 +1084,97 @@ export default function CandidatesContent({
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Predictive Score Display */}
+              {selectedCandidate.predictiveScore !== null && selectedCandidate.predictiveScore !== undefined && (
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border-2 border-purple-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-purple-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      Predictive Success Score
+                    </h3>
+                    {selectedCandidate.scoreGeneratedAt && (
+                      <span className="text-xs text-gray-500">
+                        {new Date(selectedCandidate.scoreGeneratedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`px-6 py-3 rounded-lg border-2 font-bold text-3xl ${
+                        selectedCandidate.predictiveScore >= 80
+                          ? "text-green-700 bg-green-50 border-green-200"
+                          : selectedCandidate.predictiveScore >= 60
+                          ? "text-blue-700 bg-blue-50 border-blue-200"
+                          : selectedCandidate.predictiveScore >= 40
+                          ? "text-yellow-700 bg-yellow-50 border-yellow-200"
+                          : "text-red-700 bg-red-50 border-red-200"
+                      }`}
+                    >
+                      {selectedCandidate.predictiveScore}%
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {selectedCandidate.predictiveScore >= 85
+                          ? "Exceptional Fit"
+                          : selectedCandidate.predictiveScore >= 75
+                          ? "Strong Fit"
+                          : selectedCandidate.predictiveScore >= 65
+                          ? "Good Fit"
+                          : selectedCandidate.predictiveScore >= 50
+                          ? "Moderate Fit"
+                          : "Weak Fit"}
+                      </div>
+                      {selectedCandidate.scoreConfidence && (
+                        <div
+                          className={`text-xs px-2 py-1 rounded mt-1 inline-block ${
+                            selectedCandidate.scoreConfidence === "HIGH"
+                              ? "text-green-700 bg-green-100"
+                              : selectedCandidate.scoreConfidence === "MEDIUM"
+                              ? "text-blue-700 bg-blue-100"
+                              : "text-yellow-700 bg-yellow-100"
+                          }`}
+                        >
+                          {selectedCandidate.scoreConfidence} Confidence
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {selectedCandidate.scoreRiskFactors && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-semibold text-yellow-700 mb-2">
+                        Risk Factors
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-2">
+                        {(() => {
+                          try {
+                            const risks = JSON.parse(selectedCandidate.scoreRiskFactors)
+                            return Array.isArray(risks)
+                              ? risks.map((risk: string, i: number) => (
+                                  <li key={i}>{risk}</li>
+                                ))
+                              : null
+                          } catch {
+                            return <li>{selectedCandidate.scoreRiskFactors}</li>
+                          }
+                        })()}
+                      </ul>
                     </div>
                   )}
                 </div>
