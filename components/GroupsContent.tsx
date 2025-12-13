@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import CreateGroupModal from "./CreateGroupModal"
 
 interface GroupsContentProps {
   initialData: {
@@ -20,6 +21,7 @@ export default function GroupsContent({
   const [allGroups, setAllGroups] = useState(initialData.allGroups)
   const [myGroups, setMyGroups] = useState(initialData.myGroups)
   const [activeTab, setActiveTab] = useState<"all" | "my">("all")
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   const handleJoin = async (groupId: string) => {
     try {
@@ -55,28 +57,41 @@ export default function GroupsContent({
 
   return (
     <div>
-      <div className="flex space-x-4 mb-6 border-b border-gray-200">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex space-x-4 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`px-4 py-2 font-medium ${
+              activeTab === "all"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600"
+            }`}
+          >
+            All Groups
+          </button>
+          <button
+            onClick={() => setActiveTab("my")}
+            className={`px-4 py-2 font-medium ${
+              activeTab === "my"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600"
+            }`}
+          >
+            My Groups ({myGroups.length})
+          </button>
+        </div>
         <button
-          onClick={() => setActiveTab("all")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "all"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-600"
-          }`}
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
         >
-          All Groups
-        </button>
-        <button
-          onClick={() => setActiveTab("my")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "my"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          My Groups ({myGroups.length})
+          + Create Group
         </button>
       </div>
+
+      <CreateGroupModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
 
       {activeTab === "all" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -48,22 +48,30 @@ const Sidebar = ({ className = "" }: SidebarProps) => {
           </h3>
           <ul className="space-y-1">
             <li>
-              <a
-                href="#"
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100"
+              <Link
+                href="/help"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  pathname === "/help"
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
               >
                 <span>📚</span>
                 <span>Help Center</span>
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="#"
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100"
+              <Link
+                href="/tips"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  pathname === "/tips"
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
               >
                 <span>💡</span>
                 <span>Tips & Tricks</span>
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

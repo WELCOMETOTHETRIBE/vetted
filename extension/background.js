@@ -521,11 +521,23 @@ async function sendBatchToVetted() {
         const processed = queue.map((profileDoc, index) => {
           try {
             console.log(`[DEBUG-BG] Processing profile ${index + 1}/${queue.length}...`);
+            console.log(`[DEBUG-BG] Profile document keys:`, Object.keys(profileDoc || {}));
+            console.log(`[DEBUG-BG] Calling ProfileProcessor.processProfileDocument...`);
+            
+            const processStartTime = Date.now();
             const result = ProfileProcessor.processProfileDocument(profileDoc);
-            console.log(`[DEBUG-BG] Profile ${index + 1} processed successfully`);
+            const processTime = Date.now() - processStartTime;
+            
+            console.log(`[DEBUG-BG] Profile ${index + 1} processed successfully in ${processTime}ms`);
+            console.log(`[DEBUG-BG] Processed result keys:`, result ? Object.keys(result) : 'null');
             return result;
           } catch (e) {
             console.error(`[DEBUG-BG] Error processing profile ${index + 1}:`, e);
+            console.error(`[DEBUG-BG] Error details:`, {
+              message: e?.message,
+              name: e?.name,
+              stack: e?.stack
+            });
             return null;
           }
         }).filter(p => p !== null);
