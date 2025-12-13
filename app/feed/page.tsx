@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import Sidebar from "@/components/Sidebar"
 import FeedContent from "@/components/FeedContent"
+import TechTrends from "@/components/TechTrends"
 
 async function getFeed(userId: string) {
   // Get user's connections
@@ -81,11 +82,8 @@ export default async function FeedPage() {
           <main className="flex-1 max-w-2xl">
             <FeedContent initialPosts={posts} userId={session.user.id} />
           </main>
-          <aside className="hidden xl:block w-80">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Trending</h3>
-              <p className="text-sm text-gray-600">Trending topics coming soon...</p>
-            </div>
+          <aside className="hidden lg:block w-80 space-y-4">
+            <TechTrends />
           </aside>
         </div>
       </div>
