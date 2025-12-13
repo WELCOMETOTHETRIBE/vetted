@@ -96,20 +96,10 @@ export default async function JobDetailPage({
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">{job.title}</h1>
             <div className="mb-3">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono bg-white/80 text-gray-600 border border-gray-300" title="Job ID - Use this in Predictive Score">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono bg-white/80 text-gray-600 border border-gray-300" title="Job ID - Select and copy this to use in Predictive Score">
                 <span>🆔</span>
-                <span className="select-all font-semibold">{job.id}</span>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigator.clipboard.writeText(job.id)
-                    alert('Job ID copied to clipboard!')
-                  }}
-                  className="ml-2 text-gray-400 hover:text-gray-600"
-                  title="Copy Job ID"
-                >
-                  📋
-                </button>
+                <span className="select-all font-semibold cursor-text">{job.id}</span>
+                <span className="text-gray-400 text-[10px] ml-1">(select to copy)</span>
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 mb-4">
