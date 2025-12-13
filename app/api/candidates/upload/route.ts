@@ -177,6 +177,10 @@ export async function POST(req: Request) {
         const existing = await prisma.candidate.findUnique({
           where: { linkedinUrl },
         })
+        
+        if (existing) {
+          console.log(`[SKIP] Candidate already exists: ${linkedinUrl}`)
+        }
 
         // Helper function to safely convert values to strings, handling arrays and objects
         const safeStringify = (value: any, maxLength?: number): string | null => {
@@ -397,27 +401,30 @@ export async function POST(req: Request) {
           status: "ACTIVE" as const,
         }
 
-        // Log payload summary before saving
-        console.log("Candidate payload summary:", {
-          linkedinUrl: candidatePayload.linkedinUrl,
-          fullName: candidatePayload.fullName,
-          currentCompany: candidatePayload.currentCompany,
-          jobTitle: candidatePayload.jobTitle,
-          location: candidatePayload.location,
-          companiesCount: candidatePayload.companies ? JSON.parse(candidatePayload.companies).length : 0,
-          universitiesCount: candidatePayload.universities ? JSON.parse(candidatePayload.universities).length : 0,
-          rawDataSize: candidatePayload.rawData ? candidatePayload.rawData.length : 0,
-          hasAllFields: {
-            currentCompany: !!candidatePayload.currentCompany,
-            jobTitle: !!candidatePayload.jobTitle,
-            location: !!candidatePayload.location,
-            companies: !!candidatePayload.companies,
-            universities: !!candidatePayload.universities,
-            certifications: !!candidatePayload.certifications,
-            projects: !!candidatePayload.projects,
-            rawData: !!candidatePayload.rawData
-          }
-        })
+        // Log payload summary before saving - COMPREHENSIVE
+        console.log(`[PAYLOAD] Candidate payload before database save:`)
+        console.log(`  - Full Name: ${candidatePayload.fullName || "NULL"}`)
+        console.log(`  - Job Title: ${candidatePayload.jobTitle || "NULL"}`)
+        console.log(`  - Current Company: ${candidatePayload.currentCompany || "NULL"}`)
+        console.log(`  - Location: ${candidatePayload.location || "NULL"}`)
+        console.log(`  - Total Years Experience: ${candidatePayload.totalYearsExperience || "NULL"}`)
+        console.log(`  - Companies: ${candidatePayload.companies ? JSON.parse(candidatePayload.companies).length + " items" : "NULL"}`)
+        if (candidatePayload.companies) {
+          console.log(`  - Companies list:`, JSON.parse(candidatePayload.companies))
+        }
+        console.log(`  - Universities: ${candidatePayload.universities ? JSON.parse(candidatePayload.universities).length + " items" : "NULL"}`)
+        if (candidatePayload.universities) {
+          console.log(`  - Universities list:`, JSON.parse(candidatePayload.universities))
+        }
+        console.log(`  - Fields of Study: ${candidatePayload.fieldsOfStudy ? JSON.parse(candidatePayload.fieldsOfStudy).length + " items" : "NULL"}`)
+        console.log(`  - Certifications: ${candidatePayload.certifications || "NULL"}`)
+        console.log(`  - Languages: ${candidatePayload.languages || "NULL"}`)
+        console.log(`  - Projects: ${candidatePayload.projects || "NULL"}`)
+        console.log(`  - Publications: ${candidatePayload.publications || "NULL"}`)
+        console.log(`  - Skills Count: ${candidatePayload.skillsCount || "NULL"}`)
+        console.log(`  - Experience Count: ${candidatePayload.experienceCount || "NULL"}`)
+        console.log(`  - Education Count: ${candidatePayload.educationCount || "NULL"}`)
+        console.log(`  - Raw Data size: ${candidatePayload.rawData ? candidatePayload.rawData.length + " chars" : "NULL"}`)
 
         let savedCandidate
         if (existing) {
