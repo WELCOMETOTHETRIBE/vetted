@@ -208,15 +208,46 @@ export async function POST(req: Request) {
               console.log(`  - ProfileProcessor returned NULL (invalid profile)`)
             }
             
-            if (processedResult && processedResult["Full Name"]) {
+            // Check if processed data is complete enough
+            const hasEssentialFields = processedResult && processedResult["Full Name"] && 
+              (processedResult["Current Company"] || processedResult["Job title"] || 
+               processedResult["Companies"] || processedResult["Universities"])
+            
+            // Check if we're missing critical data that should be extracted
+            const missingCriticalData = !processedResult || 
+              !processedResult["Companies"] || 
+              processedResult["Companies"]?.length === 0 ||
+              (!processedResult["Current Company"] && processedResult["Companies"]?.length === 0) ||
+              (!processedResult["Universities"] || processedResult["Universities"]?.length === 0) ||
+              (!processedResult["Total Years full time experience"] && profileDocument.experience?.length > 0)
+            
+            if (hasEssentialFields && !missingCriticalData) {
               // Use the processed data directly - it's already in the correct format
               candidateData = processedResult
-              console.log(`[STEP 3] Using processed data - SUCCESS`)
+              console.log(`[STEP 3] Using processed data - SUCCESS (complete data)`)
               console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             } else {
-              // Fallback: include raw data for AI enrichment
-              candidateData["Raw Data"] = JSON.stringify(profileDocument)
-              console.log(`[STEP 3] Using fallback (AI enrichment) - processed data missing fields`)
+              // Use processed data as base, but add raw data for AI enrichment to fill gaps
+              if (processedResult) {
+                candidateData = processedResult
+                console.log(`[STEP 3] Using processed data as base, adding raw data for AI enrichment to fill gaps`)
+              }
+              
+              // Always include comprehensive raw data for AI enrichment
+              candidateData["Raw Data"] = JSON.stringify({
+                ...profileDocument,
+                // Include full raw text and HTML for AI parsing
+                raw_text: profile.raw_text || profileDocument.raw_text,
+                raw_html: profile.html || profileDocument.raw_html,
+              })
+              
+              console.log(`[STEP 3] Data status:`)
+              console.log(`  - Has essential fields: ${hasEssentialFields}`)
+              console.log(`  - Missing critical data: ${missingCriticalData}`)
+              console.log(`  - Experience items extracted: ${profileDocument.experience?.length || 0}`)
+              console.log(`  - Education items extracted: ${profileDocument.education?.length || 0}`)
+              console.log(`  - Skills items extracted: ${profileDocument.skills?.length || 0}`)
+              console.log(`  - Will use AI enrichment to fill gaps`)
               console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             }
           } catch (processError: any) {

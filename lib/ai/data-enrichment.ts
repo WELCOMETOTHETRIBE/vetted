@@ -113,16 +113,25 @@ export async function enrichCandidateDataWithAI(
       })
       .slice(0, 20) // Limit to first 20 fields
 
-    const prompt = `Extract candidate info from LinkedIn profile data.
+    const prompt = `Extract candidate info from LinkedIn profile data. Parse the raw text comprehensively to extract ALL available information.
 
-EXISTING DATA:
-${truncatedExistingFields.length > 0 ? truncatedExistingFields.join("\n") : "None"}
+EXISTING DATA (may be incomplete):
+${truncatedExistingFields.length > 0 ? truncatedExistingFields.join("\n") : "None or minimal"}
 
-PROFILE DATA:
-${truncatedRawData}${hasMoreData ? "\n\n[Data truncated]" : ""}
+PROFILE RAW TEXT/HTML:
+${truncatedRawData}${hasMoreData ? "\n\n[Data truncated - parse what you can]" : ""}
 
-TASK:
-1. VALIDATE existing data - check if fields are correctly placed:
+TASK - COMPREHENSIVE EXTRACTION:
+1. PARSE RAW TEXT THOROUGHLY:
+   - Extract ALL work experience entries (current and past)
+   - Extract ALL education entries (universities, degrees, fields of study, graduation years)
+   - Extract ALL skills mentioned
+   - Extract certifications, languages, projects, publications, volunteer work
+   - Extract contact information (emails, phones, social links)
+   - Extract location information
+   - Extract dates and tenure information accurately
+
+2. VALIDATE existing data - check if fields are correctly placed:
    - Job titles should NOT be in company fields
    - Company names should NOT be in job title fields (e.g., "AutogenAI" should not be a job title)
    - Locations should NOT be in company fields (e.g., "England" should not be a company)
@@ -131,7 +140,7 @@ TASK:
    - Companies should be actual company names, not job titles or locations
    - Locations should be actual locations (city, state, country), not names or company names
 
-2. CORRECT mismatched fields:
+3. CORRECT mismatched fields:
    - If a COMPANY NAME is in the job title field (e.g., "AutogenAI" in title), move it to currentCompany and extract the correct title
    - If a LOCATION is in the company field (e.g., "England" in company), move it to location and extract the correct company
    - If a job title is in the company field, move it to jobTitle and extract the correct company
@@ -139,15 +148,37 @@ TASK:
    - If dates are in wrong fields, move them to correct date fields
    - Fix any other obvious data placement errors
 
-3. EXTRACT missing fields that are not in the existing data
+4. EXTRACT missing fields that are not in the existing data:
+   - Parse ALL companies from experience section (current and past)
+   - Parse ALL universities from education section
+   - Parse ALL fields of study from education section
+   - Parse total years of experience from all work entries
+   - Parse current company start date and tenure
+   - Parse previous company and titles
+   - Extract certifications, languages, projects, publications, volunteer organizations
+   - Extract courses, honors & awards, organizations, patents, test scores
+   - Extract contact information (emails, phones, social links)
 
-4. FILL gaps where existing data is incomplete or empty
+5. FILL gaps where existing data is incomplete or empty:
+   - If companies array is empty but raw text mentions companies, extract them
+   - If universities array is empty but raw text mentions universities, extract them
+   - If fields of study is empty but raw text mentions degrees/majors, extract them
+   - If total years experience is missing, calculate from date ranges
+   - If current company is missing but raw text mentions current role, extract it
+   - Fill in any other missing fields that are clearly present in the raw data
 
-5. Parse dates, companies, education, and other structured information accurately
+6. Parse dates, companies, education, and other structured information accurately:
+   - Dates: Extract in formats like "Jan 2020", "2020-01", "2020-01-01"
+   - Companies: Extract full company names, clean employment type indicators (e.g., remove "· Full-time")
+   - Education: Extract school names, degrees, fields of study, graduation years
+   - Experience: Extract job titles, companies, date ranges, descriptions
 
-6. Extract arrays (companies, universities, fields of study) as JSON arrays
+7. Extract arrays (companies, universities, fields of study) as JSON arrays:
+   - Companies: All companies mentioned in experience section
+   - Universities: All universities mentioned in education section
+   - Fields of Study: All majors/fields mentioned in education section
 
-7. Be precise and only extract/correct information that is clearly present in the raw data
+8. Be COMPREHENSIVE - extract ALL information that is clearly present in the raw data, even if it's not in the existing data
 
 Return JSON object with:
 - Fields you can extract/fill (use null if cannot determine)
