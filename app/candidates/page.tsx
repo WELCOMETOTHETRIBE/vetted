@@ -112,7 +112,7 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
     candidateIds: candidates.map((c: { id: string; fullName: string }) => c.id),
     candidateNames: candidates.map((c: { id: string; fullName: string }) => c.fullName),
     whereClause: where,
-    allCandidatesInDB: allCandidates.map((c: { id: string; fullName: string; linkedinUrl: string; status: string; createdAt: Date }) => ({
+    sampleCandidates: debugCandidates.map((c: typeof debugCandidates[0]) => ({
       id: c.id,
       name: c.fullName,
       url: c.linkedinUrl,
