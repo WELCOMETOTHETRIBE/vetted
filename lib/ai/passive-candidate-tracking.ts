@@ -273,7 +273,7 @@ export async function findMatchingJobs(candidateId: string): Promise<
     take: 5,
   })
 
-  return jobs.map((job) => ({
+  return jobs.map((job: (typeof jobs)[number]) => ({
     jobId: job.id,
     jobTitle: job.title,
     matchScore: 75, // Simplified - would use actual matching algorithm
