@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import PredictiveScore from "./PredictiveScore"
+import EngagementWorkflow from "./EngagementWorkflow"
 
 interface Candidate {
   id: string
@@ -852,6 +853,9 @@ export default function CandidatesContent({
                   loadCandidateDetails(selectedCandidate.id)
                 }}
               />
+
+              {/* Engagement Workflow Section */}
+              <EngagementWorkflow candidateId={selectedCandidate.id} />
 
               {/* AI Action Buttons */}
               <div className="flex flex-wrap gap-3">
