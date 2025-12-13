@@ -75,6 +75,7 @@ export default function AdminContent({ initialData }: AdminContentProps) {
   const [jobsPage, setJobsPage] = useState(1)
   const [jobsLoading, setJobsLoading] = useState(false)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set())
   
   // Candidates state
   const [candidates, setCandidates] = useState<Candidate[]>(initialData.candidates)
@@ -82,6 +83,7 @@ export default function AdminContent({ initialData }: AdminContentProps) {
   const [candidatesPage, setCandidatesPage] = useState(1)
   const [candidatesLoading, setCandidatesLoading] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set())
 
   const limit = 20
 
@@ -207,6 +209,11 @@ export default function AdminContent({ initialData }: AdminContentProps) {
         if (selectedCandidate?.id === candidateId) {
           setSelectedCandidate(null)
         }
+        setSelectedCandidateIds((prev) => {
+          const next = new Set(prev)
+          next.delete(candidateId)
+          return next
+        })
       } else {
         const data = await response.json()
         alert(data.error || "Failed to delete candidate")
@@ -214,6 +221,108 @@ export default function AdminContent({ initialData }: AdminContentProps) {
     } catch (error) {
       console.error("Error deleting candidate:", error)
       alert("Failed to delete candidate")
+    }
+  }
+
+  const handleBulkDeleteCandidates = async () => {
+    if (selectedCandidateIds.size === 0) return
+
+    const count = selectedCandidateIds.size
+    if (!confirm(`Are you sure you want to delete ${count} candidate${count !== 1 ? "s" : ""}? This action cannot be undone.`)) return
+
+    try {
+      const response = await fetch("/api/candidates/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateIds: Array.from(selectedCandidateIds) }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCandidates(candidates.filter((c) => !selectedCandidateIds.has(c.id)))
+        setSelectedCandidateIds(new Set())
+        if (selectedCandidate && selectedCandidateIds.has(selectedCandidate.id)) {
+          setSelectedCandidate(null)
+        }
+        alert(data.message || `Successfully deleted ${count} candidate${count !== 1 ? "s" : ""}`)
+      } else {
+        const data = await response.json()
+        alert(data.error || "Failed to delete candidates")
+      }
+    } catch (error) {
+      console.error("Error bulk deleting candidates:", error)
+      alert("Failed to delete candidates")
+    }
+  }
+
+  const handleBulkDeleteJobs = async () => {
+    if (selectedJobIds.size === 0) return
+
+    const count = selectedJobIds.size
+    if (!confirm(`Are you sure you want to delete ${count} job${count !== 1 ? "s" : ""}? This action cannot be undone.`)) return
+
+    try {
+      const response = await fetch("/api/jobs/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobIds: Array.from(selectedJobIds) }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setJobs(jobs.filter((j) => !selectedJobIds.has(j.id)))
+        setSelectedJobIds(new Set())
+        if (selectedJob && selectedJobIds.has(selectedJob.id)) {
+          setSelectedJob(null)
+        }
+        alert(data.message || `Successfully deleted ${count} job${count !== 1 ? "s" : ""}`)
+      } else {
+        const data = await response.json()
+        alert(data.error || "Failed to delete jobs")
+      }
+    } catch (error) {
+      console.error("Error bulk deleting jobs:", error)
+      alert("Failed to delete jobs")
+    }
+  }
+
+  const toggleJobSelection = (jobId: string) => {
+    setSelectedJobIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(jobId)) {
+        next.delete(jobId)
+      } else {
+        next.add(jobId)
+      }
+      return next
+    })
+  }
+
+  const toggleCandidateSelection = (candidateId: string) => {
+    setSelectedCandidateIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(candidateId)) {
+        next.delete(candidateId)
+      } else {
+        next.add(candidateId)
+      }
+      return next
+    })
+  }
+
+  const toggleAllJobs = () => {
+    if (selectedJobIds.size === paginatedJobs.length) {
+      setSelectedJobIds(new Set())
+    } else {
+      setSelectedJobIds(new Set(paginatedJobs.map((j) => j.id)))
+    }
+  }
+
+  const toggleAllCandidates = () => {
+    if (selectedCandidateIds.size === paginatedCandidates.length) {
+      setSelectedCandidateIds(new Set())
+    } else {
+      setSelectedCandidateIds(new Set(paginatedCandidates.map((c) => c.id)))
     }
   }
 
@@ -621,24 +730,34 @@ export default function AdminContent({ initialData }: AdminContentProps) {
       {/* Jobs Tab */}
       {activeTab === "jobs" && (
         <div className="space-y-4">
-          {/* Search */}
+          {/* Search and Bulk Actions */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={jobsSearch}
+                  onChange={(e) => {
+                    setJobsSearch(e.target.value)
+                    setJobsPage(1)
+                  }}
+                  placeholder="Search jobs by title or company..."
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
               </div>
-              <input
-                type="text"
-                value={jobsSearch}
-                onChange={(e) => {
-                  setJobsSearch(e.target.value)
-                  setJobsPage(1)
-                }}
-                placeholder="Search jobs by title or company..."
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
+              {selectedJobIds.size > 0 && (
+                <button
+                  onClick={handleBulkDeleteJobs}
+                  className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors text-sm whitespace-nowrap"
+                >
+                  Delete Selected ({selectedJobIds.size})
+                </button>
+              )}
             </div>
           </div>
 
@@ -658,6 +777,15 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedJobIds.size === paginatedJobs.length && paginatedJobs.length > 0}
+                            onChange={toggleAllJobs}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Title
                         </th>
@@ -676,9 +804,17 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                       {paginatedJobs.map((job) => (
                         <tr
                           key={job.id}
-                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedJobIds.has(job.id) ? "bg-blue-50" : ""}`}
                           onClick={() => setSelectedJob(job)}
                         >
+                          <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedJobIds.has(job.id)}
+                              onChange={() => toggleJobSelection(job.id)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">{job.title}</div>
                           </td>
@@ -770,24 +906,34 @@ export default function AdminContent({ initialData }: AdminContentProps) {
       {/* Candidates Tab */}
       {activeTab === "candidates" && (
         <div className="space-y-4">
-          {/* Search */}
+          {/* Search and Bulk Actions */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={candidatesSearch}
+                  onChange={(e) => {
+                    setCandidatesSearch(e.target.value)
+                    setCandidatesPage(1)
+                  }}
+                  placeholder="Search candidates by name, title, company, or status..."
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
               </div>
-              <input
-                type="text"
-                value={candidatesSearch}
-                onChange={(e) => {
-                  setCandidatesSearch(e.target.value)
-                  setCandidatesPage(1)
-                }}
-                placeholder="Search candidates by name, title, company, or status..."
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
+              {selectedCandidateIds.size > 0 && (
+                <button
+                  onClick={handleBulkDeleteCandidates}
+                  className="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors text-sm whitespace-nowrap"
+                >
+                  Delete Selected ({selectedCandidateIds.size})
+                </button>
+              )}
             </div>
           </div>
 
@@ -807,6 +953,15 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedCandidateIds.size === paginatedCandidates.length && paginatedCandidates.length > 0}
+                            onChange={toggleAllCandidates}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Name
                         </th>
@@ -831,9 +986,17 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                       {paginatedCandidates.map((candidate) => (
                         <tr
                           key={candidate.id}
-                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedCandidateIds.has(candidate.id) ? "bg-blue-50" : ""}`}
                           onClick={() => setSelectedCandidate(candidate)}
                         >
+                          <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCandidateIds.has(candidate.id)}
+                              onChange={() => toggleCandidateSelection(candidate.id)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
                               {candidate.fullName || "No name"}
