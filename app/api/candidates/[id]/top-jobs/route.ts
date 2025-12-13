@@ -66,7 +66,7 @@ export async function GET(
 
     // Calculate scores for all jobs
     const jobScores = await Promise.all(
-      jobs.map(async (job) => {
+      jobs.map(async (job: (typeof jobs)[number]) => {
         const scoreResult = await calculatePredictiveScore(candidate, job)
         if (!scoreResult) {
           return null
