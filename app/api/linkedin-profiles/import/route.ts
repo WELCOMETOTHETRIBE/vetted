@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { readFile } from "fs/promises"
 import { join } from "path"
+import { createRequire } from "module"
+
+const require = createRequire(import.meta.url)
 
 /**
  * POST /api/linkedin-profiles/import
@@ -92,27 +95,50 @@ export async function POST(req: Request) {
           continue
         }
 
-        // Create candidate data structure
-        // The upload endpoint will use AI enrichment if raw HTML/text is provided
+        // Process HTML using the extension's profileProcessor logic
         let candidateData: any = {
           "Linkedin URL": profile.linkedin_url,
         }
 
-        // If profile has HTML and raw_text, include it for AI enrichment
+        // If profile has HTML, extract structured data using the extension's logic
         if (profile.html && profile.raw_text) {
-          // Create a structure similar to what the extension sends
-          // The upload endpoint will extract this and use AI enrichment
-          candidateData["Raw Data"] = JSON.stringify({
-            extraction_metadata: {
-              source_url: profile.linkedin_url,
-              extracted_at: profile.scraped_at || new Date().toISOString(),
-            },
-            raw_html: profile.html,
-            raw_text: profile.raw_text,
-            personal_info: {
-              profile_url: profile.linkedin_url,
-            },
-          })
+          try {
+            // Step 1: Extract structured data from HTML (like contentScript.js does)
+            const { buildProfileDocumentFromHTML } = await import("@/lib/profile-processor-server")
+            const profileDocument = buildProfileDocumentFromHTML(profile.html, profile.linkedin_url)
+            
+            // Step 2: Process using profileProcessor.js (like the extension does)
+            // Use require for CommonJS module
+            const profileProcessorPath = join(process.cwd(), "lib", "profile-processor.js")
+            const profileProcessor = require(profileProcessorPath)
+            
+            // Process the profile document
+            const processed = profileProcessor.processProfileDocument(profileDocument)
+            
+            if (processed && processed["Full Name"]) {
+              // Use the processed data directly - it's already in the correct format
+              candidateData = processed
+              console.log(`Successfully processed profile ${profile.linkedin_url} using profileProcessor`)
+            } else {
+              // Fallback: include raw data for AI enrichment
+              candidateData["Raw Data"] = JSON.stringify(profileDocument)
+              console.log(`Profile ${profile.linkedin_url} processed but missing fields, using AI enrichment fallback`)
+            }
+          } catch (processError: any) {
+            console.warn(`Error processing profile ${profile.linkedin_url}:`, processError)
+            // Fallback: create structure for AI enrichment
+            candidateData["Raw Data"] = JSON.stringify({
+              extraction_metadata: {
+                source_url: profile.linkedin_url,
+                extracted_at: profile.scraped_at || new Date().toISOString(),
+              },
+              raw_html: profile.html,
+              raw_text: profile.raw_text,
+              personal_info: {
+                profile_url: profile.linkedin_url,
+              },
+            })
+          }
         }
 
         // Send to candidate upload endpoint (internal call)
