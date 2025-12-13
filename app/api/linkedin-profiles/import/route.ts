@@ -106,9 +106,11 @@ export async function POST(req: Request) {
             
             // Step 2: Process using profileProcessor.js (like the extension does)
             // Use require for CommonJS module (Next.js API routes run in Node.js context)
-            // Use relative path to avoid webpack dynamic require warning
+            // Use absolute path that works in both dev and production
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const profileProcessor = require("../../lib/profile-processor.js")
+            const profileProcessorPath = join(process.cwd(), "lib", "profile-processor.js")
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const profileProcessor = require(profileProcessorPath)
             
             // Process the profile document
             const processed = profileProcessor.processProfileDocument(profileDocument)
