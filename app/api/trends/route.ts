@@ -317,7 +317,7 @@ export async function GET(req: Request) {
       if (cachedTrends.length > 0) {
         console.log(`[trends] Returning ${cachedTrends.length} fresh cached trends`)
         return NextResponse.json({
-          items: cachedTrends.map((trend) => ({
+          items: cachedTrends.map((trend: (typeof cachedTrends)[number]) => ({
             title: trend.title,
             url: trend.url,
             source: trend.source,
@@ -357,7 +357,7 @@ export async function GET(req: Request) {
       console.log(`[trends] Returning ${staleTrends.length} stale trends (will refresh in background)`)
       // Note: Fresh fetch will happen on next request or can be triggered manually
       return NextResponse.json({
-        items: staleTrends.map((trend) => ({
+        items: staleTrends.map((trend: (typeof staleTrends)[number]) => ({
           title: trend.title,
           url: trend.url,
           source: trend.source,
@@ -384,7 +384,7 @@ export async function GET(req: Request) {
       })
       if (anyTrends.length > 0) {
         return NextResponse.json({
-          items: anyTrends.map((trend) => ({
+          items: anyTrends.map((trend: (typeof anyTrends)[number]) => ({
             title: trend.title,
             url: trend.url,
             source: trend.source,
@@ -422,7 +422,7 @@ export async function GET(req: Request) {
       })
       if (oldTrends.length > 0) {
         return NextResponse.json({
-          items: oldTrends.map((trend) => ({
+          items: oldTrends.map((trend: (typeof oldTrends)[number]) => ({
             title: trend.title,
             url: trend.url,
             source: trend.source,
@@ -519,7 +519,7 @@ export async function GET(req: Request) {
       })
       if (cachedTrends.length > 0) {
         return NextResponse.json({
-          items: cachedTrends.map((trend) => ({
+          items: cachedTrends.map((trend: (typeof cachedTrends)[number]) => ({
             title: trend.title,
             url: trend.url,
             source: trend.source,
