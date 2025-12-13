@@ -4,84 +4,68 @@ import { useState, useEffect } from "react"
 
 interface PredictiveScoreProps {
   candidateId: string
-  jobId?: string
   onScoreCalculated?: (score: number) => void
 }
 
-interface Job {
-  id: string
-  title: string
-  company: {
-    name: string
-  }
-}
-
-interface ScoreResult {
+interface TopJob {
+  jobId: string
+  jobTitle: string
+  companyName: string
+  companyId?: string
+  location?: string | null
+  isRemote: boolean
+  isHybrid: boolean
+  employmentType: string
   score: number
   confidence: "HIGH" | "MEDIUM" | "LOW"
   riskFactors: string[]
   reasoning: string
   strengths: string[]
   concerns: string[]
-  jobTitle?: string
-  companyName?: string
+}
+
+interface TopJobsResponse {
+  candidateId: string
+  candidateName: string
+  topJobs: TopJob[]
+  count: number
 }
 
 export default function PredictiveScore({
   candidateId,
-  jobId,
   onScoreCalculated,
 }: PredictiveScoreProps) {
-  const [loading, setLoading] = useState(false)
-  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [topJobs, setTopJobs] = useState<TopJob[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [selectedJobId, setSelectedJobId] = useState<string>(jobId || "")
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [loadingJobs, setLoadingJobs] = useState(false)
-  const [searchQuery, setSearchQuery] = useState<string>("")
-  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
 
-  const calculateScore = async () => {
-    if (!selectedJobId) {
-      setError("Please select a job")
-      return
-    }
+  useEffect(() => {
+    loadTopJobs()
+  }, [candidateId])
 
+  const loadTopJobs = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch(
-        `/api/candidates/${candidateId}/predictive-score`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId: selectedJobId }),
-        }
-      )
+      const response = await fetch(`/api/candidates/${candidateId}/top-jobs`)
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to calculate score")
+        throw new Error(errorData.error || "Failed to load top jobs")
       }
 
-      const data = await response.json()
-      setScoreResult({
-        score: data.score,
-        confidence: data.confidence,
-        riskFactors: data.riskFactors || [],
-        reasoning: data.reasoning,
-        strengths: data.strengths || [],
-        concerns: data.concerns || [],
-        jobTitle: data.jobTitle,
-        companyName: data.companyName,
-      })
+      const data: TopJobsResponse = await response.json()
+      setTopJobs(data.topJobs || [])
 
-      if (onScoreCalculated) {
-        onScoreCalculated(data.score)
+      // Call callback with highest score if available
+      if (data.topJobs && data.topJobs.length > 0 && onScoreCalculated) {
+        onScoreCalculated(data.topJobs[0].score)
       }
     } catch (err: any) {
-      setError(err.message || "Failed to calculate predictive score")
+      setError(err.message || "Failed to load recommended jobs")
+      console.error("Error loading top jobs:", err)
     } finally {
       setLoading(false)
     }
@@ -108,24 +92,14 @@ export default function PredictiveScore({
     return "Weak Fit"
   }
 
-  // Load jobs on mount
-  useEffect(() => {
-    const loadJobs = async () => {
-      setLoadingJobs(true)
-      try {
-        const response = await fetch("/api/jobs?limit=100")
-        if (response.ok) {
-          const data = await response.json()
-          setJobs(data.jobs || [])
-        }
-      } catch (err) {
-        console.error("Error loading jobs:", err)
-      } finally {
-        setLoadingJobs(false)
-      }
-    }
-    loadJobs()
-  }, [])
+  const getRankBadge = (index: number) => {
+    const colors = [
+      "bg-yellow-500 text-white", // Gold for #1
+      "bg-gray-400 text-white",   // Silver for #2
+      "bg-orange-600 text-white",  // Bronze for #3
+    ]
+    return colors[index] || "bg-gray-300 text-gray-700"
+  }
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 shadow-sm p-6">
@@ -145,230 +119,282 @@ export default function PredictiveScore({
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            Predictive Success Score
+            Top 3 Recommended Jobs
           </h3>
           <p className="text-sm text-gray-600">
-            Predicts candidate success probability in a specific role
+            Jobs with highest predictive success scores for this candidate
           </p>
         </div>
+        <button
+          onClick={loadTopJobs}
+          disabled={loading}
+          className="px-3 py-1.5 text-sm bg-white border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 disabled:opacity-50 transition-colors flex items-center gap-1"
+          title="Refresh recommendations"
+        >
+          <svg
+            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Refresh
+        </button>
       </div>
 
-      {!scoreResult && (
-        <div className="space-y-4">
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Job or Enter Job ID
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery || selectedJobId}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setSearchQuery(value)
-                  setShowSuggestions(true)
-                  
-                  // If it looks like a job ID (long alphanumeric), set it directly
-                  if (value.length > 20 && /^[a-z0-9]+$/i.test(value)) {
-                    setSelectedJobId(value)
-                    setSearchQuery("")
-                    setShowSuggestions(false)
-                  } else {
-                    // Search in jobs
-                    const matchingJob = jobs.find(
-                      (job) => job.id === value || 
-                      job.title.toLowerCase().includes(value.toLowerCase()) ||
-                      job.company.name.toLowerCase().includes(value.toLowerCase())
-                    )
-                    if (matchingJob) {
-                      setSelectedJobId(matchingJob.id)
-                    }
-                  }
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Type job title, company, or paste Job ID..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-              />
-              {showSuggestions && searchQuery && jobs.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {jobs
-                    .filter(
-                      (job) =>
-                        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        job.company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        job.id.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .slice(0, 10)
-                    .map((job) => (
-                      <button
-                        key={job.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedJobId(job.id)
-                          setSearchQuery(`${job.title} @ ${job.company.name}`)
-                          setShowSuggestions(false)
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-purple-50 text-sm border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="font-medium text-gray-900">{job.title}</div>
-                        <div className="text-xs text-gray-500">{job.company.name}</div>
-                        <div className="text-xs text-gray-400 font-mono mt-1">{job.id.substring(0, 12)}...</div>
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
-            {selectedJobId && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-gray-600">Selected Job ID:</span>
-                <span className="text-xs font-mono bg-purple-100 px-2 py-1 rounded border border-purple-200 text-purple-700">
-                  {selectedJobId.substring(0, 12)}...
-                </span>
-              </div>
-            )}
-            <p className="text-xs text-gray-500 mt-2">
-              💡 Paste a Job ID or search by job title/company name
-            </p>
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <p className="text-sm text-gray-600">Analyzing jobs and calculating scores...</p>
           </div>
+        </div>
+      )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-sm text-red-700">{error}</p>
           <button
-            onClick={calculateScore}
-            disabled={loading || !selectedJobId}
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+            onClick={loadTopJobs}
+            className="mt-2 text-sm text-red-700 underline hover:text-red-900"
           >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Calculating...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                Calculate Score
-              </>
-            )}
+            Try again
           </button>
         </div>
       )}
 
-      {scoreResult && (
+      {!loading && !error && topJobs.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-2">No recommended jobs found</p>
+          <p className="text-sm text-gray-500">
+            There may not be any active jobs in the system, or scores could not be calculated.
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && topJobs.length > 0 && (
         <div className="space-y-4">
-          {/* Score Display */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                {scoreResult.jobTitle && (
-                  <h4 className="text-lg font-semibold text-gray-900">
-                    {scoreResult.jobTitle}
-                  </h4>
+          {topJobs.map((job, index) => (
+            <div
+              key={job.jobId}
+              className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Rank Badge */}
+                    <div
+                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${getRankBadge(
+                        index
+                      )}`}
+                    >
+                      {index + 1}
+                    </div>
+
+                    {/* Job Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {job.jobTitle}
+                        </h4>
+                        <div
+                          className={`px-3 py-1 rounded-lg border-2 font-bold text-xl flex-shrink-0 ${getScoreColor(
+                            job.score
+                          )}`}
+                        >
+                          {Math.round(job.score)}%
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{job.companyName}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                        {job.location && (
+                          <span className="flex items-center gap-1">
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                            </svg>
+                            {job.location}
+                          </span>
+                        )}
+                        {job.isRemote && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                            Remote
+                          </span>
+                        )}
+                        {job.isHybrid && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                            Hybrid
+                          </span>
+                        )}
+                        {job.employmentType && (
+                          <span>{job.employmentType}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score Label and Confidence */}
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-sm font-medium text-gray-700">
+                    {getScoreLabel(job.score)}
+                  </span>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(
+                      job.confidence
+                    )}`}
+                  >
+                    {job.confidence} Confidence
+                  </span>
+                </div>
+
+                {/* Expandable Details */}
+                <button
+                  onClick={() =>
+                    setExpandedJobId(
+                      expandedJobId === job.jobId ? null : job.jobId
+                    )
+                  }
+                  className="w-full text-left text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 mb-2"
+                >
+                  {expandedJobId === job.jobId ? (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                      Hide Details
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                      Show Details
+                    </>
+                  )}
+                </button>
+
+                {expandedJobId === job.jobId && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
+                    <p className="text-sm text-gray-700">{job.reasoning}</p>
+
+                    {/* Strengths */}
+                    {job.strengths && job.strengths.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-1">
+                          <span>✅</span>
+                          <span>Success Predictors</span>
+                        </h5>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-5">
+                          {job.strengths.map((strength, idx) => (
+                            <li key={idx}>{strength}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Risk Factors */}
+                    {job.riskFactors && job.riskFactors.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-semibold text-yellow-700 mb-2 flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>Risk Factors</span>
+                        </h5>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-5">
+                          {job.riskFactors.map((risk, idx) => (
+                            <li key={idx}>{risk}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Concerns */}
+                    {job.concerns && job.concerns.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-1">
+                          <span>📋</span>
+                          <span>Areas to Explore</span>
+                        </h5>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-5">
+                          {job.concerns.map((concern, idx) => (
+                            <li key={idx}>{concern}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* View Job Link */}
+                    <div className="pt-2">
+                      <a
+                        href={`/jobs/${job.jobId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        <span>View Job Details</span>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
                 )}
-                {scoreResult.companyName && (
-                  <p className="text-sm text-gray-600">
-                    {scoreResult.companyName}
-                  </p>
-                )}
-              </div>
-              <div
-                className={`px-4 py-2 rounded-lg border-2 font-bold text-2xl ${getScoreColor(
-                  scoreResult.score
-                )}`}
-              >
-                {scoreResult.score}%
               </div>
             </div>
-
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-medium text-gray-700">
-                {getScoreLabel(scoreResult.score)}
-              </span>
-              <span
-                className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(
-                  scoreResult.confidence
-                )}`}
-              >
-                {scoreResult.confidence} Confidence
-              </span>
-            </div>
-
-            <p className="text-sm text-gray-700 mb-4">{scoreResult.reasoning}</p>
-
-            {/* Strengths */}
-            {scoreResult.strengths && scoreResult.strengths.length > 0 && (
-              <div className="mb-4">
-                <h5 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-1">
-                  <span>✅</span>
-                  <span>Success Predictors</span>
-                </h5>
-                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-5">
-                  {scoreResult.strengths.map((strength, idx) => (
-                    <li key={idx}>{strength}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Risk Factors */}
-            {scoreResult.riskFactors && scoreResult.riskFactors.length > 0 && (
-              <div>
-                <h5 className="text-sm font-semibold text-yellow-700 mb-2 flex items-center gap-1">
-                  <span>⚠️</span>
-                  <span>Risk Factors</span>
-                </h5>
-                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-5">
-                  {scoreResult.riskFactors.map((risk, idx) => (
-                    <li key={idx}>{risk}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Concerns */}
-            {scoreResult.concerns && scoreResult.concerns.length > 0 && (
-              <div className="mt-4">
-                <h5 className="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-1">
-                  <span>📋</span>
-                  <span>Areas to Explore</span>
-                </h5>
-                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-5">
-                  {scoreResult.concerns.map((concern, idx) => (
-                    <li key={idx}>{concern}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => {
-              setScoreResult(null)
-              setError(null)
-            }}
-            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
-          >
-            Calculate for Different Job
-          </button>
+          ))}
         </div>
       )}
     </div>
   )
 }
-

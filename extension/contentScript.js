@@ -254,7 +254,10 @@
                     
                     if (!queueResponse.success) {
                       console.error("[DEBUG-CS] Queue failed:", queueResponse.error);
-                      showToast(`Queue failed: ${queueResponse.error || "Unknown error"}`, true);
+                      const queueError = typeof queueResponse.error === 'string' 
+                        ? queueResponse.error 
+                        : (queueResponse.error?.message || JSON.stringify(queueResponse.error) || "Unknown error");
+                      showToast(`Queue failed: ${queueError}`, true);
                     } else {
                       const queuedCount = queueResponse?.queuedCount || 0;
                       console.log("[DEBUG-CS] Profile queued successfully, queue count:", queuedCount);
@@ -295,7 +298,21 @@
                 }
               });
             } else {
-              const errorMsg = response.error || "Failed to save profile JSON";
+              // Safely extract error message - handle both string and object errors
+              let errorMsg = "Failed to save profile JSON";
+              if (response.error) {
+                if (typeof response.error === 'string') {
+                  errorMsg = response.error;
+                } else if (response.error.message) {
+                  errorMsg = response.error.message;
+                } else {
+                  try {
+                    errorMsg = JSON.stringify(response.error);
+                  } catch (e) {
+                    errorMsg = String(response.error);
+                  }
+                }
+              }
               const storageInfo = response.storageInfo;
               
               // Log error with context
@@ -335,7 +352,7 @@
         });
         
         // Check if it's an extension context error
-        const errorMessage = error.message || error.toString() || "Unknown error occurred";
+        const errorMessage = error?.message || (error?.toString ? error.toString() : String(error)) || "Unknown error occurred";
         if (errorMessage.includes("Extension context invalidated") || 
             errorMessage.includes("message port closed")) {
           showExtensionReloadMessage();
@@ -363,9 +380,30 @@
     const existing = document.getElementById("profile-json-toast");
     if (existing) existing.remove();
 
+    // Convert message to string safely - handle objects, errors, etc.
+    let messageText = message;
+    if (typeof message === 'object' && message !== null) {
+      if (message.message) {
+        // Error object or object with message property
+        messageText = message.message;
+      } else if (message.error) {
+        // Object with error property
+        messageText = typeof message.error === 'string' ? message.error : JSON.stringify(message.error);
+      } else {
+        // Generic object - try to stringify or use toString
+        try {
+          messageText = JSON.stringify(message);
+        } catch (e) {
+          messageText = message.toString();
+        }
+      }
+    } else if (message === null || message === undefined) {
+      messageText = "Unknown error";
+    }
+
     const toast = document.createElement("div");
     toast.id = "profile-json-toast";
-    toast.textContent = message;
+    toast.textContent = String(messageText);
 
     Object.assign(toast.style, {
       position: "fixed",

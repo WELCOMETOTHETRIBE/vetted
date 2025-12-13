@@ -212,11 +212,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
   console.log("[DEBUG-BG] =====================================");
   if (message.type === "SAVE_PROFILE_DOCUMENT" && typeof message.payload === "object" && message.payload !== null) {
+    console.log("[DEBUG-BG] Processing SAVE_PROFILE_DOCUMENT...");
     try {
       // Get current profiles
       chrome.storage.local.get(["profileDocuments"], (data) => {
+        console.log("[DEBUG-BG] Storage get callback called");
         try {
           const currentList = Array.isArray(data.profileDocuments) ? data.profileDocuments : [];
+          console.log("[DEBUG-BG] Current profiles count:", currentList.length);
 
           // Check if profile already exists (by URL) to avoid duplicates
           const profileUrl = message.payload.extraction_metadata?.source_url || 
@@ -224,6 +227,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                             message.payload.comprehensive_data?.find(item => 
                               item.category === 'metadata' && item.data?.source_url
                             )?.data?.source_url;
+
+          console.log("[DEBUG-BG] Profile URL:", profileUrl || "Not found");
 
           // Check for duplicate by URL
           const isDuplicate = profileUrl && currentList.some(existing => {
@@ -236,6 +241,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
 
           if (isDuplicate) {
+            console.log("[DEBUG-BG] Duplicate profile detected, skipping save");
             sendResponse({ 
               success: false, 
               error: "Profile already exists",
@@ -243,6 +249,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             return;
           }
+          
+          console.log("[DEBUG-BG] No duplicate found, proceeding with save...");
 
           // Estimate size of new profile
           const newProfileSize = estimateStorageSize(message.payload);
@@ -258,9 +266,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           currentList.push(message.payload);
 
           // Try to save with error handling
+          console.log("[DEBUG-BG] Saving profile to storage...");
           chrome.storage.local.set({ profileDocuments: currentList }, () => {
+            console.log("[DEBUG-BG] Storage set callback called");
             if (chrome.runtime.lastError) {
-              console.error("Storage error:", chrome.runtime.lastError);
+              console.error("[DEBUG-BG] Storage error:", chrome.runtime.lastError);
               sendResponse({ 
                 success: false, 
                 error: chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.",
@@ -269,10 +279,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               return;
             }
             
+            console.log("[DEBUG-BG] Profile saved successfully! Total count:", currentList.length);
             sendResponse({ success: true, count: currentList.length });
           });
         } catch (error) {
-          console.error("Error processing profile save:", error);
+          console.error("[DEBUG-BG] Error processing profile save:", error);
+          console.error("[DEBUG-BG] Error details:", {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+          });
           sendResponse({ 
             success: false, 
             error: error.message || "Unknown error saving profile",
@@ -281,7 +297,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       });
     } catch (error) {
-      console.error("Error in message handler:", error);
+      console.error("[DEBUG-BG] Error in message handler:", error);
+      console.error("[DEBUG-BG] Error details:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
       sendResponse({ 
         success: false, 
         error: error.message || "Unknown error",
@@ -290,6 +311,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     // Keep the message channel open for async response
+    console.log("[DEBUG-BG] Returning true to keep message channel open for async response");
     return true;
   }
 
