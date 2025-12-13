@@ -256,6 +256,39 @@ export default function CandidateTimeline({ candidateId }: CandidateTimelineProp
         </div>
       )}
 
+      {/* Re-engagement Section */}
+      {health && health.daysSinceLastInteraction > 30 && (
+        <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900">Re-engagement Opportunity</h4>
+              <p className="text-xs text-gray-600 mt-1">
+                No contact for {health.daysSinceLastInteraction} days - consider re-engaging
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch(`/api/candidates/${candidateId}/re-engage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                })
+                if (response.ok) {
+                  alert("Re-engagement workflow triggered!")
+                  fetchTimeline()
+                }
+              } catch (error) {
+                console.error("Error triggering re-engagement:", error)
+              }
+            }}
+            className="mt-2 px-3 py-1.5 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
+          >
+            Trigger Re-engagement Workflow
+          </button>
+        </div>
+      )}
+
       {/* Timeline */}
       <div>
         <h4 className="text-sm font-semibold text-gray-900 mb-3">

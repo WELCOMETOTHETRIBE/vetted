@@ -242,7 +242,7 @@ export async function findReEngagementCandidates(
 /**
  * Find jobs that match a candidate for re-engagement
  */
-async function findMatchingJobs(candidateId: string): Promise<
+export async function findMatchingJobs(candidateId: string): Promise<
   Array<{
     jobId: string
     jobTitle: string
