@@ -194,7 +194,7 @@ export default async function CompanyPage({
               </h2>
               {company.jobs.length > 0 ? (
                 <div className="space-y-4">
-                  {company.jobs.map((job) => (
+                  {company.jobs.map((job: { id: string; title: string; location: string | null; type: string | null }) => (
                     <Link
                       key={job.id}
                       href={`/jobs/${job.id}`}
@@ -222,7 +222,7 @@ export default async function CompanyPage({
                   Recent Posts
                 </h2>
                 <div className="space-y-4">
-                  {company.posts.map((post) => (
+                  {company.posts.map((post: { id: string; content: string; createdAt: Date; author: { id: string; name: string | null; image: string | null; handle: string | null } }) => (
                     <Link
                       key={post.id}
                       href={`/feed`}
@@ -264,7 +264,7 @@ export default async function CompanyPage({
             </h2>
             {company.employees.length > 0 ? (
               <div className="space-y-3">
-                {company.employees.map((exp) => (
+                {company.employees.map((exp: { id: string; title: string; user: { id: string; name: string | null; image: string | null; handle: string | null } }) => (
                   <Link
                     key={exp.id}
                     href={`/profile/${exp.user.handle || exp.user.id}`}
