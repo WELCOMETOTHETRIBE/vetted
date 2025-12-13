@@ -303,7 +303,7 @@ export async function POST(req: Request) {
       if (matchingCandidates.length > 0) {
         const candidatesList = matchingCandidates
           .slice(0, 20) // Limit to top 20 for readability
-          .map((c) => `• ${c.fullName || "Unknown"} - ${c.jobTitle || "N/A"} at ${c.currentCompany || "N/A"} (${c.totalYearsExperience || "N/A"})`)
+          .map((c: typeof allCandidates[0]) => `• ${c.fullName || "Unknown"} - ${c.jobTitle || "N/A"} at ${c.currentCompany || "N/A"} (${c.totalYearsExperience || "N/A"})`)
           .join("\n")
 
         const candidatesContent = `📊 Group Summary: Candidates
@@ -339,7 +339,7 @@ View all candidates: /candidates`
       if (matchingJobs.length > 0) {
         const jobsList = matchingJobs
           .slice(0, 15) // Limit to top 15 for readability
-          .map((j) => `• ${j.title} at ${j.company.name}`)
+          .map((j: typeof allJobs[0]) => `• ${j.title} at ${j.company.name}`)
           .join("\n")
 
         const jobsContent = `💼 Group Summary: Job Opportunities
