@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import PredictiveScore from "./PredictiveScore"
 import EngagementWorkflow from "./EngagementWorkflow"
+import CandidateTimeline from "./CandidateTimeline"
 
 interface Candidate {
   id: string
@@ -856,6 +857,9 @@ export default function CandidatesContent({
 
               {/* Engagement Workflow Section */}
               <EngagementWorkflow candidateId={selectedCandidate.id} />
+
+              {/* Candidate Timeline Section */}
+              <CandidateTimeline candidateId={selectedCandidate.id} />
 
               {/* AI Action Buttons */}
               <div className="flex flex-wrap gap-3">
