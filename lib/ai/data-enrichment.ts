@@ -87,17 +87,39 @@ export async function enrichCandidateDataWithAI(
     })
 
     // Prepare raw data (limit size to avoid token limits)
-    const rawDataText = rawText || rawHtml || ""
-    const truncatedRawData = rawDataText.substring(0, 8000) // Limit to 8000 chars
-    const hasMoreData = rawDataText.length > 8000
+    // Prefer rawText over rawHtml as it's more token-efficient
+    let rawDataText = rawText || ""
+    
+    // If we only have HTML, extract text content (remove HTML tags)
+    if (!rawDataText && rawHtml) {
+      // Simple HTML tag removal - keep only text content
+      rawDataText = rawHtml
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "") // Remove scripts
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "") // Remove styles
+        .replace(/<[^>]+>/g, " ") // Remove HTML tags
+        .replace(/\s+/g, " ") // Normalize whitespace
+        .trim()
+    }
+    
+    // Truncate more aggressively - limit to 3000 chars to leave room for prompt
+    const truncatedRawData = rawDataText.substring(0, 3000)
+    const hasMoreData = rawDataText.length > 3000
+    
+    // Also truncate existing fields if they're too long
+    const truncatedExistingFields = existingFields
+      .map(field => {
+        // Limit each field to 200 chars
+        return field.length > 200 ? field.substring(0, 200) + "..." : field
+      })
+      .slice(0, 20) // Limit to first 20 fields
 
-    const prompt = `You are an expert data extraction and validation assistant. Analyze the raw HTML/text data from a LinkedIn profile to extract, validate, and correct candidate information.
+    const prompt = `Extract candidate info from LinkedIn profile data.
 
-EXISTING DATA (already parsed - may contain errors):
-${existingFields.length > 0 ? existingFields.join("\n") : "None"}
+EXISTING DATA:
+${truncatedExistingFields.length > 0 ? truncatedExistingFields.join("\n") : "None"}
 
-RAW DATA (from LinkedIn profile):
-${truncatedRawData}${hasMoreData ? "\n\n[Note: Data truncated, but analyze what's available]" : ""}
+PROFILE DATA:
+${truncatedRawData}${hasMoreData ? "\n\n[Data truncated]" : ""}
 
 TASK:
 1. VALIDATE existing data - check if fields are correctly placed:
