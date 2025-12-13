@@ -9,6 +9,7 @@ interface AdminContentProps {
     users: any[]
     posts: any[]
     jobs: any[]
+    candidates: any[]
   }
 }
 
@@ -41,9 +42,19 @@ interface Job {
   }
 }
 
+interface Candidate {
+  id: string
+  fullName: string | null
+  email: string | null
+  jobTitle: string | null
+  currentCompany: string | null
+  status: string | null
+  createdAt: Date
+}
+
 export default function AdminContent({ initialData }: AdminContentProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<"users" | "posts" | "jobs">("users")
+  const [activeTab, setActiveTab] = useState<"users" | "posts" | "jobs" | "candidates">("users")
   
   // Users state
   const [users, setUsers] = useState<User[]>(initialData.users)
@@ -65,6 +76,13 @@ export default function AdminContent({ initialData }: AdminContentProps) {
   const [jobsPage, setJobsPage] = useState(1)
   const [jobsLoading, setJobsLoading] = useState(false)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  
+  // Candidates state
+  const [candidates, setCandidates] = useState<Candidate[]>(initialData.candidates)
+  const [candidatesSearch, setCandidatesSearch] = useState("")
+  const [candidatesPage, setCandidatesPage] = useState(1)
+  const [candidatesLoading, setCandidatesLoading] = useState(false)
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
 
   const limit = 20
 
@@ -103,6 +121,20 @@ export default function AdminContent({ initialData }: AdminContentProps) {
   const jobsTotalPages = Math.ceil(filteredJobs.length / limit)
   const paginatedJobs = filteredJobs.slice((jobsPage - 1) * limit, jobsPage * limit)
 
+  // Filter and paginate candidates
+  const filteredCandidates = candidates.filter((candidate) => {
+    const searchLower = candidatesSearch.toLowerCase()
+    return (
+      candidate.fullName?.toLowerCase().includes(searchLower) ||
+      candidate.email?.toLowerCase().includes(searchLower) ||
+      candidate.jobTitle?.toLowerCase().includes(searchLower) ||
+      candidate.currentCompany?.toLowerCase().includes(searchLower) ||
+      candidate.status?.toLowerCase().includes(searchLower)
+    )
+  })
+  const candidatesTotalPages = Math.ceil(filteredCandidates.length / limit)
+  const paginatedCandidates = filteredCandidates.slice((candidatesPage - 1) * limit, candidatesPage * limit)
+
   const handleDeactivateUser = async (userId: string) => {
     if (!confirm("Are you sure you want to deactivate this user?")) return
 
@@ -138,6 +170,52 @@ export default function AdminContent({ initialData }: AdminContentProps) {
       }
     } catch (error) {
       console.error("Error removing post:", error)
+    }
+  }
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (!confirm("Are you sure you want to delete this job? This action cannot be undone.")) return
+
+    try {
+      const response = await fetch(`/api/jobs/${jobId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        setJobs(jobs.filter((j) => j.id !== jobId))
+        if (selectedJob?.id === jobId) {
+          setSelectedJob(null)
+        }
+      } else {
+        const data = await response.json()
+        alert(data.error || "Failed to delete job")
+      }
+    } catch (error) {
+      console.error("Error deleting job:", error)
+      alert("Failed to delete job")
+    }
+  }
+
+  const handleDeleteCandidate = async (candidateId: string) => {
+    if (!confirm("Are you sure you want to delete this candidate? This action cannot be undone.")) return
+
+    try {
+      const response = await fetch(`/api/candidates/${candidateId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        setCandidates(candidates.filter((c) => c.id !== candidateId))
+        if (selectedCandidate?.id === candidateId) {
+          setSelectedCandidate(null)
+        }
+      } else {
+        const data = await response.json()
+        alert(data.error || "Failed to delete candidate")
+      }
+    } catch (error) {
+      console.error("Error deleting candidate:", error)
+      alert("Failed to delete candidate")
     }
   }
 
@@ -226,6 +304,30 @@ export default function AdminContent({ initialData }: AdminContentProps) {
               </span>
             </div>
             {activeTab === "jobs" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("candidates")
+              setCandidatesPage(1)
+            }}
+            className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
+              activeTab === "candidates"
+                ? "text-blue-600 bg-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Candidates
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${activeTab === "candidates" ? "bg-blue-100 text-blue-700" : "bg-gray-200 text-gray-700"}`}>
+                {candidates.length}
+              </span>
+            </div>
+            {activeTab === "candidates" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
             )}
           </button>
@@ -588,13 +690,21 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {new Date(job.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
-                            <Link
-                              href={`/jobs/${job.id}`}
-                              className="text-blue-600 hover:text-blue-900 font-medium transition-colors"
-                            >
-                              View
-                            </Link>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white hover:bg-gray-50" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-3">
+                              <Link
+                                href={`/jobs/${job.id}`}
+                                className="text-blue-600 hover:text-blue-900 font-medium transition-colors"
+                              >
+                                View
+                              </Link>
+                              <button
+                                onClick={() => handleDeleteJob(job.id)}
+                                className="text-red-600 hover:text-red-900 font-medium transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -646,6 +756,169 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                       <button
                         onClick={() => setJobsPage((p) => Math.min(jobsTotalPages, p + 1))}
                         disabled={jobsPage === jobsTotalPages}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Candidates Tab */}
+      {activeTab === "candidates" && (
+        <div className="space-y-4">
+          {/* Search */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={candidatesSearch}
+                onChange={(e) => {
+                  setCandidatesSearch(e.target.value)
+                  setCandidatesPage(1)
+                }}
+                placeholder="Search candidates by name, email, title, company, or status..."
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {paginatedCandidates.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-6xl mb-4">👤</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No candidates found</h3>
+                <p className="text-gray-600">
+                  {candidatesSearch ? "Try adjusting your search query" : "No candidates in the system"}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Title
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Company
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gray-50">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedCandidates.map((candidate) => (
+                        <tr
+                          key={candidate.id}
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedCandidate(candidate)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {candidate.fullName || "No name"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{candidate.email || "N/A"}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{candidate.jobTitle || "N/A"}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{candidate.currentCompany || "N/A"}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              {candidate.status || "ACTIVE"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(candidate.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white hover:bg-gray-50" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => handleDeleteCandidate(candidate.id)}
+                              className="text-red-600 hover:text-red-900 font-medium transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {candidatesTotalPages > 1 && (
+                  <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Showing {(candidatesPage - 1) * limit + 1} to {Math.min(candidatesPage * limit, filteredCandidates.length)} of {filteredCandidates.length} candidates
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCandidatesPage((p) => Math.max(1, p - 1))}
+                        disabled={candidatesPage === 1}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: Math.min(5, candidatesTotalPages) }, (_, i) => {
+                          let pageNum
+                          if (candidatesTotalPages <= 5) {
+                            pageNum = i + 1
+                          } else if (candidatesPage <= 3) {
+                            pageNum = i + 1
+                          } else if (candidatesPage >= candidatesTotalPages - 2) {
+                            pageNum = candidatesTotalPages - 4 + i
+                          } else {
+                            pageNum = candidatesPage - 2 + i
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCandidatesPage(pageNum)}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                candidatesPage === pageNum
+                                  ? "bg-blue-600 text-white"
+                                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setCandidatesPage((p) => Math.min(candidatesTotalPages, p + 1))}
+                        disabled={candidatesPage === candidatesTotalPages}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next

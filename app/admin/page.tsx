@@ -9,7 +9,7 @@ import MigrateButton from "@/components/MigrateButton"
 import Link from "next/link"
 
 async function getAdminData() {
-  const [users, posts, jobs] = await Promise.all([
+  const [users, posts, jobs, candidates] = await Promise.all([
     prisma.user.findMany({
       where: { isActive: true },
       select: {
@@ -48,9 +48,22 @@ async function getAdminData() {
       orderBy: { createdAt: "desc" },
       take: 500,
     }),
+    prisma.candidate.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        jobTitle: true,
+        currentCompany: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+    }),
   ])
 
-  return { users, posts, jobs }
+  return { users, posts, jobs, candidates }
 }
 
 export default async function AdminPage() {

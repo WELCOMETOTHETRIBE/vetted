@@ -108,12 +108,39 @@ export async function POST(req: Request) {
 
     // Extract experience info
     if (parsed.experience && parsed.experience.length > 0) {
-      const currentExp = parsed.experience.find((exp) => exp.isCurrent) || parsed.experience[0]
+      // Sort experience by date (most recent first)
+      const sortedExperience = [...parsed.experience].sort((a, b) => {
+        const dateA = a.startDate ? new Date(a.startDate + "-01").getTime() : 0
+        const dateB = b.startDate ? new Date(b.startDate + "-01").getTime() : 0
+        return dateB - dateA
+      })
+
+      // Get current experience (isCurrent=true or most recent)
+      const currentExp = sortedExperience.find((exp) => exp.isCurrent) || sortedExperience[0]
       if (currentExp) {
         candidateData.currentCompany = currentExp.company
         candidateData.jobTitle = currentExp.title
         if (currentExp.startDate) {
           candidateData.currentCompanyStartDate = currentExp.startDate
+        }
+        if (currentExp.endDate && !currentExp.isCurrent) {
+          candidateData.currentCompanyEndDate = currentExp.endDate
+        }
+      }
+
+      // Get previous company (second most recent, or most recent non-current)
+      const previousExp = sortedExperience.find((exp) => !exp.isCurrent && exp !== currentExp) || 
+                          (sortedExperience.length > 1 && sortedExperience[1] !== currentExp ? sortedExperience[1] : null)
+      if (previousExp) {
+        candidateData.previousTargetCompany = previousExp.company
+        if (previousExp.startDate) {
+          candidateData.previousTargetCompanyStartDate = previousExp.startDate
+        }
+        if (previousExp.endDate) {
+          candidateData.previousTargetCompanyEndDate = previousExp.endDate
+        }
+        if (previousExp.title) {
+          candidateData.previousTitles = previousExp.title
         }
       }
 
