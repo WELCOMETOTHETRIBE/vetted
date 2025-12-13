@@ -138,7 +138,7 @@ const JobCard = ({ job }: JobCardProps) => {
           <div className="flex items-center gap-4 text-xs text-neutral-500">
             <span className="flex items-center gap-1 font-mono text-xs bg-gray-100 px-2 py-1 rounded border border-gray-200" title={`Job ID: ${job.id}`}>
               <span>🆔</span>
-              <span className="select-all">{job.id.substring(0, 12)}...</span>
+              <span className="select-all">{job.id}</span>
             </span>
             <span className="flex items-center gap-1">
               <span>👁️</span>

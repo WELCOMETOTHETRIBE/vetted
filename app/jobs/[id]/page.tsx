@@ -98,8 +98,7 @@ export default async function JobDetailPage({
             <div className="mb-3">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono bg-white/80 text-gray-600 border border-gray-300" title={`Job ID: ${job.id} - Select and copy this to use in Predictive Score`}>
                 <span>🆔</span>
-                <span className="select-all font-semibold cursor-text" title={job.id}>{job.id.substring(0, 12)}...</span>
-                <span className="text-gray-400 text-[10px] ml-1">(hover for full ID)</span>
+                <span className="select-all font-semibold cursor-text">{job.id}</span>
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 mb-4">
