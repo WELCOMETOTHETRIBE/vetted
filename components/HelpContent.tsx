@@ -1072,7 +1072,7 @@ export default function HelpContent() {
   const renderContent = (content: string) => {
     // Simple markdown-like rendering
     const lines = content.split("\n")
-    const elements: JSX.Element[] = []
+    const elements: React.ReactElement[] = []
     let currentList: string[] = []
     let inCodeBlock = false
 
