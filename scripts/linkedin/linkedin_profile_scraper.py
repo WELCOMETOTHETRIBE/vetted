@@ -240,9 +240,29 @@ def main():
             
             try:
                 output_path.parent.mkdir(parents=True, exist_ok=True)
+                # Test write permissions
+                test_file = output_path.parent / ".test_write"
+                try:
+                    test_file.touch()
+                    test_file.unlink()
+                except PermissionError:
+                    # Fallback to /tmp if current location is not writable
+                    output_path = Path("/tmp") / OUTPUT_FILE
+                    print(f"[output] Current location not writable, using {output_path}")
             except PermissionError:
+                # Fallback to /tmp on any error
                 output_path = Path("/tmp") / OUTPUT_FILE
                 print(f"[output] Cannot write to project root, using {output_path}")
+        else:
+            # If absolute path, try /tmp if it fails
+            try:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                test_file = output_path.parent / ".test_write"
+                test_file.touch()
+                test_file.unlink()
+            except (PermissionError, OSError):
+                output_path = Path("/tmp") / OUTPUT_FILE
+                print(f"[output] Cannot write to specified path, using {output_path}")
 
         print(f"[output] Writing {len(profiles)} profile{'s' if len(profiles) != 1 else ''} to {output_path}")
 
