@@ -418,51 +418,6 @@ export default function CandidatesContent({
     }
   }
 
-  const handleFileUpload = async (file: File) => {
-    setUploading(true)
-    try {
-      const text = await file.text()
-      let data: any[]
-
-      if (file.name.endsWith(".csv")) {
-        const lines = text.split("\n").filter((line) => line.trim())
-        const headers = lines[0].split(",").map((h) => h.trim())
-        data = lines.slice(1).map((line) => {
-          const values = line.split(",").map((v) => v.trim())
-          const obj: any = {}
-          headers.forEach((header, i) => {
-            obj[header] = values[i] || ""
-          })
-          return obj
-        })
-      } else {
-        data = JSON.parse(text)
-        if (!Array.isArray(data)) {
-          data = [data]
-        }
-      }
-
-      const response = await fetch("/api/candidates/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        alert(`Successfully uploaded ${result.created} candidate(s)`)
-        setShowUploadModal(false)
-        fetchCandidates()
-      } else {
-        const error = await response.json()
-        alert(`Upload failed: ${error.error}`)
-      }
-    } catch (error: any) {
-      alert(`Upload error: ${error.message}`)
-    } finally {
-      setUploading(false)
-    }
-  }
 
   const statusColors = {
     ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
