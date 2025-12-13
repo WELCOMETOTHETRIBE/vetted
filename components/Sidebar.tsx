@@ -13,6 +13,7 @@ const Sidebar = ({ className = "" }: SidebarProps) => {
   const quickLinks = [
     { href: "/groups", label: "Groups", icon: "👥" },
     { href: "/companies", label: "Companies", icon: "🏢" },
+    { href: "/referrals", label: "Referrals", icon: "🎯" },
     { href: "/admin", label: "Admin", icon: "⚙️" },
   ]
 

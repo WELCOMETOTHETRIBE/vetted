@@ -107,6 +107,9 @@ model User {
   // Candidates (added by admin)
   candidatesAdded Candidate[]
 
+  // Referrals
+  referralsMade Referral[] @relation("Referrer")
+
   @@index([email])
   @@index([handle])
 }
@@ -356,6 +359,7 @@ model Job {
   company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   postedBy     User             @relation(fields: [postedById], references: [id], onDelete: Cascade)
   applications JobApplication[]
+  referrals    Referral[]
 
   @@index([companyId])
   @@index([postedById])
@@ -589,6 +593,7 @@ model Candidate {
 
   addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
   engagements Engagement[]
+  referrals Referral[]
 
   @@index([linkedinUrl])
   @@index([fullName])
@@ -690,4 +695,55 @@ model Trend {
   @@index([publishedAt])
   @@index([createdAt])
   @@index([url])
+}
+
+// Referral Network System
+model Referral {
+  id              String          @id @default(cuid())
+  referrerId      String          // User who made the referral
+  candidateId     String?         // If candidate exists in system
+  candidateName   String          // Name of referred candidate
+  candidateEmail  String?
+  candidateLinkedInUrl String?
+  jobId           String?         // Job they're being referred for
+  status          ReferralStatus  @default(PENDING)
+  notes           String?         @db.Text
+  // Tracking
+  submittedAt     DateTime        @default(now())
+  contactedAt     DateTime?
+  interviewedAt   DateTime?
+  hiredAt        DateTime?
+  rejectedAt      DateTime?
+  // Rewards
+  rewardStatus    RewardStatus    @default(PENDING)
+  rewardAmount    Float?         // If monetary reward
+  rewardNotes     String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  referrer User   @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  candidate Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  job       Job?       @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([referrerId])
+  @@index([candidateId])
+  @@index([jobId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+enum ReferralStatus {
+  PENDING       // Just submitted
+  CONTACTED     // Candidate was contacted
+  INTERVIEWING  // In interview process
+  HIRED         // Successfully hired
+  REJECTED      // Not hired
+  WITHDRAWN     // Referral withdrawn
+}
+
+enum RewardStatus {
+  PENDING       // Reward not yet processed
+  APPROVED      // Reward approved
+  PAID          // Reward paid out
+  DENIED        // Reward denied
 }
