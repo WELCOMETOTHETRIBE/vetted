@@ -7,6 +7,170 @@ import PredictiveScore from "./PredictiveScore"
 import EngagementWorkflow from "./EngagementWorkflow"
 import CandidateTimeline from "./CandidateTimeline"
 
+// Resume Upload Form Component (extracted from CandidateResumeUpload)
+function ResumeUploadForm({ onSuccess, onClose }: { onSuccess?: () => void; onClose?: () => void }) {
+  const [resumeText, setResumeText] = useState("")
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [linkedinUrl, setLinkedinUrl] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setResumeFile(file)
+    setError(null)
+
+    try {
+      if (file.type === "text/plain" || file.name.toLowerCase().endsWith('.txt')) {
+        const text = await file.text()
+        setResumeText(text)
+      } else if (file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+        setResumeText("") // Will be extracted server-side
+      } else {
+        setError(`Unsupported file type: ${file.name.split('.').pop()}. Please use PDF, DOCX, or TXT.`)
+      }
+    } catch (err: any) {
+      setError(`Error reading file: ${err.message}`)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resumeFile && !resumeText.trim()) {
+      setError("Please upload a resume file or paste resume text")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(false)
+
+    try {
+      const formData = new FormData()
+      if (resumeFile) {
+        formData.append("resume", resumeFile)
+      }
+      formData.append("resumeText", resumeText)
+      if (linkedinUrl) {
+        formData.append("linkedinUrl", linkedinUrl)
+      }
+
+      const response = await fetch("/api/candidates/upload-resume", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create candidate")
+      }
+
+      setSuccess(true)
+      setResumeText("")
+      setResumeFile(null)
+      setLinkedinUrl("")
+      setTimeout(() => {
+        if (onSuccess) onSuccess()
+      }, 1500)
+    } catch (err: any) {
+      setError(err.message || "An error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          LinkedIn URL (optional)
+        </label>
+        <input
+          type="url"
+          value={linkedinUrl}
+          onChange={(e) => setLinkedinUrl(e.target.value)}
+          placeholder="https://linkedin.com/in/..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Upload Resume (PDF/DOCX/TXT)
+        </label>
+        <input
+          type="file"
+          accept=".pdf,.docx,.doc,.txt"
+          onChange={handleFileChange}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc'))
+            ? "✅ PDF/DOCX file selected - text will be extracted automatically"
+            : "Upload PDF, DOCX, or TXT file. Text will be extracted automatically, or paste text below."}
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Resume Text {resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc')) ? "(optional - will be extracted from file)" : "*"}
+        </label>
+        <textarea
+          value={resumeText}
+          onChange={(e) => setResumeText(e.target.value)}
+          rows={10}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+          placeholder={resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc'))
+            ? "Text will be extracted from file automatically. You can also paste additional text here if needed."
+            : "Paste resume text here, or upload a PDF/DOCX file above"}
+          required={!resumeFile || (!resumeFile.name.toLowerCase().endsWith('.pdf') && !resumeFile.name.toLowerCase().endsWith('.docx') && !resumeFile.name.toLowerCase().endsWith('.doc'))}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {resumeText.length} characters
+        </p>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-600">
+            ✅ Candidate created successfully! AI is analyzing the resume...
+          </p>
+        </div>
+      )}
+
+      <div className="flex gap-3 pt-4 border-t border-gray-200">
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={loading || (!resumeFile && !resumeText.trim())}
+          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? (resumeFile ? "Extracting & Processing Resume..." : "Processing Resume...") : "Create Candidate with AI"}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 interface Candidate {
   id: string
   linkedinUrl: string
@@ -93,7 +257,6 @@ export default function CandidatesContent({
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [aiLoading, setAiLoading] = useState<string | null>(null)
@@ -397,7 +560,7 @@ export default function CandidatesContent({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              Upload
+              Upload Resume
             </button>
             <button
               onClick={() => setShowColumnSelector(true)}
@@ -534,57 +697,33 @@ export default function CandidatesContent({
         </div>
       )}
 
-      {/* Upload Modal */}
+      {/* Upload Resume Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowUploadModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowUploadModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Upload Candidates</h2>
-              <p className="text-sm text-gray-500 mt-1">Upload a CSV or JSON file with candidate data</p>
-            </div>
-            <div className="p-6">
-              <label className="block">
-                <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors cursor-pointer">
-                  <div className="space-y-1 text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div className="flex text-sm text-gray-600">
-                      <span className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                        Upload a file
-                      </span>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">CSV or JSON up to 10MB</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".csv,.json"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileUpload(file)
-                    }}
-                    disabled={uploading}
-                    className="sr-only"
-                  />
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Upload Resume</h2>
+                  <p className="text-sm text-gray-500 mt-1">Upload a resume (PDF/DOCX/TXT) to create a new candidate</p>
                 </div>
-              </label>
-              {uploading && (
-                <div className="mt-4 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="ml-3 text-sm text-gray-600">Uploading...</span>
-                </div>
-              )}
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                disabled={uploading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </div>
+            <ResumeUploadForm
+              onSuccess={() => {
+                setShowUploadModal(false)
+                fetchCandidates()
+              }}
+              onClose={() => setShowUploadModal(false)}
+            />
           </div>
         </div>
       )}
@@ -602,12 +741,12 @@ export default function CandidatesContent({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates found</h3>
-            <p className="text-gray-500 mb-4">Get started by uploading candidates using the extension or CSV/JSON file.</p>
+            <p className="text-gray-500 mb-4">Get started by uploading a resume to create a new candidate.</p>
             <button
               onClick={() => setShowUploadModal(true)}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
-              Upload Candidates
+              Upload Resume
             </button>
           </div>
         ) : (
