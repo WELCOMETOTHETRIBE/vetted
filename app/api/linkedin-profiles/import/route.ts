@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { readFile, readFileSync } from "fs/promises"
-import { readFileSync as readFileSyncSync } from "fs"
+import { readFile } from "fs/promises"
+import { readFileSync } from "fs"
 import { join } from "path"
-import { createRequire } from "module"
 import vm from "vm"
 
 /**
@@ -119,7 +118,7 @@ export async function POST(req: Request) {
             } catch (requireError: any) {
               // If require fails, read and evaluate the file
               try {
-                const profileProcessorCode = readFileSyncSync(profileProcessorPath, "utf-8")
+                const profileProcessorCode = readFileSync(profileProcessorPath, "utf-8")
                 const moduleExports: any = {}
                 const moduleObj = { exports: moduleExports }
                 const requireFunc = (id: string) => {
