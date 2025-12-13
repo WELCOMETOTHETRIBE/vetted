@@ -383,7 +383,7 @@ export async function getNextActions(candidateId: string): Promise<NextAction[]>
   }
 
   // If candidate responded recently, follow up quickly
-  const lastResponse = candidate.engagements.find((e) => e.respondedAt !== null)
+  const lastResponse = candidate.engagements.find((e: (typeof candidate.engagements)[number]) => e.respondedAt !== null)
   if (lastResponse && lastResponse.respondedAt) {
     const daysSinceResponse = Math.floor(
       (Date.now() - lastResponse.respondedAt.getTime()) / (1000 * 60 * 60 * 24)
