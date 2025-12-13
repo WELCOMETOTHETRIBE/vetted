@@ -446,13 +446,25 @@ export async function POST(req: Request) {
           savedCandidate = await prisma.candidate.create({
             data: candidatePayload,
           })
-          console.log("Created candidate:", {
-            id: savedCandidate.id,
-            fullName: savedCandidate.fullName,
-            currentCompany: savedCandidate.currentCompany,
-            createdAt: savedCandidate.createdAt,
-            rawDataSize: savedCandidate.rawData ? savedCandidate.rawData.length : 0
-          })
+          console.log(`[DATABASE] Created candidate in database:`)
+          console.log(`  - ID: ${savedCandidate.id}`)
+          console.log(`  - Full Name: ${savedCandidate.fullName || "NULL"}`)
+          console.log(`  - Job Title: ${savedCandidate.jobTitle || "NULL"}`)
+          console.log(`  - Current Company: ${savedCandidate.currentCompany || "NULL"}`)
+          console.log(`  - Location: ${savedCandidate.location || "NULL"}`)
+          console.log(`  - Total Years Experience: ${savedCandidate.totalYearsExperience || "NULL"}`)
+          console.log(`  - Companies: ${savedCandidate.companies || "NULL"}`)
+          console.log(`  - Universities: ${savedCandidate.universities || "NULL"}`)
+          console.log(`  - Fields of Study: ${savedCandidate.fieldsOfStudy || "NULL"}`)
+          console.log(`  - Certifications: ${savedCandidate.certifications || "NULL"}`)
+          console.log(`  - Languages: ${savedCandidate.languages || "NULL"}`)
+          console.log(`  - Projects: ${savedCandidate.projects || "NULL"}`)
+          console.log(`  - Publications: ${savedCandidate.publications || "NULL"}`)
+          console.log(`  - Raw Data size: ${savedCandidate.rawData?.length || 0} chars`)
+          console.log(`  - Skills Count: ${savedCandidate.skillsCount || "NULL"}`)
+          console.log(`  - Experience Count: ${savedCandidate.experienceCount || "NULL"}`)
+          console.log(`  - Education Count: ${savedCandidate.educationCount || "NULL"}`)
+          console.log(`========== [CANDIDATE UPLOAD] Complete for ${linkedinUrl} ==========\n`)
         }
 
         // Generate AI summary asynchronously (don't block upload)
