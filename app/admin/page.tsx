@@ -52,7 +52,6 @@ async function getAdminData() {
       select: {
         id: true,
         fullName: true,
-        email: true,
         jobTitle: true,
         currentCompany: true,
         status: true,

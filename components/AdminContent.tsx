@@ -45,7 +45,6 @@ interface Job {
 interface Candidate {
   id: string
   fullName: string | null
-  email: string | null
   jobTitle: string | null
   currentCompany: string | null
   status: string | null
@@ -126,7 +125,6 @@ export default function AdminContent({ initialData }: AdminContentProps) {
     const searchLower = candidatesSearch.toLowerCase()
     return (
       candidate.fullName?.toLowerCase().includes(searchLower) ||
-      candidate.email?.toLowerCase().includes(searchLower) ||
       candidate.jobTitle?.toLowerCase().includes(searchLower) ||
       candidate.currentCompany?.toLowerCase().includes(searchLower) ||
       candidate.status?.toLowerCase().includes(searchLower)
@@ -787,7 +785,7 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                   setCandidatesSearch(e.target.value)
                   setCandidatesPage(1)
                 }}
-                placeholder="Search candidates by name, email, title, company, or status..."
+                placeholder="Search candidates by name, title, company, or status..."
                 className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
@@ -811,9 +809,6 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Email
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Title
@@ -843,9 +838,6 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                             <div className="text-sm font-medium text-gray-900">
                               {candidate.fullName || "No name"}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{candidate.email || "N/A"}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{candidate.jobTitle || "N/A"}</div>
