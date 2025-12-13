@@ -7,6 +7,21 @@
 import { JSDOM } from "jsdom"
 
 /**
+ * Helper function to get text content from element (like extension's getTextContent)
+ */
+function getTextContent(element: Element | null): string {
+  if (!element) return ""
+  // Try textContent first
+  let text = element.textContent?.trim() || ""
+  // If empty, try innerText
+  if (!text && "innerText" in element) {
+    text = (element as any).innerText?.trim() || ""
+  }
+  // Remove extra whitespace
+  return text.replace(/\s+/g, " ").trim()
+}
+
+/**
  * Extract structured data from LinkedIn profile HTML
  * Mimics the extension's contentScript.js extraction logic
  */
@@ -37,21 +52,58 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
     activity: {},
   }
 
-  // Extract name from various possible selectors
+  // Get raw text for fallback extraction
+  const rawText = document.body?.textContent || ""
+  structured.raw_text = rawText
+
+  // Extract name from various possible selectors (more comprehensive)
   const nameSelectors = [
     "h1.text-heading-xlarge",
     "h1[data-anonymize='person-name']",
+    "main h1",
+    "h1",
     ".pv-text-details__left-panel h1",
+    "[data-test-id='name']",
+    "[aria-label*='name']",
     "h1.top-card-layout__title",
     "h1.break-words",
+    ".top-card-layout__title",
   ]
+  
   for (const selector of nameSelectors) {
     const nameEl = document.querySelector(selector)
     if (nameEl) {
-      const nameText = nameEl.textContent?.trim()
-      if (nameText && nameText.length > 1) {
-        structured.personal_info.name = nameText
-        break
+      const nameText = getTextContent(nameEl)
+      // Validate name - should be 2-4 words, not too long
+      if (nameText && nameText.length > 2 && nameText.length < 100) {
+        const nameParts = nameText.split(/\s+/)
+        if (nameParts.length >= 2 && nameParts.length <= 4) {
+          // Check for invalid names
+          const invalidNames = ["Join LinkedIn", "Accessibility", "User Agreement", "LinkedIn Member"]
+          if (!invalidNames.some(invalid => nameText.includes(invalid))) {
+            structured.personal_info.name = nameText
+            break
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback: Extract name from raw text if not found in HTML
+  if (!structured.personal_info.name && rawText) {
+    const namePatterns = [
+      /^([A-Z][a-z]+(?: [A-Z][a-zñóíéáú\.]+)+(?: [A-Z][a-zñóíéáú\.]+)?)\n/,
+      /Me For Business\n([A-Z][a-z]+(?: [A-Z][a-zñóíéáú\.]+)+(?: [A-Z][a-zñóíéáú\.]+)?)\n/,
+    ]
+    for (const pattern of namePatterns) {
+      const match = rawText.substring(0, 1000).match(pattern)
+      if (match) {
+        const potentialName = match[1].trim()
+        const nameParts = potentialName.split(/\s+/)
+        if (potentialName.length > 3 && potentialName.length < 50 && nameParts.length >= 2 && nameParts.length <= 4) {
+          structured.personal_info.name = potentialName
+          break
+        }
       }
     }
   }
@@ -60,14 +112,17 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
   const headlineSelectors = [
     ".text-body-medium.break-words",
     ".pv-text-details__left-panel .text-body-medium",
+    "h2.text-body-medium",
+    "h2",
+    "[data-test-id='headline']",
     ".top-card-layout__headline",
     ".text-body-medium",
   ]
   for (const selector of headlineSelectors) {
     const headlineEl = document.querySelector(selector)
-    if (headlineEl) {
-      const headlineText = headlineEl.textContent?.trim()
-      if (headlineText && !headlineText.includes("connections")) {
+    if (headlineEl && headlineEl !== document.querySelector("h1")) {
+      const headlineText = getTextContent(headlineEl)
+      if (headlineText && !headlineText.includes("connections") && !headlineText.includes("followers") && headlineText.length > 5) {
         structured.personal_info.headline = headlineText
         break
       }
@@ -78,14 +133,20 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
   const locationSelectors = [
     ".text-body-small.inline.t-black--light.break-words",
     ".pv-text-details__left-panel .text-body-small",
+    "[data-test-id='location']",
+    "[aria-label*='location']",
     ".top-card-layout__first-subline",
     ".text-body-small",
   ]
   for (const selector of locationSelectors) {
     const locationEl = document.querySelector(selector)
     if (locationEl) {
-      const locationText = locationEl.textContent?.trim()
-      if (locationText && !locationText.includes("connections") && !locationText.includes("followers")) {
+      const locationText = getTextContent(locationEl)
+      if (locationText && 
+          !locationText.includes("connections") && 
+          !locationText.includes("followers") && 
+          locationText.length > 3 &&
+          locationText.length < 100) {
         structured.personal_info.location = locationText
         break
       }

@@ -155,14 +155,34 @@ export async function POST(req: Request) {
             // Process the profile document
             const processed = profileProcessor.processProfileDocument(profileDocument)
             
+            // Log what we extracted for debugging
+            console.log(`[profile-processor] Extracted data for ${profile.linkedin_url}:`, {
+              hasName: !!profileDocument.personal_info?.name,
+              name: profileDocument.personal_info?.name,
+              hasLocation: !!profileDocument.personal_info?.location,
+              location: profileDocument.personal_info?.location,
+              experienceCount: profileDocument.experience?.length || 0,
+              educationCount: profileDocument.education?.length || 0,
+              rawTextLength: profileDocument.raw_text?.length || 0,
+            })
+            
             if (processed && processed["Full Name"]) {
               // Use the processed data directly - it's already in the correct format
               candidateData = processed
-              console.log(`Successfully processed profile ${profile.linkedin_url} using profileProcessor`)
+              console.log(`Successfully processed profile ${profile.linkedin_url} using profileProcessor:`, {
+                fullName: processed["Full Name"],
+                currentCompany: processed["Current Company"],
+                jobTitle: processed["Job title"],
+                location: processed["Location"],
+              })
             } else {
               // Fallback: include raw data for AI enrichment
               candidateData["Raw Data"] = JSON.stringify(profileDocument)
-              console.log(`Profile ${profile.linkedin_url} processed but missing fields, using AI enrichment fallback`)
+              console.log(`Profile ${profile.linkedin_url} processed but missing fields. Extracted:`, {
+                personalInfo: profileDocument.personal_info,
+                experienceCount: profileDocument.experience?.length || 0,
+                educationCount: profileDocument.education?.length || 0,
+              })
             }
           } catch (processError: any) {
             console.warn(`Error processing profile ${profile.linkedin_url}:`, processError)
