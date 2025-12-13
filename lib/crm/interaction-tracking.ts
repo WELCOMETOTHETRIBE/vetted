@@ -55,15 +55,16 @@ export async function getCandidateTimeline(candidateId: string): Promise<Timelin
 
   // Add engagement events
   for (const engagement of candidate.engagements) {
-    const typeIcon = {
+    const typeIconMap: Record<string, string> = {
       EMAIL: "📧",
       CALL: "📞",
       MESSAGE: "💬",
       LINKEDIN: "💼",
       SMS: "📱",
-    }[engagement.type] || "📨"
+    }
+    const typeIcon = typeIconMap[engagement.type as string] || "📨"
 
-    const statusColor = {
+    const statusColorMap: Record<string, string> = {
       PENDING: "gray",
       SCHEDULED: "blue",
       SENT: "green",
@@ -73,7 +74,8 @@ export async function getCandidateTimeline(candidateId: string): Promise<Timelin
       RESPONDED: "emerald",
       FAILED: "red",
       CANCELLED: "gray",
-    }[engagement.status] || "gray"
+    }
+    const statusColor = statusColorMap[engagement.status as string] || "gray"
 
     events.push({
       id: engagement.id,
