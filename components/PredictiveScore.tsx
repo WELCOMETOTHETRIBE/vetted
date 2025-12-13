@@ -38,6 +38,8 @@ export default function PredictiveScore({
   const [selectedJobId, setSelectedJobId] = useState<string>(jobId || "")
   const [jobs, setJobs] = useState<Job[]>([])
   const [loadingJobs, setLoadingJobs] = useState(false)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const calculateScore = async () => {
     if (!selectedJobId) {
@@ -153,43 +155,80 @@ export default function PredictiveScore({
 
       {!scoreResult && (
         <div className="space-y-4">
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Job for Scoring
+              Search Job or Enter Job ID
             </label>
-            {loadingJobs ? (
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-500">
-                Loading jobs...
-              </div>
-            ) : jobs.length > 0 ? (
-              <select
-                value={selectedJobId}
-                onChange={(e) => setSelectedJobId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white"
-              >
-                <option value="">-- Select a job --</option>
-                {jobs.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.title} @ {job.company.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={selectedJobId}
-                  onChange={(e) => setSelectedJobId(e.target.value)}
-                  placeholder="Enter Job ID manually"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-                />
-                <p className="text-xs text-gray-500">
-                  Or paste a job ID from the jobs page
-                </p>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery || selectedJobId}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setSearchQuery(value)
+                  setShowSuggestions(true)
+                  
+                  // If it looks like a job ID (long alphanumeric), set it directly
+                  if (value.length > 20 && /^[a-z0-9]+$/i.test(value)) {
+                    setSelectedJobId(value)
+                    setSearchQuery("")
+                    setShowSuggestions(false)
+                  } else {
+                    // Search in jobs
+                    const matchingJob = jobs.find(
+                      (job) => job.id === value || 
+                      job.title.toLowerCase().includes(value.toLowerCase()) ||
+                      job.company.name.toLowerCase().includes(value.toLowerCase())
+                    )
+                    if (matchingJob) {
+                      setSelectedJobId(matchingJob.id)
+                    }
+                  }
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                placeholder="Type job title, company, or paste Job ID..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+              />
+              {showSuggestions && searchQuery && jobs.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {jobs
+                    .filter(
+                      (job) =>
+                        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        job.company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        job.id.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .slice(0, 10)
+                    .map((job) => (
+                      <button
+                        key={job.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedJobId(job.id)
+                          setSearchQuery(`${job.title} @ ${job.company.name}`)
+                          setShowSuggestions(false)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-purple-50 text-sm border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-medium text-gray-900">{job.title}</div>
+                        <div className="text-xs text-gray-500">{job.company.name}</div>
+                        <div className="text-xs text-gray-400 font-mono mt-1">{job.id.substring(0, 12)}...</div>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+            {selectedJobId && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-gray-600">Selected Job ID:</span>
+                <span className="text-xs font-mono bg-purple-100 px-2 py-1 rounded border border-purple-200 text-purple-700">
+                  {selectedJobId.substring(0, 12)}...
+                </span>
               </div>
             )}
             <p className="text-xs text-gray-500 mt-2">
-              💡 Tip: Job IDs are shown on each job card and job detail page
+              💡 Paste a Job ID or search by job title/company name
             </p>
           </div>
 
