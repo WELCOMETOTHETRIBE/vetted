@@ -127,6 +127,24 @@ model UserProfile {
   location    String?
   about       String?  @db.Text
   bannerImage String?
+  // Contact info
+  phone       String?
+  website     String?
+  // Professional details
+  currentTitle String?
+  currentCompany String?
+  industry    String?
+  // Additional fields
+  languages   String?  @db.Text // JSON array as string
+  certifications String? @db.Text // JSON array as string
+  projects    String?  @db.Text // JSON array as string
+  publications String? @db.Text // JSON array as string
+  volunteerWork String? @db.Text // JSON array as string
+  awards      String?  @db.Text // JSON array as string
+  // Resume tracking
+  resumeUrl   String? // URL to uploaded resume file
+  resumeParsedAt DateTime? // When resume was last parsed
+  resumeText  String? @db.Text // Extracted resume text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

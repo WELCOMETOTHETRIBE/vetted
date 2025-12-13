@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import ProfileEditForm from "@/components/ProfileEditForm"
+import ResumeProfileUpload from "@/components/ResumeProfileUpload"
 
 async function getProfileData(userId: string) {
   const user = await prisma.user.findUnique({
@@ -42,6 +43,9 @@ export default async function ProfileEditPage() {
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h1>
+        <div className="mb-6">
+          <ResumeProfileUpload />
+        </div>
         <ProfileEditForm user={user} />
       </div>
     </div>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Navbar from "@/components/Navbar"
 import CandidatesContent from "@/components/CandidatesContent"
+import CandidateResumeUpload from "@/components/CandidateResumeUpload"
 import { Suspense } from "react"
 
 // Force dynamic rendering to prevent caching
@@ -116,6 +117,7 @@ export default async function CandidatesPage({
             Total: {data.total} candidates
           </div>
         </div>
+        <CandidateResumeUpload onSuccess={() => window.location.reload()} />
         <Suspense fallback={<div className="p-8 text-center text-gray-600">Loading...</div>}>
           <CandidatesContent
             initialCandidates={data.candidates}
