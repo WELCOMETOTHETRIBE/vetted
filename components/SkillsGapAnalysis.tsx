@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { downloadCSV, downloadJSON } from "@/lib/utils/export"
 
 interface SkillGap {
   skill: string
@@ -35,7 +36,7 @@ export default function SkillsGapAnalysis() {
   const [data, setData] = useState<SkillsGapAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<"gaps" | "upskilling">("gaps")
+  const [activeTab, setActiveTab] = useState<"gaps" | "upskilling" | "trends">("gaps")
   const [filterSeverity, setFilterSeverity] = useState<
     "all" | "critical" | "high" | "moderate" | "low"
   >("all")
@@ -138,12 +139,42 @@ export default function SkillsGapAnalysis() {
             Last updated: {new Date(data.lastUpdated).toLocaleString()}
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          🔄 Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative group">
+            <button className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              📥 Export
+            </button>
+            <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              <button
+                onClick={() => {
+                  downloadJSON(data, `skills-gap-analysis-${new Date().toISOString().split("T")[0]}.json`)
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+              >
+                📄 Export JSON
+              </button>
+              <button
+                onClick={() => {
+                  const filename = `skills-gap-analysis-${new Date().toISOString().split("T")[0]}.csv`
+                  if (activeTab === "gaps") {
+                    downloadCSV(data.skillGaps, filename)
+                  } else {
+                    downloadCSV(data.upskillingOpportunities, filename)
+                  }
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg"
+              >
+                📊 Export CSV (Current Tab)
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={fetchData}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {/* Overall Gap Score */}
@@ -192,6 +223,16 @@ export default function SkillsGapAnalysis() {
           }`}
         >
           Upskilling Opportunities ({data.upskillingOpportunities.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("trends")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "trends"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Trends ({data.skillTrends?.length || 0})
         </button>
       </div>
 
@@ -265,6 +306,60 @@ export default function SkillsGapAnalysis() {
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* Skill Trends Tab */}
+      {activeTab === "trends" && (
+        <div className="space-y-4">
+          {!data.skillTrends || data.skillTrends.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No trend data available yet.</p>
+          ) : (
+            data.skillTrends.map((trend, idx) => (
+              <div
+                key={idx}
+                className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">{trend.skill}</h4>
+                    <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                      <span>
+                        Current Gap: <strong className="text-gray-900">{trend.currentGap}</strong>
+                      </span>
+                      <span>
+                        Previous Gap: <strong className="text-gray-900">{trend.previousGap}</strong>
+                      </span>
+                      <span>
+                        Change:{" "}
+                        <strong
+                          className={
+                            trend.changePercentage > 0 ? "text-red-600" : "text-green-600"
+                          }
+                        >
+                          {trend.changePercentage > 0 ? "+" : ""}
+                          {trend.changePercentage.toFixed(1)}%
+                        </strong>
+                      </span>
+                      <span className="text-gray-500">({trend.period})</span>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                      trend.trend === "improving"
+                        ? "bg-green-100 text-green-800"
+                        : trend.trend === "worsening"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {trend.trend === "improving" ? "📈" : trend.trend === "worsening" ? "📉" : "➡️"}{" "}
+                    {trend.trend.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { downloadCSV, downloadJSON } from "@/lib/utils/export"
 
 interface SalaryInsight {
   role: string
@@ -153,12 +154,53 @@ export default function MarketIntelligence() {
             Last updated: {new Date(data.lastUpdated).toLocaleString()}
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          🔄 Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative group">
+            <button className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              📥 Export
+            </button>
+            <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              <button
+                onClick={() => {
+                  const exportData = {
+                    salaryInsights: data.salaryInsights,
+                    skillDemandTrends: data.skillDemandTrends,
+                    competitorInsights: data.competitorInsights,
+                    supplyDemandRatios: data.supplyDemandRatios,
+                    lastUpdated: data.lastUpdated,
+                  }
+                  downloadJSON(exportData, `market-intelligence-${new Date().toISOString().split("T")[0]}.json`)
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+              >
+                📄 Export JSON
+              </button>
+              <button
+                onClick={() => {
+                  const filename = `market-intelligence-${new Date().toISOString().split("T")[0]}.csv`
+                  if (activeTab === "salary") {
+                    downloadCSV(data.salaryInsights, filename)
+                  } else if (activeTab === "skills") {
+                    downloadCSV(data.skillDemandTrends, filename)
+                  } else if (activeTab === "competitors") {
+                    downloadCSV(data.competitorInsights, filename)
+                  } else if (activeTab === "supply") {
+                    downloadCSV(data.supplyDemandRatios, filename)
+                  }
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg"
+              >
+                📊 Export CSV (Current Tab)
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={fetchData}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

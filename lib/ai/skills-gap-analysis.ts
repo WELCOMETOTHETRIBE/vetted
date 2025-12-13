@@ -23,9 +23,19 @@ export interface UpskillingOpportunity {
   priority: "high" | "medium" | "low"
 }
 
+export interface SkillTrend {
+  skill: string
+  currentGap: number
+  previousGap: number
+  trend: "improving" | "worsening" | "stable"
+  changePercentage: number
+  period: string // e.g., "30 days"
+}
+
 export interface SkillsGapAnalysis {
   skillGaps: SkillGap[]
   upskillingOpportunities: UpskillingOpportunity[]
+  skillTrends: SkillTrend[]
   overallGapScore: number // 0-100, higher = more gaps
   lastUpdated: Date
 }
