@@ -74,9 +74,9 @@ export default function SignUpPage() {
           <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
             Create your Vetted account
           </h2>
-          <p className="mt-3 text-center text-sm text-neutral-600">
+          <p className="mt-3 text-center text-sm text-neutral-800">
             Or{" "}
-            <Link href="/auth/signin" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            <Link href="/auth/signin" className="font-semibold text-primary-700 hover:text-primary-800 transition-colors">
               sign in to your existing account
             </Link>
           </p>
@@ -154,7 +154,7 @@ export default function SignUpPage() {
                 <div className="w-full border-t border-neutral-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-neutral-500 font-medium">Or continue with</span>
+                <span className="px-3 bg-white text-neutral-700 font-medium">Or continue with</span>
               </div>
             </div>
 
@@ -162,7 +162,7 @@ export default function SignUpPage() {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full inline-flex justify-center items-center py-3 px-4 border-2 border-neutral-300 rounded-xl shadow-sm bg-white text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                className="w-full inline-flex justify-center items-center py-3 px-4 border-2 border-neutral-400 rounded-xl shadow-sm bg-white text-sm font-semibold text-neutral-900 hover:bg-neutral-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
                 <span>Sign up with Google</span>
               </button>

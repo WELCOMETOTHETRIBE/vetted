@@ -83,7 +83,7 @@ export default async function AdminPage() {
             <AshbyScraperButton />
             <Link
               href="/candidates"
-              className="px-5 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="px-5 py-2.5 bg-primary-700 text-white rounded-xl hover:bg-primary-800 font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             >
               View Candidates
             </Link>

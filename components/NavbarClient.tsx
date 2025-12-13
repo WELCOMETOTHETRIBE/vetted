@@ -98,10 +98,10 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                 aria-label="Profile menu"
                 aria-expanded="false"
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
                   Me
                 </div>
-                <span className="hidden md:inline text-sm text-neutral-600">▼</span>
+                <span className="hidden md:inline text-sm text-neutral-800 font-medium">▼</span>
               </button>
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <Link
