@@ -121,32 +121,32 @@ enum UserRole {
 
 // User Profile (extended profile info)
 model UserProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  headline    String?
-  location    String?
-  about       String?  @db.Text
-  bannerImage String?
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  headline       String?
+  location       String?
+  about          String?   @db.Text
+  bannerImage    String?
   // Contact info
-  phone       String?
-  website     String?
+  phone          String?
+  website        String?
   // Professional details
-  currentTitle String?
+  currentTitle   String?
   currentCompany String?
-  industry    String?
+  industry       String?
   // Additional fields
-  languages   String?  @db.Text // JSON array as string
-  certifications String? @db.Text // JSON array as string
-  projects    String?  @db.Text // JSON array as string
-  publications String? @db.Text // JSON array as string
-  volunteerWork String? @db.Text // JSON array as string
-  awards      String?  @db.Text // JSON array as string
+  languages      String?   @db.Text // JSON array as string
+  certifications String?   @db.Text // JSON array as string
+  projects       String?   @db.Text // JSON array as string
+  publications   String?   @db.Text // JSON array as string
+  volunteerWork  String?   @db.Text // JSON array as string
+  awards         String?   @db.Text // JSON array as string
   // Resume tracking
-  resumeUrl   String? // URL to uploaded resume file
+  resumeUrl      String? // URL to uploaded resume file
   resumeParsedAt DateTime? // When resume was last parsed
-  resumeText  String? @db.Text // Extracted resume text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  resumeText     String?   @db.Text // Extracted resume text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -599,19 +599,19 @@ model Candidate {
   aiBestFitRoles                    String?         @db.Text // JSON array of best fit roles
   aiHighlights                      String?         @db.Text // Notable experience highlights
   aiConcerns                        String?         @db.Text // Potential concerns or gaps
-  aiSummaryGeneratedAt              DateTime?       // When AI summary was generated
+  aiSummaryGeneratedAt              DateTime? // When AI summary was generated
   // Predictive scoring fields
-  predictiveScore                   Float?          // 0-100 success probability score
-  scoreConfidence                   String?         // HIGH, MEDIUM, LOW
+  predictiveScore                   Float? // 0-100 success probability score
+  scoreConfidence                   String? // HIGH, MEDIUM, LOW
   scoreRiskFactors                  String?         @db.Text // JSON array of risk factors
-  scoreGeneratedAt                  DateTime?       // When score was generated
-  scoreJobId                        String?         // Score is job-specific
+  scoreGeneratedAt                  DateTime? // When score was generated
+  scoreJobId                        String? // Score is job-specific
   createdAt                         DateTime        @default(now())
   updatedAt                         DateTime        @updatedAt
 
-  addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
+  addedBy     User?        @relation(fields: [addedById], references: [id], onDelete: SetNull)
   engagements Engagement[]
-  referrals Referral[]
+  referrals   Referral[]
 
   @@index([linkedinUrl])
   @@index([fullName])
@@ -640,7 +640,7 @@ model EngagementWorkflow {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  createdBy User         @relation("WorkflowCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("WorkflowCreator", fields: [createdById], references: [id], onDelete: Cascade)
   engagements Engagement[]
 
   @@index([createdById])
@@ -668,25 +668,25 @@ enum EngagementStatus {
 }
 
 model Engagement {
-  id          String   @id @default(cuid())
-  candidateId String
-  workflowId  String?
-  type        EngagementType
-  subject     String?  // For emails
-  content     String?  @db.Text
-  scheduledAt DateTime
-  sentAt      DateTime?
-  deliveredAt DateTime?
-  openedAt    DateTime?
-  clickedAt   DateTime?
-  respondedAt DateTime?
-  status      EngagementStatus @default(PENDING)
-  metadata    String?  @db.Text // JSON for additional tracking data
-  errorMessage String? @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String           @id @default(cuid())
+  candidateId  String
+  workflowId   String?
+  type         EngagementType
+  subject      String? // For emails
+  content      String?          @db.Text
+  scheduledAt  DateTime
+  sentAt       DateTime?
+  deliveredAt  DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  respondedAt  DateTime?
+  status       EngagementStatus @default(PENDING)
+  metadata     String?          @db.Text // JSON for additional tracking data
+  errorMessage String?          @db.Text
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  candidate Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   workflow  EngagementWorkflow? @relation(fields: [workflowId], references: [id], onDelete: SetNull)
 
   @@index([candidateId])
@@ -698,16 +698,16 @@ model Engagement {
 
 // Tech Trends
 model Trend {
-  id           String   @id @default(cuid())
-  title        String
-  url          String   @unique
-  source       String
-  publishedAt  DateTime?
-  highlight   String   @db.Text
+  id          String    @id @default(cuid())
+  title       String
+  url         String    @unique
+  source      String
+  publishedAt DateTime?
+  highlight   String    @db.Text
   category    String
-  rawExcerpt  String   @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  rawExcerpt  String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([category])
   @@index([publishedAt])
@@ -715,31 +715,55 @@ model Trend {
   @@index([url])
 }
 
+model Startup {
+  id          String    @id @default(cuid())
+  name        String
+  url         String? // Optional - may have multiple articles about same company
+  source      String?
+  publishedAt DateTime?
+  highlight   String    @db.Text
+  usp         String    @db.Text // Unique Selling Proposition
+  type        String // "ipo" or "cutting_edge"
+  valuation   String?
+  funding     String?
+  industry    String?
+  description String    @db.Text
+  website     String? // Company website if available
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([name, type]) // Unique company per type
+  @@index([type])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@index([name])
+}
+
 // Referral Network System
 model Referral {
-  id              String          @id @default(cuid())
-  referrerId      String          // User who made the referral
-  candidateId     String?         // If candidate exists in system
-  candidateName   String          // Name of referred candidate
-  candidateEmail  String?
+  id                   String         @id @default(cuid())
+  referrerId           String // User who made the referral
+  candidateId          String? // If candidate exists in system
+  candidateName        String // Name of referred candidate
+  candidateEmail       String?
   candidateLinkedInUrl String?
-  jobId           String?         // Job they're being referred for
-  status          ReferralStatus  @default(PENDING)
-  notes           String?         @db.Text
+  jobId                String? // Job they're being referred for
+  status               ReferralStatus @default(PENDING)
+  notes                String?        @db.Text
   // Tracking
-  submittedAt     DateTime        @default(now())
-  contactedAt     DateTime?
-  interviewedAt   DateTime?
-  hiredAt        DateTime?
-  rejectedAt      DateTime?
+  submittedAt          DateTime       @default(now())
+  contactedAt          DateTime?
+  interviewedAt        DateTime?
+  hiredAt              DateTime?
+  rejectedAt           DateTime?
   // Rewards
-  rewardStatus    RewardStatus    @default(PENDING)
-  rewardAmount    Float?         // If monetary reward
-  rewardNotes     String?         @db.Text
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  rewardStatus         RewardStatus   @default(PENDING)
+  rewardAmount         Float? // If monetary reward
+  rewardNotes          String?        @db.Text
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
-  referrer User   @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referrer  User       @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
   candidate Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   job       Job?       @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
@@ -751,17 +775,17 @@ model Referral {
 }
 
 enum ReferralStatus {
-  PENDING       // Just submitted
-  CONTACTED     // Candidate was contacted
-  INTERVIEWING  // In interview process
-  HIRED         // Successfully hired
-  REJECTED      // Not hired
-  WITHDRAWN     // Referral withdrawn
+  PENDING // Just submitted
+  CONTACTED // Candidate was contacted
+  INTERVIEWING // In interview process
+  HIRED // Successfully hired
+  REJECTED // Not hired
+  WITHDRAWN // Referral withdrawn
 }
 
 enum RewardStatus {
-  PENDING       // Reward not yet processed
-  APPROVED      // Reward approved
-  PAID          // Reward paid out
-  DENIED        // Reward denied
+  PENDING // Reward not yet processed
+  APPROVED // Reward approved
+  PAID // Reward paid out
+  DENIED // Reward denied
 }

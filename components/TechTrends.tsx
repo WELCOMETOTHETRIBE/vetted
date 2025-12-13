@@ -23,14 +23,16 @@ interface TrendsResponse {
 interface StartupItem {
   name: string
   description: string
-  url: string
-  source: string
+  url?: string
+  source?: string
   published_at: string | null
   highlight: string
+  usp: string
   type: "ipo" | "cutting_edge"
   valuation?: string
   funding?: string
   industry?: string
+  website?: string
 }
 
 interface StartupsResponse {
@@ -333,30 +335,42 @@ export default function TechTrends() {
     return (
       <>
         <div className="space-y-4">
-          {startups.slice(0, 5).map((startup, idx) => (
-            <div
-              key={idx}
-              className="group border-b border-gray-100 last:border-b-0 pb-3 last:pb-0"
-            >
-              <a
-                href={startup.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block hover:opacity-80 transition-opacity"
+          {startups.slice(0, 5).map((startup, idx) => {
+            const companyUrl = startup.website 
+              ? (startup.website.startsWith('http') ? startup.website : `https://${startup.website}`)
+              : startup.url
+            
+            return (
+              <div
+                key={idx}
+                className="group border-b border-gray-100 last:border-b-0 pb-3 last:pb-0"
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {startup.name}
-                    </h4>
+                    {companyUrl ? (
+                      <a
+                        href={companyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <h4 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                          {startup.name}
+                        </h4>
+                      </a>
+                    ) : (
+                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
+                        {startup.name}
+                      </h4>
+                    )}
                     {startup.industry && (
-                      <span className="text-xs text-purple-600 font-medium">
+                      <span className="text-xs text-purple-600 font-medium mt-0.5 inline-block">
                         {startup.industry}
                       </span>
                     )}
                   </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
+                    className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
                       startup.type === "ipo"
                         ? "bg-green-100 text-green-800"
                         : "bg-blue-100 text-blue-800"
@@ -366,35 +380,55 @@ export default function TechTrends() {
                   </span>
                 </div>
                 
+                {startup.usp && (
+                  <div className="mb-2">
+                    <p className="text-xs font-medium text-gray-700 mb-1">USP:</p>
+                    <p className="text-xs text-gray-600 line-clamp-2">
+                      {startup.usp}
+                    </p>
+                  </div>
+                )}
+                
                 {startup.highlight && (
-                  <p className="text-xs text-gray-600 line-clamp-2 mb-2 mt-1">
+                  <p className="text-xs text-gray-600 line-clamp-2 mb-2">
                     {startup.highlight}
                   </p>
                 )}
                 
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{startup.source}</span>
-                    <span className="text-xs text-gray-400">•</span>
-                    <span className="text-xs text-gray-500">
-                      {formatTimeAgo(startup.published_at)}
-                    </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(startup.valuation || startup.funding) && (
+                      <>
+                        <span className="text-xs text-gray-700 font-medium">
+                          {startup.valuation || startup.funding}
+                        </span>
+                        {(startup.source || startup.published_at) && (
+                          <span className="text-xs text-gray-400">•</span>
+                        )}
+                      </>
+                    )}
+                    {startup.source && (
+                      <span className="text-xs text-gray-500">{startup.source}</span>
+                    )}
+                    {startup.published_at && (
+                      <>
+                        {startup.source && <span className="text-xs text-gray-400">•</span>}
+                        <span className="text-xs text-gray-500">
+                          {formatTimeAgo(startup.published_at)}
+                        </span>
+                      </>
+                    )}
                   </div>
-                  {(startup.valuation || startup.funding) && (
-                    <span className="text-xs text-gray-600 font-medium">
-                      {startup.valuation || startup.funding}
-                    </span>
-                  )}
                 </div>
-              </a>
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
         
         {startups.length > 5 && (
           <div className="mt-4 pt-3 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              Showing top 5 of {startups.length} startups
+              Showing top 5 of {startups.length} companies
             </p>
           </div>
         )}
