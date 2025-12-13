@@ -153,113 +153,309 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
     }
   }
 
-  // Extract experience sections - try multiple selectors
-  const experienceSelectors = [
-    "#experience ~ .pvs-list__outer-container .pvs-list__item",
-    ".experience-section .pvs-list__item",
-    "section#experience .pvs-list__item",
-    ".pvs-list__item",
-  ]
-
-  for (const expSelector of experienceSelectors) {
-    const experienceSections = document.querySelectorAll(expSelector)
-    if (experienceSections.length > 0) {
-      experienceSections.forEach((section) => {
-        const titleEl = section.querySelector(".mr1.t-bold span[aria-hidden='true'], .t-bold span")
-        const companyEl = section.querySelector(".t-14.t-normal span[aria-hidden='true'], .t-normal span")
-        const dateEl = section.querySelector(".t-14.t-normal.t-black--light span[aria-hidden='true'], .t-black--light span")
-        const descriptionEl = section.querySelector(".t-14.t-normal.t-black span[aria-hidden='true'], .t-black span")
-
-        const title = titleEl?.textContent?.trim()
-        const company = companyEl?.textContent?.trim()
-        const dateRange = dateEl?.textContent?.trim()
-        const description = descriptionEl?.textContent?.trim()
-
-        if (title || company) {
-          const experience: any = {
-            title: title || "",
-            company: company || "",
-            dateRange: dateRange || "",
-            description: description || "",
+  // Helper function to find section by heading (like extension)
+  function findSectionByHeading(headingTexts: string[]): Element | null {
+    const headings = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6, [role='heading']"))
+    for (const heading of headings) {
+      const text = getTextContent(heading)
+      if (text && headingTexts.some((h: string) => text.toLowerCase().includes(h.toLowerCase()))) {
+        // Find the parent section or container
+        let current: Element | null = heading.parentElement
+        while (current && current !== document.body) {
+          const tagName = current.tagName?.toLowerCase()
+          const className = current.className?.toString() || ""
+          const id = current.getAttribute("id") || ""
+          
+          if (tagName === "section" || 
+              className.includes("section") || 
+              id.includes("section") ||
+              className.includes("experience") ||
+              className.includes("education")) {
+            return current
           }
+          current = current.parentElement
+        }
+        return heading.parentElement
+      }
+    }
+    return null
+  }
 
-          // Parse date range to determine if current
-          const dateText = (dateRange || "").toLowerCase()
-          experience.isCurrent = dateText.includes("present") || dateText.includes("current") || dateText.includes("now")
-
-          // Extract start/end dates
-          const dateMatch = dateRange?.match(/(\w+\s+\d{4})\s*[-–]\s*(\w+\s+\d{4}|Present|Current)/i)
-          if (dateMatch) {
-            experience.startDate = dateMatch[1]
-            experience.endDate = dateMatch[2]
-          } else {
-            const singleDateMatch = dateRange?.match(/(\w+\s+\d{4})/i)
-            if (singleDateMatch) {
-              experience.startDate = singleDateMatch[1]
+  // EXPERIENCE - Comprehensive extraction (like extension)
+  const experienceSection = findSectionByHeading(["Experience", "Work Experience", "Employment", "Professional Experience"])
+  if (experienceSection) {
+    const items = experienceSection.querySelectorAll("li, .pvs-list__paged-list-item, [data-view-name='profile-component-entity'], article, [role='listitem'], .pvs-list__item")
+    items.forEach((item) => {
+      if (!item) return
+      
+      const itemText = getTextContent(item) || ""
+      
+      // Extract title - try multiple selectors (like extension)
+      const titleSelectors = [
+        "h3",
+        ".t-16.t-black.t-bold",
+        "span[aria-hidden='true']",
+        "[class*='title']",
+        "[class*='position']",
+        ".pvs-entity__summary-info-v2 h3",
+        ".mr1.t-bold span[aria-hidden='true']",
+        ".t-bold span"
+      ]
+      
+      let title = ""
+      for (const selector of titleSelectors) {
+        const titleEl = item.querySelector(selector)
+        if (titleEl) {
+          title = getTextContent(titleEl) || ""
+          if (title) break
+        }
+      }
+      
+      // If title contains company info, extract it separately
+      if (title && /[·•]\s*(?:Full-time|Part-time)/i.test(title)) {
+        const titleParts = title.split(/[·•]/)
+        title = titleParts[0].trim()
+      }
+      
+      // Extract company - try multiple selectors (like extension)
+      const companySelectors = [
+        ".t-14.t-black--light.t-normal",
+        ".pvs-entity__subtitle",
+        "[class*='company']",
+        "[class*='organization']",
+        "span[aria-hidden='true']",
+        ".pvs-entity__secondary-title",
+        ".t-14.t-normal.t-black--light",
+        ".t-14.t-normal span[aria-hidden='true']",
+        ".t-normal span"
+      ]
+      
+      let company = ""
+      for (const selector of companySelectors) {
+        const companyEl = item.querySelector(selector)
+        if (companyEl) {
+          const companyText = getTextContent(companyEl)
+          // Skip if it's the title we already found
+          if (companyText && companyText !== title && companyText.length > 2) {
+            company = companyText
+            // Clean company name - remove employment type indicators
+            company = company.replace(/\s*[·•]\s*(?:Full-time|Part-time|Contract|Internship|Freelance|Self-employed|Volunteer).*$/i, '').trim()
+            if (company) break
+          }
+        }
+      }
+      
+      // Also try to find company by looking for elements that contain "· Full-time" or similar patterns
+      if (!company) {
+        const allTextElements = item.querySelectorAll("span, div, p")
+        for (const el of allTextElements) {
+          const text = getTextContent(el)
+          if (text && /[·•]\s*(?:Full-time|Part-time|Contract)/i.test(text)) {
+            const parts = text.split(/[·•]/).map((p: string) => p.trim()).filter((p: string) => p)
+            if (parts.length > 0) {
+              company = parts[0]
+              break
             }
           }
-
-          structured.experience.push(experience)
         }
-      })
-      break // Use first selector that finds results
-    }
+      }
+      
+      // Extract date range
+      const dateSelectors = [
+        ".t-14.t-normal.t-black--light span[aria-hidden='true']",
+        ".t-black--light span",
+        "[class*='date']",
+        "[class*='duration']"
+      ]
+      
+      let dateRange = ""
+      for (const selector of dateSelectors) {
+        const dateEl = item.querySelector(selector)
+        if (dateEl) {
+          dateRange = getTextContent(dateEl) || ""
+          if (dateRange && (dateRange.includes("Present") || dateRange.includes("Current") || /\d{4}/.test(dateRange))) {
+            break
+          }
+        }
+      }
+      
+      // Extract description
+      const descriptionSelectors = [
+        ".t-14.t-normal.t-black span[aria-hidden='true']",
+        ".t-black span",
+        "[class*='description']"
+      ]
+      
+      let description = ""
+      for (const selector of descriptionSelectors) {
+        const descEl = item.querySelector(selector)
+        if (descEl) {
+          description = getTextContent(descEl) || ""
+          if (description && description.length > 20) break
+        }
+      }
+      
+      if (title || company) {
+        const experience: any = {
+          title: title || "",
+          company: company || "",
+          dateRange: dateRange || "",
+          description: description || "",
+        }
+
+        // Parse date range to determine if current
+        const dateText = (dateRange || "").toLowerCase()
+        experience.isCurrent = dateText.includes("present") || dateText.includes("current") || dateText.includes("now")
+
+        // Extract start/end dates
+        const dateMatch = dateRange?.match(/(\w+\s+\d{4})\s*[-–]\s*(\w+\s+\d{4}|Present|Current)/i)
+        if (dateMatch) {
+          experience.startDate = dateMatch[1]
+          experience.endDate = dateMatch[2]
+        } else {
+          const singleDateMatch = dateRange?.match(/(\w+\s+\d{4})/i)
+          if (singleDateMatch) {
+            experience.startDate = singleDateMatch[1]
+          }
+        }
+
+        structured.experience.push(experience)
+      }
+    })
   }
 
-  // Extract education sections
-  const educationSelectors = [
-    "#education ~ .pvs-list__outer-container .pvs-list__item",
-    ".education-section .pvs-list__item",
-    "section#education .pvs-list__item",
-  ]
-
-  for (const eduSelector of educationSelectors) {
-    const educationSections = document.querySelectorAll(eduSelector)
-    if (educationSections.length > 0) {
-      educationSections.forEach((section) => {
-        const schoolEl = section.querySelector(".mr1.t-bold span[aria-hidden='true'], .t-bold span")
-        const degreeEl = section.querySelector(".t-14.t-normal span[aria-hidden='true'], .t-normal span")
-        const dateEl = section.querySelector(".t-14.t-normal.t-black--light span[aria-hidden='true'], .t-black--light span")
-
-        const school = schoolEl?.textContent?.trim()
-        if (school) {
-          const education: any = {
-            school: school,
-            degree: degreeEl?.textContent?.trim() || "",
-            dateRange: dateEl?.textContent?.trim() || "",
-          }
-
-          // Extract graduation year
-          const yearMatch = education.dateRange.match(/\d{4}/)
-          if (yearMatch) {
-            education.graduationYear = yearMatch[0]
-          }
-
-          structured.education.push(education)
+  // EDUCATION - Comprehensive extraction (like extension)
+  const educationSection = findSectionByHeading(["Education", "Academic Background", "University", "College"])
+  if (educationSection) {
+    const items = educationSection.querySelectorAll("li, .pvs-list__paged-list-item, [data-view-name='profile-component-entity'], article, [role='listitem'], .pvs-list__item")
+    items.forEach((item) => {
+      if (!item) return
+      
+      const itemText = getTextContent(item) || ""
+      
+      // Extract school - try multiple selectors
+      const schoolSelectors = [
+        "h3",
+        ".t-16.t-black.t-bold",
+        ".mr1.t-bold span[aria-hidden='true']",
+        ".t-bold span",
+        "[class*='school']",
+        "[class*='university']"
+      ]
+      
+      let school = ""
+      for (const selector of schoolSelectors) {
+        const schoolEl = item.querySelector(selector)
+        if (schoolEl) {
+          school = getTextContent(schoolEl) || ""
+          if (school && school.length > 2) break
         }
-      })
-      break
-    }
+      }
+      
+      // Extract degree/field - try multiple selectors
+      const degreeSelectors = [
+        ".t-14.t-normal span[aria-hidden='true']",
+        ".t-normal span",
+        "[class*='degree']",
+        "[class*='field']"
+      ]
+      
+      let degree = ""
+      let fieldOfStudy = ""
+      for (const selector of degreeSelectors) {
+        const degreeEl = item.querySelector(selector)
+        if (degreeEl) {
+          const degreeText = getTextContent(degreeEl) || ""
+          // Skip if it's the school name
+          if (degreeText && degreeText !== school && degreeText.length > 2) {
+            // Check if it contains field of study keywords
+            if (/Bachelor|Master|PhD|Doctor|Associate|Certificate|Diploma/i.test(degreeText)) {
+              degree = degreeText
+            } else {
+              fieldOfStudy = degreeText
+            }
+            break
+          }
+        }
+      }
+      
+      // Extract date range
+      const dateSelectors = [
+        ".t-14.t-normal.t-black--light span[aria-hidden='true']",
+        ".t-black--light span",
+        "[class*='date']"
+      ]
+      
+      let dateRange = ""
+      for (const selector of dateSelectors) {
+        const dateEl = item.querySelector(selector)
+        if (dateEl) {
+          dateRange = getTextContent(dateEl) || ""
+          if (dateRange && /\d{4}/.test(dateRange)) break
+        }
+      }
+      
+      if (school) {
+        const education: any = {
+          school: school,
+          degree: degree || "",
+          field_of_study: fieldOfStudy || "",
+          date_range: dateRange || "",
+        }
+
+        // Extract graduation year
+        const yearMatch = dateRange.match(/\d{4}/)
+        if (yearMatch) {
+          education.graduationYear = yearMatch[0]
+        }
+
+        structured.education.push(education)
+      }
+    })
   }
 
-  // Extract skills
-  const skillSelectors = [
-    "#skills ~ .pvs-list__outer-container .pvs-list__item",
-    ".skills-section .pvs-list__item",
-    "section#skills .pvs-list__item",
-  ]
-
-  for (const skillSelector of skillSelectors) {
-    const skillElements = document.querySelectorAll(skillSelector)
-    if (skillElements.length > 0) {
-      skillElements.forEach((skillEl) => {
-        const skillName = skillEl.querySelector(".mr1.t-bold span[aria-hidden='true'], .t-bold span")?.textContent?.trim()
-        if (skillName) {
-          structured.skills.push({ name: skillName })
+  // SKILLS - Comprehensive extraction (like extension)
+  const skillsSection = findSectionByHeading(["Skills", "Core Competencies", "Expertise", "Technical Skills"])
+  if (skillsSection) {
+    const items = skillsSection.querySelectorAll("li, .pvs-list__paged-list-item, [data-view-name='profile-component-entity'], article, [role='listitem'], .pvs-list__item, button, span")
+    items.forEach((item) => {
+      if (!item) return
+      
+      // Try multiple selectors for skill name
+      const skillSelectors = [
+        ".mr1.t-bold span[aria-hidden='true']",
+        ".t-bold span",
+        "span[aria-hidden='true']",
+        "button span",
+        "[class*='skill']"
+      ]
+      
+      let skillName = ""
+      for (const selector of skillSelectors) {
+        const skillEl = item.querySelector(selector)
+        if (skillEl) {
+          skillName = getTextContent(skillEl) || ""
+          if (skillName && skillName.length > 1 && skillName.length < 50) {
+            // Validate it's actually a skill (not a button label or other text)
+            if (!/endorse|add|show|more|less/i.test(skillName)) {
+              break
+            }
+          }
         }
-      })
-      break
-    }
+      }
+      
+      // Fallback: use the item's text content directly
+      if (!skillName) {
+        const itemText = getTextContent(item)
+        if (itemText && itemText.length > 1 && itemText.length < 50 && !/endorse|add|show|more|less/i.test(itemText)) {
+          skillName = itemText
+        }
+      }
+      
+      if (skillName) {
+        structured.skills.push({ name: skillName.trim() })
+      }
+    })
   }
 
   // Extract raw text for additional parsing
