@@ -178,17 +178,37 @@ export async function extractTextFromResume(
   const ext = filename.toLowerCase().split('.').pop()
   
   if (ext === 'pdf') {
-    // For PDF, we'll use a simple approach - in production, use pdf-parse
-    // For now, return error suggesting text extraction
-    throw new Error("PDF parsing requires pdf-parse library. Please install: npm install pdf-parse")
-  } else if (ext === 'docx' || ext === 'doc') {
-    // For DOCX, we'll use a simple approach - in production, use mammoth
-    throw new Error("DOCX parsing requires mammoth library. Please install: npm install mammoth")
+    try {
+      const pdfParse = require('pdf-parse')
+      const data = await pdfParse(buffer)
+      return data.text || ""
+    } catch (error: any) {
+      console.error("Error parsing PDF:", error)
+      throw new Error(`Failed to parse PDF: ${error.message}`)
+    }
+  } else if (ext === 'docx') {
+    try {
+      const mammoth = require('mammoth')
+      const result = await mammoth.extractRawText({ buffer })
+      return result.value || ""
+    } catch (error: any) {
+      console.error("Error parsing DOCX:", error)
+      throw new Error(`Failed to parse DOCX: ${error.message}`)
+    }
+  } else if (ext === 'doc') {
+    // Old .doc format - try mammoth first, fallback to error
+    try {
+      const mammoth = require('mammoth')
+      const result = await mammoth.extractRawText({ buffer })
+      return result.value || ""
+    } catch (error: any) {
+      throw new Error(`Failed to parse DOC file. Please convert to DOCX or PDF. Error: ${error.message}`)
+    }
   } else if (ext === 'txt') {
     // Plain text files
     return buffer.toString('utf-8')
   } else {
-    throw new Error(`Unsupported file type: ${ext}. Supported: PDF, DOCX, TXT`)
+    throw new Error(`Unsupported file type: ${ext}. Supported: PDF, DOCX, DOC, TXT`)
   }
 }
 

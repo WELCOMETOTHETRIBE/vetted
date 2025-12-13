@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { parseResumeText } from "@/lib/ai/resume-parser"
+import { parseResumeText, extractTextFromResume } from "@/lib/ai/resume-parser"
 
 /**
  * POST /api/profile/complete-from-resume
@@ -27,19 +27,27 @@ export async function POST(req: Request) {
 
     let textToParse = resumeText
 
-    // If file uploaded, extract text (for now, expect text to be provided)
-    // TODO: Add PDF/DOCX parsing libraries
-    if (resumeFile && !resumeText) {
-      // For now, require text extraction on client side
-      return NextResponse.json(
-        { error: "Please extract text from file first and send as resumeText, or use text input" },
-        { status: 400 }
-      )
+    // If file uploaded, extract text from it
+    if (resumeFile) {
+      try {
+        const arrayBuffer = await resumeFile.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const extractedText = await extractTextFromResume(buffer, resumeFile.name)
+        
+        // Use extracted text, or combine with manually provided text
+        textToParse = extractedText + (resumeText ? `\n\n${resumeText}` : "")
+      } catch (error: any) {
+        console.error("Error extracting text from file:", error)
+        return NextResponse.json(
+          { error: `Failed to extract text from file: ${error.message}` },
+          { status: 400 }
+        )
+      }
     }
 
-    if (!textToParse) {
+    if (!textToParse || textToParse.trim().length === 0) {
       return NextResponse.json(
-        { error: "Resume text is required" },
+        { error: "Resume text is required (could not extract from file)" },
         { status: 400 }
       )
     }
