@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import MarketIntelligence from "@/components/MarketIntelligence"
+import SkillsGapAnalysis from "@/components/SkillsGapAnalysis"
 
 export default async function MarketPage() {
   const session = await auth()
@@ -16,11 +17,14 @@ export default async function MarketPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Market Intelligence</h1>
           <p className="text-gray-600 mt-2">
-            Real-time insights into salary trends, skill demand, competitor analysis, and
-            supply/demand ratios
+            Real-time insights into salary trends, skill demand, competitor analysis, supply/demand
+            ratios, and skills gap analysis
           </p>
         </div>
-        <MarketIntelligence />
+        <div className="space-y-6">
+          <MarketIntelligence />
+          <SkillsGapAnalysis />
+        </div>
       </div>
     </div>
   )
