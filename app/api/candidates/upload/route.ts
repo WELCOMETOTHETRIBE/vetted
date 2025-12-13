@@ -149,28 +149,74 @@ export async function POST(req: Request) {
           }
         }
 
-        // Check for missing fields that could benefit from AI enrichment
-        const hasMissingFields = !candidateData["Current Company"] && 
-          !candidateData["Job title"] && 
-          !candidateData["Location"] &&
+        // Check for missing or incomplete fields that could benefit from AI enrichment
+        // Use AI enrichment if:
+        // 1. We have raw data (HTML or text)
+        // 2. AND we're missing critical fields OR have empty arrays that should have data
+        const hasRawData = !!(rawHtml || rawText)
+        const missingCriticalFields = !candidateData["Current Company"] || 
+          !candidateData["Job title"] || 
+          !candidateData["Location"] ||
           !candidateData["Total Years full time experience"]
+        
+        // Check if arrays are empty but should have data (based on raw data structure)
+        let hasEmptyArrays = false
+        if (candidateData["Raw Data"]) {
+          try {
+            const rawData = typeof candidateData["Raw Data"] === "string" 
+              ? JSON.parse(candidateData["Raw Data"]) 
+              : candidateData["Raw Data"]
+            
+            // If raw data has experience/education/skills but arrays are empty, we need AI enrichment
+            const hasExperienceInRaw = rawData.experience && rawData.experience.length > 0
+            const hasEducationInRaw = rawData.education && rawData.education.length > 0
+            const hasSkillsInRaw = rawData.skills && rawData.skills.length > 0
+            
+            const companiesEmpty = !candidateData["Companies"] || 
+              (Array.isArray(candidateData["Companies"]) && candidateData["Companies"].length === 0) ||
+              (typeof candidateData["Companies"] === "string" && (!candidateData["Companies"] || candidateData["Companies"] === "[]"))
+            
+            const universitiesEmpty = !candidateData["Universities"] || 
+              (Array.isArray(candidateData["Universities"]) && candidateData["Universities"].length === 0) ||
+              (typeof candidateData["Universities"] === "string" && (!candidateData["Universities"] || candidateData["Universities"] === "[]"))
+            
+            if ((hasExperienceInRaw && companiesEmpty) || 
+                (hasEducationInRaw && universitiesEmpty) ||
+                (hasSkillsInRaw && !candidateData["Skills Count"])) {
+              hasEmptyArrays = true
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
 
-        // Use AI enrichment if we have raw data and missing fields
+        // Use AI enrichment if we have raw data and (missing fields OR empty arrays)
         let enrichedData = candidateData
-        if ((rawHtml || rawText) && hasMissingFields) {
-          console.log(`Attempting AI enrichment for ${fullName || linkedinUrl}`)
+        if (hasRawData && (missingCriticalFields || hasEmptyArrays)) {
+          console.log(`[AI ENRICHMENT] Attempting comprehensive AI enrichment for ${fullName || linkedinUrl}`)
+          console.log(`  - Has raw data: ${hasRawData}`)
+          console.log(`  - Missing critical fields: ${missingCriticalFields}`)
+          console.log(`  - Has empty arrays: ${hasEmptyArrays}`)
           try {
             const aiEnriched = await enrichCandidateDataWithAI(candidateData, rawHtml, rawText)
             if (aiEnriched) {
-              console.log(`AI enrichment successful for ${fullName || linkedinUrl}, enriched fields:`, Object.keys(aiEnriched))
+              console.log(`[AI ENRICHMENT] Success for ${fullName || linkedinUrl}`)
+              console.log(`  - Enriched fields:`, Object.keys(aiEnriched))
+              if (aiEnriched.corrections && aiEnriched.corrections.length > 0) {
+                console.log(`  - Corrections applied: ${aiEnriched.corrections.length}`)
+              }
               enrichedData = mergeEnrichedData(candidateData, aiEnriched)
             } else {
-              console.log(`AI enrichment returned no data for ${fullName || linkedinUrl}`)
+              console.log(`[AI ENRICHMENT] Returned no data for ${fullName || linkedinUrl}`)
             }
           } catch (error) {
-            console.error(`AI enrichment failed for ${fullName || linkedinUrl}:`, error)
+            console.error(`[AI ENRICHMENT] Failed for ${fullName || linkedinUrl}:`, error)
             // Continue with original data if enrichment fails
           }
+        } else if (hasRawData) {
+          console.log(`[AI ENRICHMENT] Skipped for ${fullName || linkedinUrl} - data appears complete`)
+        } else {
+          console.log(`[AI ENRICHMENT] Skipped for ${fullName || linkedinUrl} - no raw data available`)
         }
 
         // Check if candidate already exists
