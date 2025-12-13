@@ -216,6 +216,8 @@ export async function POST(req: Request) {
       // Collect matching candidates and jobs
       const matchingCandidates: typeof allCandidates = []
       const matchingJobs: typeof allJobs = []
+      let candidatesAssigned = 0
+      let jobsAssigned = 0
 
       // Find matching candidates
       for (const candidate of allCandidates) {
