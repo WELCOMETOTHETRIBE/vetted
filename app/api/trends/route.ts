@@ -219,10 +219,20 @@ Return JSON array with one highlight per article in the same order.`,
         const content = response.choices[0]?.message?.content
         if (content) {
           try {
-            const highlights = JSON.parse(content)
+            // Try to extract JSON from markdown code blocks
+            let jsonContent = content.trim()
+            if (jsonContent.startsWith("```json")) {
+              jsonContent = jsonContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
+            } else if (jsonContent.startsWith("```")) {
+              jsonContent = jsonContent.replace(/```\n?/g, "").trim()
+            }
+            
+            const highlights = JSON.parse(jsonContent)
             if (Array.isArray(highlights) && highlights.length === batch.length) {
               for (let j = 0; j < batch.length; j++) {
-                batch[j].highlight = String(highlights[j] || "")
+                const highlight = String(highlights[j] || "").trim()
+                // Remove quotes if wrapped
+                batch[j].highlight = highlight.replace(/^["']|["']$/g, "")
               }
             }
           } catch {
@@ -230,10 +240,28 @@ Return JSON array with one highlight per article in the same order.`,
             const lines = content
               .split("\n")
               .map((line) => line.trim())
-              .filter((line) => line && !line.startsWith("Article"))
+              .filter((line) => {
+                const trimmed = line.trim()
+                return (
+                  trimmed &&
+                  !trimmed.startsWith("Article") &&
+                  !trimmed.startsWith("```") &&
+                  !trimmed.startsWith("[") &&
+                  !trimmed.startsWith("{") &&
+                  trimmed.length > 10 // Filter out very short lines
+                )
+              })
             if (lines.length >= batch.length) {
               for (let j = 0; j < batch.length; j++) {
-                batch[j].highlight = lines[j] || ""
+                let highlight = lines[j] || ""
+                // Clean up quotes and formatting
+                highlight = highlight.replace(/^["',\[\]]+|["',\[\]]+$/g, "").trim()
+                batch[j].highlight = highlight
+              }
+            } else {
+              // Fallback: use raw excerpt as highlight if parsing fails
+              for (let j = 0; j < batch.length; j++) {
+                batch[j].highlight = batch[j].raw_excerpt.substring(0, 150) + "..."
               }
             }
           }
