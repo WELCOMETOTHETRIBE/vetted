@@ -15,47 +15,68 @@ interface TrendItem {
 interface TrendsResponse {
   items: TrendItem[]
   last_updated: string
+  cached?: boolean
+  stale?: boolean
+  warning?: string
 }
 
 export default function TechTrends() {
   const [trends, setTrends] = useState<TrendItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchTrends = async (forceRefresh = false) => {
+    try {
+      if (!refreshing) {
+        setLoading(true)
+      }
+      setError(null)
+      console.log("[TechTrends] Fetching trends from /api/trends", forceRefresh ? "(force refresh)" : "")
+      const url = forceRefresh ? "/api/trends?refresh=true" : "/api/trends"
+      const response = await fetch(url, {
+        cache: forceRefresh ? "no-store" : "default",
+      })
+      
+      console.log("[TechTrends] Response status:", response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[TechTrends] API error:", errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch trends`)
+      }
+      
+      const data: TrendsResponse = await response.json()
+      console.log("[TechTrends] Received data:", {
+        itemsCount: data.items?.length || 0,
+        lastUpdated: data.last_updated,
+        cached: data.cached,
+        stale: data.stale,
+      })
+      
+      // Always update trends if we got data, even if stale
+      if (data.items && data.items.length > 0) {
+        setTrends(data.items)
+        setError(null)
+      } else if (trends.length === 0) {
+        // Only show error if we don't have any trends cached
+        setError("No trends available")
+      }
+    } catch (err: any) {
+      console.error("[TechTrends] Failed to fetch trends:", err)
+      // Don't clear existing trends on error - keep showing what we have
+      if (trends.length === 0) {
+        setError(err.message || "Unable to load trends. Check console for details.")
+      }
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchTrends = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        console.log("[TechTrends] Fetching trends from /api/trends")
-        const response = await fetch("/api/trends")
-        
-        console.log("[TechTrends] Response status:", response.status)
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          console.error("[TechTrends] API error:", errorData)
-          throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch trends`)
-        }
-        
-        const data: TrendsResponse = await response.json()
-        console.log("[TechTrends] Received data:", {
-          itemsCount: data.items?.length || 0,
-          lastUpdated: data.last_updated,
-        })
-        
-        setTrends(data.items || [])
-        setError(null)
-      } catch (err: any) {
-        console.error("[TechTrends] Failed to fetch trends:", err)
-        setError(err.message || "Unable to load trends. Check console for details.")
-        setTrends([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchTrends()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const formatTimeAgo = (dateString: string | null) => {
@@ -145,9 +166,22 @@ export default function TechTrends() {
     <div className="bg-white rounded-lg border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900">Tech Trends</h3>
-        <span className="text-xs text-gray-500">
-          {formatTimeAgo(trends[0]?.published_at)}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setRefreshing(true)
+              fetchTrends(true)
+            }}
+            disabled={refreshing}
+            className="text-xs text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh trends"
+          >
+            {refreshing ? "Refreshing..." : "🔄 Refresh"}
+          </button>
+          <span className="text-xs text-gray-500">
+            {formatTimeAgo(trends[0]?.published_at)}
+          </span>
+        </div>
       </div>
       
       <div className="space-y-4">

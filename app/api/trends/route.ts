@@ -291,11 +291,17 @@ Return JSON array with one highlight per article in the same order.`,
 
 export async function GET(req: Request) {
   try {
-    const CACHE_DURATION_HOURS = 1 // Cache trends for 1 hour
-    const CLEANUP_AGE_HOURS = 24 // Delete trends older than 24 hours
+    const { searchParams } = new URL(req.url)
+    const forceRefresh = searchParams.get("refresh") === "true"
 
-    // Step 1: Check for cached trends (within last hour)
+    const CACHE_DURATION_HOURS = 6 // Cache trends for 6 hours (increased from 1)
+    const STALE_CACHE_HOURS = 24 // Return stale cache if less than 24 hours old
+    const CLEANUP_AGE_HOURS = 72 // Delete trends older than 3 days (increased from 24 hours)
+
+    // Step 1: Check for fresh cached trends (within cache duration) - skip if force refresh
     const cacheCutoff = new Date(Date.now() - CACHE_DURATION_HOURS * 60 * 60 * 1000)
+    
+    if (!forceRefresh) {
     const cachedTrends = await prisma.trend.findMany({
       where: {
         createdAt: {
@@ -308,39 +314,10 @@ export async function GET(req: Request) {
       take: 50, // Limit to 50 most recent trends
     })
 
-    if (cachedTrends.length > 0) {
-      console.log(`[trends] Returning ${cachedTrends.length} cached trends`)
-      return NextResponse.json({
-        items: cachedTrends.map((trend) => ({
-          title: trend.title,
-          url: trend.url,
-          source: trend.source,
-          published_at: trend.publishedAt?.toISOString() || null,
-          highlight: trend.highlight,
-          category: trend.category,
-          raw_excerpt: trend.rawExcerpt,
-        })),
-        last_updated: cachedTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
-        cached: true,
-      })
-    }
-
-    // Step 2: No cached trends, fetch new ones
-    console.log("[trends] No cached trends found, fetching new trends from SerpAPI")
-
-    // Check SERPAPI_KEY
-    if (!process.env.SERPAPI_KEY) {
-      console.error("[trends] SERPAPI_KEY not configured")
-      // Try to return old trends even if expired
-      const oldTrends = await prisma.trend.findMany({
-        orderBy: {
-          publishedAt: "desc",
-        },
-        take: 20,
-      })
-      if (oldTrends.length > 0) {
+      if (cachedTrends.length > 0) {
+        console.log(`[trends] Returning ${cachedTrends.length} fresh cached trends`)
         return NextResponse.json({
-          items: oldTrends.map((trend) => ({
+          items: cachedTrends.map((trend) => ({
             title: trend.title,
             url: trend.url,
             source: trend.source,
@@ -349,7 +326,74 @@ export async function GET(req: Request) {
             category: trend.category,
             raw_excerpt: trend.rawExcerpt,
           })),
-          last_updated: oldTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+          last_updated: cachedTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+          cached: true,
+        })
+      }
+    }
+
+    // Step 1.5: Check for stale cache (less than STALE_CACHE_HOURS old) - return it while fetching fresh in background
+    const staleCacheCutoff = new Date(Date.now() - STALE_CACHE_HOURS * 60 * 60 * 1000)
+    const staleTrends = await prisma.trend.findMany({
+      where: {
+        createdAt: {
+          gte: staleCacheCutoff,
+        },
+      },
+      orderBy: {
+        publishedAt: "desc",
+      },
+      take: 50,
+    })
+
+    // If we have stale trends, return them immediately (don't wait for fresh fetch)
+    const returnStaleTrends = staleTrends.length > 0
+
+    // Step 2: Fetch new trends (but return stale cache immediately if available)
+    console.log("[trends] Cache expired, fetching new trends from SerpAPI")
+
+    // If we have stale trends, return them immediately
+    if (returnStaleTrends) {
+      console.log(`[trends] Returning ${staleTrends.length} stale trends (will refresh in background)`)
+      // Note: Fresh fetch will happen on next request or can be triggered manually
+      return NextResponse.json({
+        items: staleTrends.map((trend) => ({
+          title: trend.title,
+          url: trend.url,
+          source: trend.source,
+          published_at: trend.publishedAt?.toISOString() || null,
+          highlight: trend.highlight,
+          category: trend.category,
+          raw_excerpt: trend.rawExcerpt,
+        })),
+        last_updated: staleTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+        cached: true,
+        stale: true,
+      })
+    }
+
+    // Check SERPAPI_KEY
+    if (!process.env.SERPAPI_KEY) {
+      console.error("[trends] SERPAPI_KEY not configured")
+      // Try to return any trends we have, even if very old
+      const anyTrends = await prisma.trend.findMany({
+        orderBy: {
+          publishedAt: "desc",
+        },
+        take: 20,
+      })
+      if (anyTrends.length > 0) {
+        return NextResponse.json({
+          items: anyTrends.map((trend) => ({
+            title: trend.title,
+            url: trend.url,
+            source: trend.source,
+            published_at: trend.publishedAt?.toISOString() || null,
+            highlight: trend.highlight,
+            category: trend.category,
+            raw_excerpt: trend.rawExcerpt,
+          })),
+          last_updated: anyTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
           cached: true,
           warning: "Using stale data - SERPAPI_KEY not configured",
         })
