@@ -283,7 +283,7 @@ export async function getUserWorkflows(userId: string): Promise<EngagementWorkfl
     orderBy: { createdAt: "desc" },
   })
 
-  return workflows.map((w) => ({
+  return workflows.map((w: { id: string; name: string; description: string | null; steps: string; isActive: boolean; createdAt: Date; updatedAt: Date }) => ({
     id: w.id,
     name: w.name,
     description: w.description || undefined,
