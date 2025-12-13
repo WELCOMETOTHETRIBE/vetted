@@ -39,14 +39,19 @@ interface InterviewPrepProps {
   jobTitle: string
 }
 
+type TaskType = "interview" | "resume" | "cover-letter"
+
 export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [taskType, setTaskType] = useState<TaskType>("interview")
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false)
   const [interviewData, setInterviewData] = useState<InterviewPrepData | null>(null)
+  const [resumeData, setResumeData] = useState<any>(null)
+  const [coverLetterData, setCoverLetterData] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -96,23 +101,52 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
     setIsLoading(true)
     setError(null)
     setInterviewData(null)
+    setResumeData(null)
+    setCoverLetterData(null)
 
     try {
-      const response = await fetch(`/api/jobs/${jobId}/interview-prep`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidateId: selectedCandidate.id }),
-      })
+      let response: Response
+      let data: any
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to generate interview prep")
+      if (taskType === "interview") {
+        response = await fetch(`/api/jobs/${jobId}/interview-prep`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidateId: selectedCandidate.id }),
+        })
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to generate interview prep")
+        }
+        data = await response.json()
+        setInterviewData(data)
+      } else if (taskType === "resume") {
+        response = await fetch(`/api/jobs/${jobId}/resume-update`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidateId: selectedCandidate.id }),
+        })
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to generate resume updates")
+        }
+        data = await response.json()
+        setResumeData(data)
+      } else if (taskType === "cover-letter") {
+        response = await fetch(`/api/jobs/${jobId}/cover-letter-candidate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidateId: selectedCandidate.id }),
+        })
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to generate cover letter")
+        }
+        data = await response.json()
+        setCoverLetterData(data.coverLetter)
       }
-
-      const data = await response.json()
-      setInterviewData(data)
     } catch (err: any) {
-      setError(err.message || "An error occurred while generating interview prep")
+      setError(err.message || `An error occurred while generating ${taskType === "interview" ? "interview prep" : taskType === "resume" ? "resume updates" : "cover letter"}`)
     } finally {
       setIsLoading(false)
     }
@@ -211,23 +245,83 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
           </div>
         </div>
 
+        {/* Task Type Selector */}
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-900 mb-2">
+            Select Task Type
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => {
+                setTaskType("interview")
+                setInterviewData(null)
+                setResumeData(null)
+                setCoverLetterData(null)
+              }}
+              className={`px-4 py-3 rounded-lg border-2 transition-all font-medium text-sm ${
+                taskType === "interview"
+                  ? "bg-orange-600 text-white border-orange-600 shadow-md"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-orange-300 hover:bg-orange-50"
+              }`}
+            >
+              🎯 Interview Prep
+            </button>
+            <button
+              onClick={() => {
+                setTaskType("resume")
+                setInterviewData(null)
+                setResumeData(null)
+                setCoverLetterData(null)
+              }}
+              className={`px-4 py-3 rounded-lg border-2 transition-all font-medium text-sm ${
+                taskType === "resume"
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50"
+              }`}
+            >
+              📄 Resume Updates
+            </button>
+            <button
+              onClick={() => {
+                setTaskType("cover-letter")
+                setInterviewData(null)
+                setResumeData(null)
+                setCoverLetterData(null)
+              }}
+              className={`px-4 py-3 rounded-lg border-2 transition-all font-medium text-sm ${
+                taskType === "cover-letter"
+                  ? "bg-green-600 text-white border-green-600 shadow-md"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-green-300 hover:bg-green-50"
+              }`}
+            >
+              ✉️ Cover Letter
+            </button>
+          </div>
+        </div>
+
         {/* Generate Button */}
         <button
           onClick={handleGenerate}
           disabled={!selectedCandidate || isLoading}
-          className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2 shadow-sm"
+          className={`w-full px-6 py-3 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2 shadow-sm ${
+            taskType === "interview"
+              ? "bg-orange-600 hover:bg-orange-700"
+              : taskType === "resume"
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
         >
           {isLoading ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Generating Interview Prep...
+              Generating {taskType === "interview" ? "Interview Prep" : taskType === "resume" ? "Resume Updates" : "Cover Letter"}...
             </>
           ) : (
             <>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Generate Interview Prep
+              Generate {taskType === "interview" ? "Interview Prep" : taskType === "resume" ? "Resume Updates" : "Cover Letter"}
             </>
           )}
         </button>
@@ -239,8 +333,79 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
           </div>
         )}
 
+        {/* Resume Updates Results */}
+        {resumeData && taskType === "resume" && (
+          <div className="mt-6 space-y-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-blue-600">📄</span>
+                Resume Updates & Modifications for {selectedCandidate?.fullName}
+              </h3>
+              <div className="prose max-w-none">
+                {resumeData.suggestions && resumeData.suggestions.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-3">Suggested Updates</h4>
+                    <ul className="space-y-2">
+                      {resumeData.suggestions.map((suggestion: string, i: number) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <span className="text-blue-500 mt-1.5 flex-shrink-0">•</span>
+                          <p className="text-gray-700 leading-relaxed">{suggestion}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {resumeData.updatedSections && (
+                  <div className="space-y-4">
+                    {Object.entries(resumeData.updatedSections).map(([section, content]: [string, any]) => (
+                      <div key={section} className="border-t border-gray-200 pt-4">
+                        <h4 className="font-semibold text-gray-900 mb-2 capitalize">{section.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                        <div className="text-gray-700 whitespace-pre-wrap">{typeof content === 'string' ? content : JSON.stringify(content, null, 2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {resumeData.summary && (
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Summary</h4>
+                    <p className="text-gray-700">{resumeData.summary}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cover Letter Results */}
+        {coverLetterData && taskType === "cover-letter" && (
+          <div className="mt-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <span className="text-green-600">✉️</span>
+                  Cover Letter for {selectedCandidate?.fullName}
+                </h3>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(coverLetterData)
+                    alert("Cover letter copied to clipboard!")
+                  }}
+                  className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="prose max-w-none">
+                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {coverLetterData}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Interview Prep Results */}
-        {interviewData && (
+        {interviewData && taskType === "interview" && (
           <div className="mt-6 space-y-6">
             {/* Header */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
