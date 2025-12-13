@@ -466,7 +466,7 @@ export default function TechTrends() {
       <div className="mt-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900">
-            {activeTab === "trends" ? "Tech Trends" : "Startups to Invest In"}
+            {activeTab === "trends" ? "Tech Trends" : "Startups to Watch"}
           </h3>
           <div className="flex items-center gap-2">
             <button
