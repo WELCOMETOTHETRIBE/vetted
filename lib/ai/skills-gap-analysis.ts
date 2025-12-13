@@ -360,13 +360,68 @@ export async function getSkillsGapAnalysis(): Promise<SkillsGapAnalysis> {
       }
     })
 
+  // Calculate skill trends (compare current gaps with historical data)
+  // For now, we'll simulate trends by comparing current vs a snapshot from 30 days ago
+  // In production, you'd store historical snapshots in a database
+  const skillTrends: SkillTrend[] = []
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+  // Get historical job counts (jobs created 30+ days ago)
+  const historicalJobs = await prisma.job.findMany({
+    where: {
+      isActive: true,
+      createdAt: { lte: thirtyDaysAgo },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      requirements: true,
+    },
+  })
+
+  // Calculate historical skill gaps
+  const historicalJobSkills = new Map<string, number>()
+  for (const job of historicalJobs) {
+    const skills = extractJobSkills(job)
+    for (const skill of skills) {
+      historicalJobSkills.set(skill, (historicalJobSkills.get(skill) || 0) + 1)
+    }
+  }
+
+  // Compare current vs historical
+  for (const gap of skillGaps.slice(0, 20)) {
+    const skillLower = gap.skill.toLowerCase()
+    const historicalCount = historicalJobSkills.get(skillLower) || 0
+    const currentCount = gap.requiredCount
+
+    // Calculate trend
+    let trend: "improving" | "worsening" | "stable"
+    const changePercentage =
+      historicalCount > 0 ? ((currentCount - historicalCount) / historicalCount) * 100 : 0
+
+    if (changePercentage > 10) trend = "worsening"
+    else if (changePercentage < -10) trend = "improving"
+    else trend = "stable"
+
+    skillTrends.push({
+      skill: gap.skill,
+      currentGap: gap.gap,
+      previousGap: historicalCount - gap.availableCount, // Approximate previous gap
+      trend,
+      changePercentage: Math.round(changePercentage * 10) / 10,
+      period: "30 days",
+    })
+  }
+
   console.log(
-    `[skills-gap-analysis] Analysis complete: ${skillGaps.length} skill gaps identified, overall gap score: ${overallGapScore}`
+    `[skills-gap-analysis] Analysis complete: ${skillGaps.length} skill gaps identified, ${skillTrends.length} trends tracked, overall gap score: ${overallGapScore}`
   )
 
   return {
     skillGaps: skillGaps.slice(0, 50), // Top 50 gaps
     upskillingOpportunities,
+    skillTrends,
     overallGapScore,
     lastUpdated: new Date(),
   }
