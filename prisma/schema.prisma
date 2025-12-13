@@ -672,3 +672,22 @@ model Engagement {
   @@index([scheduledAt])
   @@index([type])
 }
+
+// Tech Trends
+model Trend {
+  id           String   @id @default(cuid())
+  title        String
+  url          String   @unique
+  source       String
+  publishedAt  DateTime?
+  highlight   String   @db.Text
+  category    String
+  rawExcerpt  String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@index([url])
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getOpenAIClient, isOpenAIConfigured } from "@/lib/openai"
+import { prisma } from "@/lib/prisma"
 
 /**
  * Tech Trends API endpoint.
@@ -22,6 +23,8 @@ interface TrendItem {
 interface TrendsResponse {
   items: TrendItem[]
   last_updated: string
+  cached?: boolean
+  warning?: string
 }
 
 // Predefined search queries for tech trends
@@ -288,9 +291,69 @@ Return JSON array with one highlight per article in the same order.`,
 
 export async function GET(req: Request) {
   try {
-    // Check SERPAPI_KEY first
+    const CACHE_DURATION_HOURS = 1 // Cache trends for 1 hour
+    const CLEANUP_AGE_HOURS = 24 // Delete trends older than 24 hours
+
+    // Step 1: Check for cached trends (within last hour)
+    const cacheCutoff = new Date(Date.now() - CACHE_DURATION_HOURS * 60 * 60 * 1000)
+    const cachedTrends = await prisma.trend.findMany({
+      where: {
+        createdAt: {
+          gte: cacheCutoff,
+        },
+      },
+      orderBy: {
+        publishedAt: "desc",
+      },
+      take: 50, // Limit to 50 most recent trends
+    })
+
+    if (cachedTrends.length > 0) {
+      console.log(`[trends] Returning ${cachedTrends.length} cached trends`)
+      return NextResponse.json({
+        items: cachedTrends.map((trend) => ({
+          title: trend.title,
+          url: trend.url,
+          source: trend.source,
+          published_at: trend.publishedAt?.toISOString() || null,
+          highlight: trend.highlight,
+          category: trend.category,
+          raw_excerpt: trend.rawExcerpt,
+        })),
+        last_updated: cachedTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+        cached: true,
+      })
+    }
+
+    // Step 2: No cached trends, fetch new ones
+    console.log("[trends] No cached trends found, fetching new trends from SerpAPI")
+
+    // Check SERPAPI_KEY
     if (!process.env.SERPAPI_KEY) {
       console.error("[trends] SERPAPI_KEY not configured")
+      // Try to return old trends even if expired
+      const oldTrends = await prisma.trend.findMany({
+        orderBy: {
+          publishedAt: "desc",
+        },
+        take: 20,
+      })
+      if (oldTrends.length > 0) {
+        return NextResponse.json({
+          items: oldTrends.map((trend) => ({
+            title: trend.title,
+            url: trend.url,
+            source: trend.source,
+            published_at: trend.publishedAt?.toISOString() || null,
+            highlight: trend.highlight,
+            category: trend.category,
+            raw_excerpt: trend.rawExcerpt,
+          })),
+          last_updated: oldTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+          cached: true,
+          warning: "Using stale data - SERPAPI_KEY not configured",
+        })
+      }
       return NextResponse.json(
         {
           error: "SERPAPI_KEY not configured",
@@ -301,12 +364,34 @@ export async function GET(req: Request) {
       )
     }
 
-    // Step 1: Fetch trends from SerpAPI
-    console.log("[trends] Fetching trends from SerpAPI")
+    // Step 3: Fetch trends from SerpAPI
     const rawItems = await fetchTrendsFromSerpAPI()
 
     if (rawItems.length === 0) {
-      console.warn("[trends] No trends fetched, returning empty response")
+      console.warn("[trends] No trends fetched, checking for old cached trends")
+      // Try to return old trends even if expired
+      const oldTrends = await prisma.trend.findMany({
+        orderBy: {
+          publishedAt: "desc",
+        },
+        take: 20,
+      })
+      if (oldTrends.length > 0) {
+        return NextResponse.json({
+          items: oldTrends.map((trend) => ({
+            title: trend.title,
+            url: trend.url,
+            source: trend.source,
+            published_at: trend.publishedAt?.toISOString() || null,
+            highlight: trend.highlight,
+            category: trend.category,
+            raw_excerpt: trend.rawExcerpt,
+          })),
+          last_updated: oldTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+          cached: true,
+          warning: "Using stale data - API fetch failed",
+        })
+      }
       return NextResponse.json({
         items: [],
         last_updated: new Date().toISOString(),
@@ -317,21 +402,96 @@ export async function GET(req: Request) {
       })
     }
 
-    // Step 2: Normalize results
+    // Step 4: Normalize results
     console.log(`[trends] Normalizing ${rawItems.length} raw items`)
     const normalizedItems = normalizeResults(rawItems)
 
-    // Step 3: Enrich with AI highlights
+    // Step 5: Enrich with AI highlights
     console.log(`[trends] Enriching ${normalizedItems.length} items with AI`)
     const enrichedItems = await enrichWithAI(normalizedItems)
 
-    // Step 4: Return response
+    // Step 6: Store trends in database
+    console.log(`[trends] Storing ${enrichedItems.length} trends in database`)
+    const now = new Date()
+    for (const item of enrichedItems) {
+      try {
+        await prisma.trend.upsert({
+          where: {
+            url: item.url,
+          },
+          update: {
+            title: item.title,
+            source: item.source,
+            publishedAt: item.published_at ? new Date(item.published_at) : null,
+            highlight: item.highlight,
+            category: item.category,
+            rawExcerpt: item.raw_excerpt,
+            updatedAt: now,
+          },
+          create: {
+            title: item.title,
+            url: item.url,
+            source: item.source,
+            publishedAt: item.published_at ? new Date(item.published_at) : null,
+            highlight: item.highlight,
+            category: item.category,
+            rawExcerpt: item.raw_excerpt,
+          },
+        })
+      } catch (error: any) {
+        // Skip duplicates or other errors, continue with next item
+        console.warn(`[trends] Error storing trend ${item.url}:`, error.message)
+      }
+    }
+
+    // Step 7: Clean up old trends (older than 24 hours)
+    const cleanupCutoff = new Date(Date.now() - CLEANUP_AGE_HOURS * 60 * 60 * 1000)
+    const deleteResult = await prisma.trend.deleteMany({
+      where: {
+        createdAt: {
+          lt: cleanupCutoff,
+        },
+      },
+    })
+    if (deleteResult.count > 0) {
+      console.log(`[trends] Cleaned up ${deleteResult.count} old trends`)
+    }
+
+    // Step 8: Return response
     return NextResponse.json({
       items: enrichedItems,
-      last_updated: new Date().toISOString(),
+      last_updated: now.toISOString(),
+      cached: false,
     })
   } catch (error: any) {
     console.error("[trends] Error:", error)
+    // Try to return cached trends on error
+    try {
+      const cachedTrends = await prisma.trend.findMany({
+        orderBy: {
+          publishedAt: "desc",
+        },
+        take: 20,
+      })
+      if (cachedTrends.length > 0) {
+        return NextResponse.json({
+          items: cachedTrends.map((trend) => ({
+            title: trend.title,
+            url: trend.url,
+            source: trend.source,
+            published_at: trend.publishedAt?.toISOString() || null,
+            highlight: trend.highlight,
+            category: trend.category,
+            raw_excerpt: trend.rawExcerpt,
+          })),
+          last_updated: cachedTrends[0]?.createdAt.toISOString() || new Date().toISOString(),
+          cached: true,
+          warning: "Using cached data due to error",
+        })
+      }
+    } catch (cacheError) {
+      console.error("[trends] Error fetching cached trends:", cacheError)
+    }
     return NextResponse.json(
       {
         error: "Failed to fetch trends",
