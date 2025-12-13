@@ -174,27 +174,27 @@ export async function POST(req: Request) {
             console.log(`  - Raw HTML length: ${profileDocument.raw_html?.length || 0} chars`)
             
             // Process the profile document
-            const processed = profileProcessor.processProfileDocument(profileDocument)
+            const processedResult = profileProcessor.processProfileDocument(profileDocument)
             
             console.log(`[STEP 2] ProfileProcessor Results:`)
-            if (processed) {
-              console.log(`  - Full Name: ${processed["Full Name"] || "NOT FOUND"}`)
-              console.log(`  - Job Title: ${processed["Job title"] || "NOT FOUND"}`)
-              console.log(`  - Current Company: ${processed["Current Company"] || "NOT FOUND"}`)
-              console.log(`  - Location: ${processed["Location"] || "NOT FOUND"}`)
-              console.log(`  - Total Years Experience: ${processed["Total Years full time experience"] || "NOT FOUND"}`)
-              console.log(`  - Companies: ${processed["Companies"] ? JSON.stringify(processed["Companies"]) : "NOT FOUND"}`)
-              console.log(`  - Universities: ${processed["Universities"] ? JSON.stringify(processed["Universities"]) : "NOT FOUND"}`)
-              console.log(`  - Fields of Study: ${processed["Fields of Study"] ? JSON.stringify(processed["Fields of Study"]) : "NOT FOUND"}`)
-              console.log(`  - Certifications: ${processed["Certifications"] || "NOT FOUND"}`)
-              console.log(`  - Languages: ${processed["Languages"] || "NOT FOUND"}`)
-              console.log(`  - Projects: ${processed["Projects"] || "NOT FOUND"}`)
-              console.log(`  - Publications: ${processed["Publications"] || "NOT FOUND"}`)
-              console.log(`  - All processed fields:`, Object.keys(processed))
-              console.log(`  - Raw Data included: ${!!processed["Raw Data"]}`)
-              if (processed["Raw Data"]) {
+            if (processedResult) {
+              console.log(`  - Full Name: ${processedResult["Full Name"] || "NOT FOUND"}`)
+              console.log(`  - Job Title: ${processedResult["Job title"] || "NOT FOUND"}`)
+              console.log(`  - Current Company: ${processedResult["Current Company"] || "NOT FOUND"}`)
+              console.log(`  - Location: ${processedResult["Location"] || "NOT FOUND"}`)
+              console.log(`  - Total Years Experience: ${processedResult["Total Years full time experience"] || "NOT FOUND"}`)
+              console.log(`  - Companies: ${processedResult["Companies"] ? JSON.stringify(processedResult["Companies"]) : "NOT FOUND"}`)
+              console.log(`  - Universities: ${processedResult["Universities"] ? JSON.stringify(processedResult["Universities"]) : "NOT FOUND"}`)
+              console.log(`  - Fields of Study: ${processedResult["Fields of Study"] ? JSON.stringify(processedResult["Fields of Study"]) : "NOT FOUND"}`)
+              console.log(`  - Certifications: ${processedResult["Certifications"] || "NOT FOUND"}`)
+              console.log(`  - Languages: ${processedResult["Languages"] || "NOT FOUND"}`)
+              console.log(`  - Projects: ${processedResult["Projects"] || "NOT FOUND"}`)
+              console.log(`  - Publications: ${processedResult["Publications"] || "NOT FOUND"}`)
+              console.log(`  - All processed fields:`, Object.keys(processedResult))
+              console.log(`  - Raw Data included: ${!!processedResult["Raw Data"]}`)
+              if (processedResult["Raw Data"]) {
                 try {
-                  const rawDataParsed = JSON.parse(processed["Raw Data"])
+                  const rawDataParsed = JSON.parse(processedResult["Raw Data"])
                   console.log(`  - Raw Data structure:`, {
                     hasPersonalInfo: !!rawDataParsed.personal_info,
                     hasExperience: !!rawDataParsed.experience,
@@ -211,9 +211,9 @@ export async function POST(req: Request) {
               console.log(`  - ProfileProcessor returned NULL (invalid profile)`)
             }
             
-            if (processed && processed["Full Name"]) {
+            if (processedResult && processedResult["Full Name"]) {
               // Use the processed data directly - it's already in the correct format
-              candidateData = processed
+              candidateData = processedResult
               console.log(`[STEP 3] Using processed data - SUCCESS`)
               console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             } else {
