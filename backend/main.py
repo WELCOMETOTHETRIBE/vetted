@@ -58,11 +58,15 @@ async def startup_event():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    
+    # Railway sets PORT env var, fallback to config
+    port = int(os.getenv("PORT", Config.API_PORT))
     
     uvicorn.run(
         "backend.main:app",
         host=Config.API_HOST,
-        port=Config.API_PORT,
-        reload=True
+        port=port,
+        reload=False  # Disable reload in production
     )
 
