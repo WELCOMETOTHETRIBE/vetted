@@ -152,9 +152,6 @@ export async function POST(req: Request) {
               }
             }
             
-            // Process the profile document
-            const processed = profileProcessor.processProfileDocument(profileDocument)
-            
             // Log what we extracted for debugging - COMPREHENSIVE
             console.log(`\n========== [LINKEDIN IMPORT] Processing ${profile.linkedin_url} ==========`)
             console.log(`[STEP 1] HTML Extraction Results:`)
