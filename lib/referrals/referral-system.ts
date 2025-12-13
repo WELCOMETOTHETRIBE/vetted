@@ -179,21 +179,21 @@ export async function getUserReferralStats(userId: string): Promise<ReferralStat
   })
 
   const totalReferrals = referrals.length
-  const pendingReferrals = referrals.filter((r) => r.status === "PENDING").length
-  const contactedReferrals = referrals.filter((r) => r.status === "CONTACTED").length
-  const interviewingReferrals = referrals.filter((r) => r.status === "INTERVIEWING").length
-  const hiredReferrals = referrals.filter((r) => r.status === "HIRED").length
-  const rejectedReferrals = referrals.filter((r) => r.status === "REJECTED").length
+  const pendingReferrals = referrals.filter((r: (typeof referrals)[number]) => r.status === "PENDING").length
+  const contactedReferrals = referrals.filter((r: (typeof referrals)[number]) => r.status === "CONTACTED").length
+  const interviewingReferrals = referrals.filter((r: (typeof referrals)[number]) => r.status === "INTERVIEWING").length
+  const hiredReferrals = referrals.filter((r: (typeof referrals)[number]) => r.status === "HIRED").length
+  const rejectedReferrals = referrals.filter((r: (typeof referrals)[number]) => r.status === "REJECTED").length
 
   const hireRate = totalReferrals > 0 ? (hiredReferrals / totalReferrals) * 100 : 0
 
   const totalRewards = referrals
-    .filter((r) => r.rewardStatus === "PAID")
-    .reduce((sum, r) => sum + (r.rewardAmount || 0), 0)
+    .filter((r: (typeof referrals)[number]) => r.rewardStatus === "PAID")
+    .reduce((sum: number, r: (typeof referrals)[number]) => sum + (r.rewardAmount || 0), 0)
 
   const pendingRewards = referrals
-    .filter((r) => r.rewardStatus === "APPROVED" || r.rewardStatus === "PENDING")
-    .reduce((sum, r) => sum + (r.rewardAmount || 0), 0)
+    .filter((r: (typeof referrals)[number]) => r.rewardStatus === "APPROVED" || r.rewardStatus === "PENDING")
+    .reduce((sum: number, r: (typeof referrals)[number]) => sum + (r.rewardAmount || 0), 0)
 
   return {
     totalReferrals,
