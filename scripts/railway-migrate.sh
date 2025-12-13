@@ -20,3 +20,4 @@ echo "✅ Database migrations completed!"
 # echo "🌱 Seeding database..."
 # npm run db:seed
 
+

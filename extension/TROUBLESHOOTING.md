@@ -108,3 +108,4 @@ Ensure all files are in the extension folder:
    - Check for errors
 3. Share the error messages for help
 
+

@@ -49,6 +49,19 @@ const Sidebar = ({ className = "" }: SidebarProps) => {
           <ul className="space-y-1">
             <li>
               <Link
+                href="/market"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  pathname === "/market"
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <span>📊</span>
+                <span>Market Intelligence</span>
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/help"
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-colors ${
                   pathname === "/help"

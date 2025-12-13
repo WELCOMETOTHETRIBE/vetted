@@ -70,3 +70,4 @@ if (fs.existsSync(path.join(prismaClientDir, 'client.js'))) {
   console.log('Skipping default.js creation - client.js not found (Prisma not generated yet)');
 }
 
+

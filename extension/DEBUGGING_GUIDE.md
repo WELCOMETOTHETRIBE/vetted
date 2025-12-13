@@ -158,3 +158,4 @@ When you click "Send to Vetted", you'll see logs for each step:
 4. **Test with 1 profile first** - Easier to debug
 5. **Check extension status** - Make sure it's enabled and not reloaded
 
+

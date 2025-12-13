@@ -46,3 +46,4 @@ echo ""
 echo "🎉 Setup complete! Your database is ready."
 echo "You can now try signing up at /auth/signup"
 
+

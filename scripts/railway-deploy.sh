@@ -17,3 +17,4 @@ npx prisma db push --accept-data-loss || {
 echo "✅ Migrations completed, starting server..."
 exec node server.js
 
+

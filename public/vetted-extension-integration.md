@@ -136,3 +136,4 @@ fetch('/api/candidates/upload', {
 3. **Extension Update**: Modify extension to send directly to Vetted API
 4. **Bulk Import**: Add CSV import functionality
 
+

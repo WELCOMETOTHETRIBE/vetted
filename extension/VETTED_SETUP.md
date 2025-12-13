@@ -141,3 +141,4 @@ After setting up:
 3. Verify profiles are searchable
 4. Update candidate statuses as needed
 
+
