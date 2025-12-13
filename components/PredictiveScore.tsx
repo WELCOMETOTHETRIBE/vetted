@@ -1,11 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface PredictiveScoreProps {
   candidateId: string
   jobId?: string
   onScoreCalculated?: (score: number) => void
+}
+
+interface Job {
+  id: string
+  title: string
+  company: {
+    name: string
+  }
 }
 
 interface ScoreResult {
@@ -28,6 +36,8 @@ export default function PredictiveScore({
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedJobId, setSelectedJobId] = useState<string>(jobId || "")
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loadingJobs, setLoadingJobs] = useState(false)
 
   const calculateScore = async () => {
     if (!selectedJobId) {
@@ -96,6 +106,25 @@ export default function PredictiveScore({
     return "Weak Fit"
   }
 
+  // Load jobs on mount
+  useEffect(() => {
+    const loadJobs = async () => {
+      setLoadingJobs(true)
+      try {
+        const response = await fetch("/api/jobs?limit=100")
+        if (response.ok) {
+          const data = await response.json()
+          setJobs(data.jobs || [])
+        }
+      } catch (err) {
+        console.error("Error loading jobs:", err)
+      } finally {
+        setLoadingJobs(false)
+      }
+    }
+    loadJobs()
+  }, [])
+
   return (
     <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
@@ -128,15 +157,39 @@ export default function PredictiveScore({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Job for Scoring
             </label>
-            <input
-              type="text"
-              value={selectedJobId}
-              onChange={(e) => setSelectedJobId(e.target.value)}
-              placeholder="Enter Job ID"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Enter the job ID to calculate success probability
+            {loadingJobs ? (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-500">
+                Loading jobs...
+              </div>
+            ) : jobs.length > 0 ? (
+              <select
+                value={selectedJobId}
+                onChange={(e) => setSelectedJobId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white"
+              >
+                <option value="">-- Select a job --</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.title} @ {job.company.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={selectedJobId}
+                  onChange={(e) => setSelectedJobId(e.target.value)}
+                  placeholder="Enter Job ID manually"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                />
+                <p className="text-xs text-gray-500">
+                  Or paste a job ID from the jobs page
+                </p>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              💡 Tip: Job IDs are shown on each job card and job detail page
             </p>
           </div>
 

@@ -136,6 +136,10 @@ const JobCard = ({ job }: JobCardProps) => {
 
         <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
           <div className="flex items-center gap-4 text-xs text-neutral-500">
+            <span className="flex items-center gap-1 font-mono text-xs bg-gray-100 px-2 py-1 rounded border border-gray-200" title="Job ID">
+              <span>🆔</span>
+              <span className="select-all">{job.id}</span>
+            </span>
             <span className="flex items-center gap-1">
               <span>👁️</span>
               <span>{job.views || 0} views</span>
