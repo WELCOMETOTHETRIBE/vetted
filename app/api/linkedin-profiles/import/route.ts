@@ -3,9 +3,6 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { readFile } from "fs/promises"
 import { join } from "path"
-import { createRequire } from "module"
-
-const require = createRequire(import.meta.url)
 
 /**
  * POST /api/linkedin-profiles/import
@@ -108,8 +105,9 @@ export async function POST(req: Request) {
             const profileDocument = buildProfileDocumentFromHTML(profile.html, profile.linkedin_url)
             
             // Step 2: Process using profileProcessor.js (like the extension does)
-            // Use require for CommonJS module
+            // Use require for CommonJS module (Next.js API routes run in Node.js context)
             const profileProcessorPath = join(process.cwd(), "lib", "profile-processor.js")
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const profileProcessor = require(profileProcessorPath)
             
             // Process the profile document
