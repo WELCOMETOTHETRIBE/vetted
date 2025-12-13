@@ -25,9 +25,19 @@ interface UpskillingOpportunity {
   priority: "high" | "medium" | "low"
 }
 
+interface SkillTrend {
+  skill: string
+  currentGap: number
+  previousGap: number
+  trend: "improving" | "worsening" | "stable"
+  changePercentage: number
+  period: string
+}
+
 interface SkillsGapAnalysis {
   skillGaps: SkillGap[]
   upskillingOpportunities: UpskillingOpportunity[]
+  skillTrends?: SkillTrend[]
   overallGapScore: number
   lastUpdated: string
 }
