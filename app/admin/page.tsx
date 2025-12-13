@@ -6,6 +6,8 @@ import AdminContent from "@/components/AdminContent"
 import PopulateJobsButton from "@/components/PopulateJobsButton"
 import AshbyScraperButton from "@/components/AshbyScraperButton"
 import MigrateButton from "@/components/MigrateButton"
+import SetupGroupsButton from "@/components/SetupGroupsButton"
+import LinkedInScraperButton from "@/components/LinkedInScraperButton"
 import Link from "next/link"
 
 async function getAdminData() {
@@ -93,6 +95,7 @@ export default async function AdminPage() {
             <MigrateButton />
             <PopulateJobsButton />
             <AshbyScraperButton />
+            <LinkedInScraperButton />
             <Link
               href="/candidates"
               className="px-5 py-2.5 bg-primary-700 text-white rounded-xl hover:bg-primary-800 font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
@@ -101,6 +104,7 @@ export default async function AdminPage() {
             </Link>
           </div>
         </div>
+        <SetupGroupsButton />
         <AdminContent initialData={adminData} />
       </div>
     </div>

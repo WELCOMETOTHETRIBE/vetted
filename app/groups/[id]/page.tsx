@@ -31,6 +31,42 @@ async function getGroup(groupId: string, userId: string) {
         },
         orderBy: { createdAt: "desc" },
       },
+      posts: {
+        where: { isActive: true },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              handle: true,
+            },
+          },
+          reactions: {
+            select: {
+              id: true,
+              userId: true,
+              type: true,
+            },
+          },
+          comments: {
+            where: { isActive: true },
+            select: { id: true },
+          },
+          reposts: {
+            select: { id: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
+      _count: {
+        select: {
+          memberships: true,
+          posts: true,
+          groupPosts: true,
+        },
+      },
     },
   })
 
@@ -74,9 +110,17 @@ export default async function GroupPage({
           {group.description && (
             <p className="text-gray-700 mb-4">{group.description}</p>
           )}
-          <p className="text-sm text-gray-600">
-            Created by {group.owner.name}
-          </p>
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <span>Created by {group.owner.name}</span>
+            {group._count && (
+              <>
+                <span>•</span>
+                <span>{group._count.memberships} member{group._count.memberships !== 1 ? "s" : ""}</span>
+                <span>•</span>
+                <span>{group._count.posts + group._count.groupPosts} post{(group._count.posts + group._count.groupPosts) !== 1 ? "s" : ""}</span>
+              </>
+            )}
+          </div>
         </div>
 
         {isMember ? (
@@ -97,35 +141,62 @@ export default async function GroupPage({
               }}
             />
             <div className="space-y-4">
-              {group.groupPosts.map((post: any) => (
-                <div
-                  key={post.id}
-                  className="bg-white rounded-lg border border-gray-200 p-6"
-                >
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white">
-                      {post.author.image ? (
-                        <img
-                          src={post.author.image}
-                          alt={post.author.name || "User"}
-                          className="w-full h-full rounded-full"
-                        />
-                      ) : (
-                        post.author.name?.charAt(0).toUpperCase() || "U"
-                      )}
+              {/* Show regular posts (includes candidate/job summaries) */}
+              {group.posts && group.posts.length > 0 && (
+                <>
+                  {group.posts.map((post: any) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUserId={session.user.id}
+                      onLike={async () => {}}
+                      onComment={async () => {}}
+                      onRepost={async () => {}}
+                    />
+                  ))}
+                </>
+              )}
+              
+              {/* Show group-specific posts */}
+              {group.groupPosts && group.groupPosts.length > 0 && (
+                <>
+                  {group.groupPosts.map((post: any) => (
+                    <div
+                      key={post.id}
+                      className="bg-white rounded-lg border border-gray-200 p-6"
+                    >
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white">
+                          {post.author.image ? (
+                            <img
+                              src={post.author.image}
+                              alt={post.author.name || "User"}
+                              className="w-full h-full rounded-full"
+                            />
+                          ) : (
+                            post.author.name?.charAt(0).toUpperCase() || "U"
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {post.author.name || "Anonymous"}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-gray-700 whitespace-pre-wrap">{post.content}</p>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {post.author.name || "Anonymous"}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(post.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-gray-700">{post.content}</p>
+                  ))}
+                </>
+              )}
+              
+              {(!group.posts || group.posts.length === 0) && (!group.groupPosts || group.groupPosts.length === 0) && (
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <p className="text-gray-600">No posts yet. Be the first to post!</p>
                 </div>
-              ))}
+              )}
             </div>
           </>
         ) : (
