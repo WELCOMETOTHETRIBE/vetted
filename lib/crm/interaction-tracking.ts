@@ -164,9 +164,9 @@ export async function calculateRelationshipHealth(
   const totalInteractions = engagements.length
 
   // Calculate response rate
-  const respondedEngagements = engagements.filter((e) => e.respondedAt !== null).length
+  const respondedEngagements = engagements.filter((e: (typeof engagements)[number]) => e.respondedAt !== null).length
   const sentEngagements = engagements.filter(
-    (e) => e.status === "SENT" || e.status === "DELIVERED" || e.status === "OPENED" || e.status === "CLICKED" || e.status === "RESPONDED"
+    (e: (typeof engagements)[number]) => e.status === "SENT" || e.status === "DELIVERED" || e.status === "OPENED" || e.status === "CLICKED" || e.status === "RESPONDED"
   ).length
   const responseRate = sentEngagements > 0 ? (respondedEngagements / sentEngagements) * 100 : 0
 
@@ -273,7 +273,7 @@ export async function calculateRelationshipHealth(
   }
 
   // Factor 4: Engagement quality (opened/clicked)
-  const openedCount = engagements.filter((e) => e.openedAt !== null).length
+  const openedCount = engagements.filter((e: (typeof engagements)[number]) => e.openedAt !== null).length
   const openedRate = totalInteractions > 0 ? (openedCount / totalInteractions) * 100 : 0
 
   if (openedRate > 50) {
