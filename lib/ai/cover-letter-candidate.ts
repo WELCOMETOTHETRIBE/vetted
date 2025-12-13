@@ -40,6 +40,27 @@ export async function generateCoverLetterForCandidate(
       throw new Error("Job not found")
     }
 
+    // Safely parse rawData to extract summary
+    let candidateSummary = candidate.aiSummary || "No summary available"
+    if (!candidate.aiSummary && candidate.rawData) {
+      try {
+        // Limit rawData size to prevent parsing issues with very large JSON
+        const rawDataToParse = candidate.rawData.length > 100000 
+          ? candidate.rawData.substring(0, 100000) + "..." 
+          : candidate.rawData
+        const parsed = JSON.parse(rawDataToParse)
+        candidateSummary = parsed.summary || candidateSummary
+      } catch (parseError) {
+        // If JSON parsing fails, try to extract summary from raw text
+        console.warn("Failed to parse candidate rawData JSON, using fallback:", parseError)
+        // Try to find summary in raw text if it's not valid JSON
+        const summaryMatch = candidate.rawData.match(/"summary"\s*:\s*"([^"]+)"/i)
+        if (summaryMatch) {
+          candidateSummary = summaryMatch[1]
+        }
+      }
+    }
+
     // Build candidate profile text
     const candidateProfile = `
 Name: ${candidate.fullName}
@@ -47,7 +68,7 @@ Current Title: ${candidate.jobTitle || "Not specified"}
 Current Company: ${candidate.currentCompany || "Not specified"}
 Location: ${candidate.location || "Not specified"}
 Experience: ${candidate.totalYearsExperience || "Not specified"}
-Summary: ${candidate.aiSummary || candidate.rawData ? JSON.parse(candidate.rawData || "{}").summary || "No summary available" : "No summary available"}
+Summary: ${candidateSummary}
 ${candidate.certifications ? `Certifications: ${candidate.certifications}` : ""}
 ${candidate.languages ? `Languages: ${candidate.languages}` : ""}
 ${candidate.projects ? `Projects: ${candidate.projects}` : ""}
