@@ -58,6 +58,8 @@ async function fetchTrendsFromSerpAPI(): Promise<any[]> {
   const allResults: any[] = []
   const region = process.env.TRENDS_REGION || "us"
 
+  console.log(`[trends] Starting fetch with ${TREND_QUERIES.length} queries, region: ${region}`)
+
   for (const queryConfig of TREND_QUERIES) {
     try {
       const params = new URLSearchParams({
@@ -69,7 +71,10 @@ async function fetchTrendsFromSerpAPI(): Promise<any[]> {
         hl: "en",
       })
 
-      const response = await fetch(`https://serpapi.com/search?${params.toString()}`, {
+      console.log(`[trends] Fetching: ${queryConfig.query}`)
+      const url = `https://serpapi.com/search?${params.toString()}`
+      
+      const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -77,12 +82,21 @@ async function fetchTrendsFromSerpAPI(): Promise<any[]> {
       })
 
       if (!response.ok) {
-        console.error(`[trends] SerpAPI error for query "${queryConfig.query}": ${response.status}`)
+        const errorText = await response.text()
+        console.error(`[trends] SerpAPI error for query "${queryConfig.query}": ${response.status} - ${errorText.substring(0, 200)}`)
         continue
       }
 
       const data = await response.json()
+      
+      // Check for SerpAPI errors in response
+      if (data.error) {
+        console.error(`[trends] SerpAPI returned error for "${queryConfig.query}":`, data.error)
+        continue
+      }
+
       const items = data.organic_results || []
+      console.log(`[trends] Got ${items.length} results for "${queryConfig.query}"`)
 
       // Add category to each item
       for (const item of items) {
@@ -91,14 +105,13 @@ async function fetchTrendsFromSerpAPI(): Promise<any[]> {
           category: queryConfig.category,
         })
       }
-
-      console.log(`[trends] Fetched ${items.length} results for "${queryConfig.query}"`)
     } catch (error: any) {
       console.error(`[trends] Error fetching query "${queryConfig.query}":`, error.message)
       continue
     }
   }
 
+  console.log(`[trends] Total results fetched: ${allResults.length}`)
   return allResults
 }
 
@@ -247,6 +260,19 @@ Return JSON array with one highlight per article in the same order.`,
 
 export async function GET(req: Request) {
   try {
+    // Check SERPAPI_KEY first
+    if (!process.env.SERPAPI_KEY) {
+      console.error("[trends] SERPAPI_KEY not configured")
+      return NextResponse.json(
+        {
+          error: "SERPAPI_KEY not configured",
+          items: [],
+          last_updated: new Date().toISOString(),
+        },
+        { status: 500 }
+      )
+    }
+
     // Step 1: Fetch trends from SerpAPI
     console.log("[trends] Fetching trends from SerpAPI")
     const rawItems = await fetchTrendsFromSerpAPI()
@@ -256,6 +282,10 @@ export async function GET(req: Request) {
       return NextResponse.json({
         items: [],
         last_updated: new Date().toISOString(),
+        debug: {
+          serpapi_configured: !!process.env.SERPAPI_KEY,
+          queries_attempted: TREND_QUERIES.length,
+        },
       })
     }
 
