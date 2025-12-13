@@ -43,7 +43,7 @@ async def health_check():
     
     return JSONResponse({
         "status": "ok",
-        "google_configured": Config.is_google_configured(),
+        "serpapi_configured": Config.is_serpapi_configured(),
         "openai_configured": Config.is_openai_configured()
     })
 

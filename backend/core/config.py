@@ -9,10 +9,9 @@ from typing import Optional
 class Config:
     """Application configuration loaded from environment variables."""
     
-    # Google Search API Configuration
-    GOOGLE_SEARCH_API_KEY: Optional[str] = os.getenv("GOOGLE_SEARCH_API_KEY")
-    GOOGLE_SEARCH_ENGINE_ID: Optional[str] = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
-    GOOGLE_TRENDS_REGION: str = os.getenv("GOOGLE_TRENDS_REGION", "US")
+    # SerpAPI Configuration (same as job scraper)
+    SERPAPI_KEY: Optional[str] = os.getenv("SERPAPI_KEY")
+    TRENDS_REGION: str = os.getenv("TRENDS_REGION", "us")  # SerpAPI uses lowercase country codes
     
     # OpenAI Configuration
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
@@ -24,18 +23,16 @@ class Config:
     @classmethod
     def validate(cls) -> bool:
         """Validate that required configuration is present."""
-        if not cls.GOOGLE_SEARCH_API_KEY:
-            print("Warning: GOOGLE_SEARCH_API_KEY not set")
-        if not cls.GOOGLE_SEARCH_ENGINE_ID:
-            print("Warning: GOOGLE_SEARCH_ENGINE_ID not set")
+        if not cls.SERPAPI_KEY:
+            print("Warning: SERPAPI_KEY not set")
         if not cls.OPENAI_API_KEY:
             print("Warning: OPENAI_API_KEY not set")
         return True
     
     @classmethod
-    def is_google_configured(cls) -> bool:
-        """Check if Google Search API is configured."""
-        return bool(cls.GOOGLE_SEARCH_API_KEY and cls.GOOGLE_SEARCH_ENGINE_ID)
+    def is_serpapi_configured(cls) -> bool:
+        """Check if SerpAPI is configured."""
+        return bool(cls.SERPAPI_KEY)
     
     @classmethod
     def is_openai_configured(cls) -> bool:

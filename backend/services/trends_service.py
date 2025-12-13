@@ -2,26 +2,24 @@
 Tech Trends Service
 
 Fetches and enriches latest technology trends for Vetted dashboard.
-Uses Google Custom Search API to fetch tech news and OpenAI to generate highlights.
+Uses SerpAPI (same as job scraper) to fetch tech news and OpenAI to generate highlights.
 
 APIs Used:
-- Google Custom Search JSON API (Programmable Search)
+- SerpAPI (Google Search API via SerpAPI)
 - OpenAI Chat Completions API
 
 Required Environment Variables:
-- GOOGLE_SEARCH_API_KEY: Google Custom Search API key
-- GOOGLE_SEARCH_ENGINE_ID: Custom Search Engine ID
+- SERPAPI_KEY: SerpAPI key (same as job scraper)
 - OPENAI_API_KEY: OpenAI API key
-- GOOGLE_TRENDS_REGION: Region for search results (default: "US")
+- TRENDS_REGION: Region for search results (default: "us")
 """
 import asyncio
 import logging
-import re
 from datetime import datetime
 from typing import Optional
 from urllib.parse import urlparse
 
-import httpx
+from serpapi import GoogleSearch
 from openai import OpenAI
 
 from backend.core.config import Config
@@ -29,127 +27,105 @@ from backend.models.trends import TrendItem, TrendsResponse
 
 logger = logging.getLogger(__name__)
 
-# Predefined search queries for tech trends
+# Predefined search queries for tech trends (similar to job scraper pattern)
 TREND_QUERIES = [
     {
         "query": "latest technology trends startups 2025",
         "category": "startups",
-        "num_results": 8
+        "num_results": 10
     },
     {
         "query": "software engineering emerging trends",
         "category": "software_engineering",
-        "num_results": 8
+        "num_results": 10
     },
     {
         "query": "AI startup news artificial intelligence",
         "category": "ai",
-        "num_results": 8
+        "num_results": 10
     },
     {
         "query": "engineering firm technology innovations",
         "category": "engineering",
-        "num_results": 6
+        "num_results": 10
     }
 ]
 
 
 class TrendsService:
-    """Service for fetching and enriching tech trends."""
+    """Service for fetching and enriching tech trends using SerpAPI."""
     
     def __init__(self):
         """Initialize the trends service."""
-        self.google_api_key = Config.GOOGLE_SEARCH_API_KEY
-        self.google_engine_id = Config.GOOGLE_SEARCH_ENGINE_ID
-        self.region = Config.GOOGLE_TRENDS_REGION
+        self.serpapi_key = Config.SERPAPI_KEY
+        self.region = Config.TRENDS_REGION
         self.openai_client = None
         
         if Config.is_openai_configured():
             self.openai_client = OpenAI(api_key=Config.OPENAI_API_KEY)
     
-    async def fetch_raw_trends(self) -> list[dict]:
+    def fetch_raw_trends(self) -> list[dict]:
         """
-        Fetch raw trend data from Google Custom Search API.
+        Fetch raw trend data from SerpAPI (same pattern as job scraper).
         
         Returns:
             List of raw search result dictionaries
         """
-        if not Config.is_google_configured():
-            logger.warning("Google Search API not configured, returning empty results")
+        if not Config.is_serpapi_configured():
+            logger.warning("SerpAPI not configured, returning empty results")
+            return []
+        
+        if not self.serpapi_key:
+            logger.warning("SERPAPI_KEY not set, returning empty results")
             return []
         
         all_results = []
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            tasks = []
-            for query_config in TREND_QUERIES:
-                task = self._fetch_query_results(client, query_config)
-                tasks.append(task)
-            
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            for result in results:
-                if isinstance(result, Exception):
-                    logger.error(f"Error fetching query results: {result}")
-                    continue
-                if isinstance(result, list):
-                    all_results.extend(result)
+        for query_config in TREND_QUERIES:
+            try:
+                query = query_config["query"]
+                category = query_config["category"]
+                num_results = query_config.get("num_results", 10)
+                
+                logger.info(f"Fetching trends for query: {query}")
+                
+                # Use SerpAPI same way as job scraper
+                params = {
+                    "engine": "google",
+                    "q": query,
+                    "api_key": self.serpapi_key,
+                    "num": min(num_results, 100),  # SerpAPI supports up to 100
+                    "gl": self.region,  # Country code (e.g., "us")
+                    "hl": "en",  # Language
+                }
+                
+                search = GoogleSearch(params)
+                results = search.get_dict()
+                
+                items = results.get("organic_results", [])
+                
+                # Add category to each item
+                enriched_items = []
+                for item in items:
+                    enriched_items.append({
+                        **item,
+                        "category": category,
+                        "query": query
+                    })
+                
+                logger.info(f"Fetched {len(enriched_items)} results for '{query}'")
+                all_results.extend(enriched_items)
+                
+            except Exception as e:
+                logger.error(f"Error fetching query '{query_config.get('query', 'unknown')}': {e}")
+                continue
         
         return all_results
     
-    async def _fetch_query_results(
-        self, 
-        client: httpx.AsyncClient, 
-        query_config: dict
-    ) -> list[dict]:
-        """Fetch results for a single query."""
-        query = query_config["query"]
-        category = query_config["category"]
-        num_results = query_config.get("num_results", 10)
-        
-        try:
-            url = "https://www.googleapis.com/customsearch/v1"
-            params = {
-                "key": self.google_api_key,
-                "cx": self.google_engine_id,
-                "q": query,
-                "num": min(num_results, 10),  # Google API max is 10 per request
-                "lr": f"lang_en",  # English results
-                "cr": f"country{self.region.lower()}",  # Country restriction
-            }
-            
-            logger.info(f"Fetching trends for query: {query}")
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            
-            data = response.json()
-            items = data.get("items", [])
-            
-            # Add category to each item
-            enriched_items = []
-            for item in items:
-                enriched_items.append({
-                    **item,
-                    "category": category,
-                    "query": query
-                })
-            
-            logger.info(f"Fetched {len(enriched_items)} results for '{query}'")
-            return enriched_items
-            
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error fetching query '{query}': {e.response.status_code}")
-            if e.response.status_code == 429:
-                logger.warning("Rate limit hit, consider adding backoff")
-            return []
-        except Exception as e:
-            logger.error(f"Error fetching query '{query}': {e}")
-            return []
-    
     def _normalize_results(self, raw_items: list[dict]) -> list[TrendItem]:
         """
-        Normalize raw Google API results into TrendItem models.
-        Deduplicates by URL and title similarity.
+        Normalize raw SerpAPI results into TrendItem models.
+        Deduplicates by URL.
         """
         seen_urls = set()
         normalized_items = []
@@ -160,16 +136,16 @@ class TrendsService:
             snippet = item.get("snippet", "")
             category = item.get("category", "general")
             
-            # Parse published date if available
+            # Parse published date if available (SerpAPI sometimes includes date)
             published_at = None
-            if "pagemap" in item and "metatags" in item["pagemap"]:
-                metatags = item["pagemap"]["metatags"][0] if item["pagemap"]["metatags"] else {}
-                date_str = metatags.get("article:published_time") or metatags.get("og:updated_time")
-                if date_str:
-                    try:
-                        published_at = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass
+            date_str = item.get("date")
+            if date_str:
+                try:
+                    # Try to parse ISO format
+                    published_at = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    # If parsing fails, leave as None (not critical)
+                    pass
             
             # Extract source domain from URL
             try:
@@ -270,7 +246,7 @@ Return JSON array with one highlight per article in the same order."""
                 }
             ]
             
-            # Use asyncio.to_thread to run synchronous OpenAI call (Python 3.9+)
+            # Use asyncio.to_thread to run synchronous OpenAI call
             def _call_openai():
                 return self.openai_client.chat.completions.create(
                     model="gpt-4o-mini",
@@ -372,9 +348,15 @@ Mention "AI", "startups", or "software" only if relevant. Avoid fluff."""
             TrendsResponse with enriched trend items
         """
         try:
-            # Step 1: Fetch raw trends from Google
-            logger.info("Fetching raw trends from Google Search API")
-            raw_items = await self.fetch_raw_trends()
+            # Step 1: Fetch raw trends from SerpAPI (synchronous call, wrap in executor)
+            logger.info("Fetching raw trends from SerpAPI")
+            
+            def _fetch_sync():
+                return self.fetch_raw_trends()
+            
+            # Run SerpAPI calls in executor since they're synchronous
+            loop = asyncio.get_event_loop()
+            raw_items = await loop.run_in_executor(None, _fetch_sync)
             
             if not raw_items:
                 logger.warning("No raw trends fetched, returning empty response")
@@ -404,4 +386,3 @@ Mention "AI", "startups", or "software" only if relevant. Avoid fluff."""
                 items=[],
                 last_updated=datetime.utcnow()
             )
-
