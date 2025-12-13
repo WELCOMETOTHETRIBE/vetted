@@ -98,6 +98,9 @@ model User {
   messageThreadsAsUser2 MessageThread[] @relation("ThreadUser2")
   messages              Message[]
 
+  // Engagement Workflows
+  createdWorkflows EngagementWorkflow[] @relation("WorkflowCreator")
+
   // Notifications
   notifications Notification[]
 
@@ -585,6 +588,7 @@ model Candidate {
   updatedAt                         DateTime        @updatedAt
 
   addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
+  engagements Engagement[]
 
   @@index([linkedinUrl])
   @@index([fullName])
@@ -600,4 +604,71 @@ enum CandidateStatus {
   CONTACTED
   HIRED
   REJECTED
+}
+
+// Engagement Workflows
+model EngagementWorkflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  steps       String   @db.Text // JSON array of workflow steps
+  isActive    Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User         @relation("WorkflowCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  engagements Engagement[]
+
+  @@index([createdById])
+  @@index([isActive])
+}
+
+enum EngagementType {
+  EMAIL
+  CALL
+  MESSAGE
+  LINKEDIN
+  SMS
+}
+
+enum EngagementStatus {
+  PENDING
+  SCHEDULED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  RESPONDED
+  FAILED
+  CANCELLED
+}
+
+model Engagement {
+  id          String   @id @default(cuid())
+  candidateId String
+  workflowId  String?
+  type        EngagementType
+  subject     String?  // For emails
+  content     String?  @db.Text
+  scheduledAt DateTime
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  respondedAt DateTime?
+  status      EngagementStatus @default(PENDING)
+  metadata    String?  @db.Text // JSON for additional tracking data
+  errorMessage String? @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  candidate Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  workflow  EngagementWorkflow? @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+
+  @@index([candidateId])
+  @@index([workflowId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([type])
 }
