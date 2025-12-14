@@ -419,6 +419,7 @@ function JobsPageContent() {
                   </MagneticElement>
                 </div>
               )}
+              )}
             </main>
           </div>
         </div>
