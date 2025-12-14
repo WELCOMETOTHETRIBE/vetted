@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react"
 import { HoverMorph, StaggerContainer, LiquidButton, MagneticElement } from "@/components/AdvancedAnimations"
 import { MetricCard, InteractiveBarChart, AnimatedCounter } from "@/components/DataVisualization"
 import { SearchFilter } from "@/components/AdvancedForms"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 
 // Database job interface
 interface DatabaseJob {
@@ -86,19 +87,73 @@ const filterOptions = [
   }
 ]
 
-function SimpleNavbar() {
+function JobsNavbar() {
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <nav className="glass-elevated sticky top-0 z-40 backdrop-blur-xl border-b border-surface-tertiary/50 shadow-elevation-1">
+      <div className="container-fluid">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo - More Prominent */}
           <div className="flex items-center">
-            <a href="/" className="text-xl font-bold text-gray-900">Vetted</a>
+            <a href="/feed" className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg p-1">
+              <img
+                src="/vetted-logo.png"
+                alt="Vetted"
+                className="h-10 w-auto"
+                onError={(e) => {
+                  // Fallback to text if image fails to load
+                  const target = e.target as HTMLImageElement
+                  target.style.display = "none"
+                  const parent = target.parentElement
+                  if (parent && !parent.querySelector(".fallback-logo")) {
+                    const fallback = document.createElement("span")
+                    fallback.className = "fallback-logo text-2xl font-bold text-primary-600"
+                    fallback.textContent = "Vetted"
+                    parent.appendChild(fallback)
+                  }
+                }}
+              />
+              <span className="hidden md:block text-xl font-bold text-neutral-900">Vetted</span>
+            </a>
           </div>
-          <div className="flex items-center space-x-4">
-            <a href="/feed" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Feed</a>
-            <a href="/jobs" className="text-blue-600 bg-blue-50 px-3 py-2 rounded-md text-sm font-medium">Jobs</a>
-            <a href="/candidates" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Candidates</a>
-            <a href="/network" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Network</a>
+
+          {/* Navigation Items */}
+          <div className="flex items-center space-x-1">
+            <a
+              href="/feed"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-content-secondary hover:bg-surface-secondary hover:text-content-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+            >
+              <span className="hidden sm:inline">Feed</span>
+              <span className="sm:hidden text-base">📰</span>
+            </a>
+            <a
+              href="/jobs"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-primary-700 bg-primary-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+              aria-current="page"
+            >
+              <span className="hidden sm:inline">Jobs</span>
+              <span className="sm:hidden text-base">💼</span>
+            </a>
+            <a
+              href="/candidates"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-content-secondary hover:bg-surface-secondary hover:text-content-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+            >
+              <span className="hidden sm:inline">Candidates</span>
+              <span className="sm:hidden text-base">🎯</span>
+            </a>
+            <a
+              href="/network"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-content-secondary hover:bg-surface-secondary hover:text-content-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+            >
+              <span className="hidden sm:inline">Network</span>
+              <span className="sm:hidden text-base">👥</span>
+            </a>
+            <a
+              href="/messages"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-content-secondary hover:bg-surface-secondary hover:text-content-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
+            >
+              <span className="hidden sm:inline">Messages</span>
+              <span className="sm:hidden text-base">💬</span>
+            </a>
           </div>
         </div>
       </div>
