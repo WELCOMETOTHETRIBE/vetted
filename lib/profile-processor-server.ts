@@ -29,6 +29,19 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
   const dom = new JSDOM(html)
   const document = dom.window.document
 
+  // Debug: Check for common issues
+  const pageTitle = document.title || ""
+  const hasLoginPage = html.includes("Join LinkedIn") || html.includes("Sign in")
+  const hasVietnamese = html.includes("Tiếng Việt")
+  const bodyText = document.body?.textContent || ""
+
+  console.log(`[HTML EXTRACTION] Starting extraction for ${url}`)
+  console.log(`[HTML EXTRACTION] Page title: "${pageTitle}"`)
+  console.log(`[HTML EXTRACTION] Has login indicators: ${hasLoginPage}`)
+  console.log(`[HTML EXTRACTION] Has Vietnamese text: ${hasVietnamese}`)
+  console.log(`[HTML EXTRACTION] Body text length: ${bodyText.length}`)
+  console.log(`[HTML EXTRACTION] HTML length: ${html.length}`)
+
   const structured: any = {
     personal_info: {
       profile_url: url,
@@ -56,6 +69,12 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
   const rawText = document.body?.textContent || ""
   structured.raw_text = rawText
 
+  // Early exit if this looks like a login page
+  if (hasLoginPage && !bodyText.includes("experience") && !bodyText.includes("Experience")) {
+    console.log(`[HTML EXTRACTION] ⚠️  Detected login page, aborting extraction`)
+    return structured
+  }
+
   // Extract name from various possible selectors (more comprehensive)
   const nameSelectors = [
     "h1.text-heading-xlarge",
@@ -74,17 +93,26 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
     const nameEl = document.querySelector(selector)
     if (nameEl) {
       const nameText = getTextContent(nameEl)
+      console.log(`[HTML EXTRACTION] Name selector "${selector}" found: "${nameText}"`)
+
       // Validate name - should be 2-4 words, not too long
       if (nameText && nameText.length > 2 && nameText.length < 100) {
         const nameParts = nameText.split(/\s+/)
         if (nameParts.length >= 2 && nameParts.length <= 4) {
           // Check for invalid names
-          const invalidNames = ["Join LinkedIn", "Accessibility", "User Agreement", "LinkedIn Member"]
+          const invalidNames = ["Join LinkedIn", "Accessibility", "User Agreement", "LinkedIn Member", "Tiếng Việt"]
           if (!invalidNames.some(invalid => nameText.includes(invalid))) {
             structured.personal_info.name = nameText
+            console.log(`[HTML EXTRACTION] ✓ Valid name found: "${nameText}"`)
             break
+          } else {
+            console.log(`[HTML EXTRACTION] ✗ Name contains invalid text: "${nameText}"`)
           }
+        } else {
+          console.log(`[HTML EXTRACTION] ✗ Name has wrong word count (${nameParts.length}): "${nameText}"`)
         }
+      } else {
+        console.log(`[HTML EXTRACTION] ✗ Name too short/long or empty: "${nameText}"`)
       }
     }
   }
@@ -118,13 +146,18 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
     ".top-card-layout__headline",
     ".text-body-medium",
   ]
+  console.log(`[HTML EXTRACTION] Looking for headline...`)
   for (const selector of headlineSelectors) {
     const headlineEl = document.querySelector(selector)
     if (headlineEl && headlineEl !== document.querySelector("h1")) {
       const headlineText = getTextContent(headlineEl)
+      console.log(`[HTML EXTRACTION] Headline selector "${selector}" found: "${headlineText}"`)
       if (headlineText && !headlineText.includes("connections") && !headlineText.includes("followers") && headlineText.length > 5) {
         structured.personal_info.headline = headlineText
+        console.log(`[HTML EXTRACTION] ✓ Valid headline found: "${headlineText}"`)
         break
+      } else {
+        console.log(`[HTML EXTRACTION] ✗ Headline invalid or too short: "${headlineText}"`)
       }
     }
   }
@@ -182,10 +215,13 @@ export function extractStructuredDataFromHTML(html: string, url: string): any {
   }
 
   // EXPERIENCE - Comprehensive extraction (like extension)
+  console.log(`[HTML EXTRACTION] Looking for experience section...`)
   const experienceSection = findSectionByHeading(["Experience", "Work Experience", "Employment", "Professional Experience"])
+  console.log(`[HTML EXTRACTION] Experience section found: ${!!experienceSection}`)
   if (experienceSection) {
     const items = experienceSection.querySelectorAll("li, .pvs-list__paged-list-item, [data-view-name='profile-component-entity'], article, [role='listitem'], .pvs-list__item")
-    items.forEach((item) => {
+    console.log(`[HTML EXTRACTION] Found ${items.length} experience items`)
+    items.forEach((item, index) => {
       if (!item) return
       
       const itemText = getTextContent(item) || ""

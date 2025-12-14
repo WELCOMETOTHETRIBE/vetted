@@ -49,3 +49,7 @@ next-env.d.ts
 
 # scraper output
 ashby_jobs.json
+
+# Personal data files
+linkedin_cookies.json
+linkedin_profiles.json
