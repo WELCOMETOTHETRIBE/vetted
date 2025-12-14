@@ -261,8 +261,7 @@ function JobsPageContent() {
 
             {/* Main Content */}
             <main className="flex-1 min-w-0">
-              {/* Error State */}
-              {error && (
+              {error ? (
                 <div className="text-center py-12">
                   <div className="text-red-600 mb-4">
                     <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,50 +277,49 @@ function JobsPageContent() {
                     Try Again
                   </button>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h2 className="text-fluid-3xl font-bold text-content-primary mb-2">
+                        {isLoading ? "Loading..." : `${jobs.length} Jobs Found`}
+                      </h2>
+                      <p className="text-content-secondary">
+                        Updated in real-time • AI-powered recommendations
+                      </p>
+                    </div>
 
-              {/* Header */}
-              {!error && (
-                <div className="flex items-center justify-between mb-8">
-                  <div>
-                    <h2 className="text-fluid-3xl font-bold text-content-primary mb-2">
-                      {isLoading ? "Loading..." : `${jobs.length} Jobs Found`}
-                    </h2>
-                    <p className="text-content-secondary">
-                      Updated in real-time • AI-powered recommendations
-                    </p>
+                    {/* View Toggle */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setActiveView('grid')}
+                        className={`p-2 rounded-xl transition-colors ${
+                          activeView === 'grid'
+                            ? 'bg-primary-500 text-white'
+                            : 'text-content-secondary hover:bg-surface-secondary'
+                        }`}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setActiveView('list')}
+                        className={`p-2 rounded-xl transition-colors ${
+                          activeView === 'list'
+                            ? 'bg-primary-500 text-white'
+                            : 'text-content-secondary hover:bg-surface-secondary'
+                        }`}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
-                {/* View Toggle */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveView('grid')}
-                    className={`p-2 rounded-xl transition-colors ${
-                      activeView === 'grid'
-                        ? 'bg-primary-500 text-white'
-                        : 'text-content-secondary hover:bg-surface-secondary'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setActiveView('list')}
-                    className={`p-2 rounded-xl transition-colors ${
-                      activeView === 'list'
-                        ? 'bg-primary-500 text-white'
-                        : 'text-content-secondary hover:bg-surface-secondary'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Jobs List/Grid */}
+                  {/* Jobs List/Grid */}
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -419,6 +417,7 @@ function JobsPageContent() {
                   </MagneticElement>
                 </div>
               )}
+                </>
               )}
             </main>
           </div>
