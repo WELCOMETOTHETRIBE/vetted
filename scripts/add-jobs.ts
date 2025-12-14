@@ -1,8 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import { config } from 'dotenv'
-
 // Load environment variables
-config()
+require('dotenv').config()
 
 // Initialize Prisma with adapter (same pattern as lib/prisma.ts)
 let adapter = undefined;
@@ -16,9 +13,18 @@ try {
   console.warn('Prisma adapter creation failed:', e?.message || String(e));
 }
 
+const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient(adapter ? { adapter } : {})
 
 const jobsData = [
+  {
+    "title": "Senior Manager, Cyber Assurance @ Anduril Industries",
+    "url": "https://job-boards.greenhouse.io/andurilindustries/jobs/4977542007?gh_jid=4977542007",
+    "description": "Senior Manager, Cyber Assurance position at Anduril Industries. The Cyber Assurance Team comprises ISSM, ISSO, and ISSE personnel who collectively ensure security compliance, authorization success, and security engineering throughout the system lifecycle. CAT members support proposal development, design reviews, system authorization, and continuous monitoring across all protection levels.\n\nWe are looking for a Senior Manager, Cyber Assurance to provide strategic and operational leadership for the Cyber Assurance Team to ensure that all program systems achieve and maintain cybersecurity authorizations, comply with applicable security policies (JSIG, ICD 503, NIST 800-53, DoD RMF), and deliver secure engineering throughout the system lifecycle.\n\nKey responsibilities include:\n- Define the CAT vision, objectives, and performance metrics\n- Prioritize and allocate resources across ISSM, ISSO, and ISSE tasks\n- Direct the end-to-end RMF lifecycle\n- Ensure System Security Plans, Security Assessment Reports, and POA&Ms are authored\n- Supervise, mentor, and evaluate ISSM, ISSO, and ISSE personnel\n- Conduct regular CAT meetings and status briefings\n- Oversee continuous monitoring program\n- Manage GRC platforms and security artifacts\n- Lead risk-assessment workshops\n- Direct incident-response activities\n\nSalary Range: $191,000 - $253,000 USD\nLocation: Costa Mesa, California, United States",
+    "location": "Costa Mesa, California, United States",
+    "salaryRange": "$191,000 - $253,000 USD",
+    "requirements": "Bachelor's degree in Computer Science, Information Security, or related field (Master's preferred). 8+ years of progressive cyber-security leadership experience in DoD or classified environments. Certifications: AM/IAT Level III (CISSP, CASP+, CISM, or equivalent). Deep knowledge of JSIG, ICD 503, NIST 800-53, DoD RMF (DoDI 8510.01). Active DoD Top Secret (TS/SCI-eligible) clearance required."
+  },
   {
     "title": "Senior Android Software Engineer @ Hiya",
     "url": "https://jobs.ashbyhq.com/hiya/89133d2b-abbd-470d-a16f-6675d95b0019"
@@ -148,15 +154,30 @@ async function main() {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '')
 
+        // Set specific data for known companies
+        let industry = 'Technology';
+        let size = '11-50';
+        let companyLocation = jobData.location || 'Costa Mesa, CA';
+        let website = jobData.url.split('/').slice(0, 3).join('/');
+        let about = `Technology company offering ${jobTitle} position.`;
+
+        if (companyName === 'Anduril Industries') {
+          industry = 'Defense Technology';
+          size = '1001-5000';
+          companyLocation = 'Costa Mesa, CA';
+          website = 'https://anduril.com';
+          about = 'Anduril Industries is a defense technology company with a mission to transform U.S. and allied military capabilities with advanced technology. By bringing the expertise, technology, and business model of the 21st century\'s most innovative companies to the defense industry, Anduril is changing how military systems are designed, built and sold. Anduril\'s family of systems is powered by Lattice OS, an AI-powered operating system that turns thousands of data streams into a realtime, 3D command and control center.';
+        }
+
         company = await prisma.company.create({
           data: {
             name: companyName,
             slug: slug,
-            industry: 'Technology',
-            location: 'Remote',
-            size: '11-50',
-            website: jobData.url.split('/').slice(0, 3).join('/'),
-            about: `Technology company offering ${jobTitle} position.`,
+            industry: industry,
+            location: companyLocation,
+            size: size,
+            website: website,
+            about: about,
           },
         })
         console.log(`Created company: ${companyName}`)
@@ -177,9 +198,44 @@ async function main() {
         continue
       }
 
-      // Determine if remote from title
-      const isRemote = jobData.title.toLowerCase().includes('remote') || 
-                      jobData.title.toLowerCase().includes('(remote)')
+      // Parse salary range if provided
+      let salaryMin: number | null = null;
+      let salaryMax: number | null = null;
+      let salaryCurrency = 'USD';
+
+      if (jobData.salaryRange) {
+        // Parse salary range like "$191,000 - $253,000 USD"
+        const salaryMatch = jobData.salaryRange.match(/\$?([\d,]+)\s*-\s*\$?([\d,]+)\s*([A-Z]{3})?/);
+        if (salaryMatch) {
+          salaryMin = parseInt(salaryMatch[1].replace(/,/g, ''));
+          salaryMax = parseInt(salaryMatch[2].replace(/,/g, ''));
+          if (salaryMatch[3]) {
+            salaryCurrency = salaryMatch[3];
+          }
+        }
+      }
+
+      // Determine if remote from title or description
+      const titleLower = jobData.title.toLowerCase()
+      const descLower = (jobData.description || '').toLowerCase()
+      const isRemote = titleLower.includes('remote') ||
+                      titleLower.includes('(remote)') ||
+                      descLower.includes('remote') ||
+                      descLower.includes('fully-remote')
+
+      // Use provided location or determine from description
+      let location = jobData.location || (isRemote ? 'Remote' : 'Location TBD')
+      if (!jobData.location && !isRemote) {
+        if (descLower.includes('san francisco') || descLower.includes('sf')) {
+          location = 'San Francisco, CA'
+        } else if (descLower.includes('new york') || descLower.includes('ny')) {
+          location = 'New York, NY'
+        } else if (descLower.includes('boston')) {
+          location = 'Boston, MA'
+        } else if (descLower.includes('costa mesa')) {
+          location = 'Costa Mesa, CA'
+        }
+      }
 
       // Create job
       const job = await prisma.job.create({
@@ -187,15 +243,20 @@ async function main() {
           title: jobTitle,
           companyId: company.id,
           postedById: postedBy.id,
-          location: isRemote ? 'Remote' : 'Location TBD',
+          location: location,
           isRemote: isRemote,
           employmentType: 'FULL_TIME',
-          description: `We are hiring a ${jobTitle} to join our team at ${companyName}. 
+          salaryMin: salaryMin,
+          salaryMax: salaryMax,
+          salaryCurrency: salaryCurrency,
+          description: jobData.description
+            ? `${jobData.description}\n\nApply at: ${jobData.url}`
+            : `We are hiring a ${jobTitle} to join our team at ${companyName}.
 
 Apply at: ${jobData.url}
 
 This position is posted through our job board. Please visit the application URL for more details and to apply.`,
-          requirements: `Requirements will be listed on the application page. Please visit ${jobData.url} for full details.`,
+          requirements: jobData.requirements || `Requirements will be listed on the application page. Please visit ${jobData.url} for full details.`,
         },
       })
 
