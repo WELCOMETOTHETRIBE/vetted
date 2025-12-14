@@ -540,6 +540,7 @@ export function MetricCard({
   value,
   previousValue,
   format = "number",
+  suffix = "",
   icon,
   className = ""
 }: {
@@ -547,21 +548,27 @@ export function MetricCard({
   value: number
   previousValue?: number
   format?: "number" | "currency" | "percentage"
+  suffix?: string
   icon?: React.ReactNode
   className?: string
 }) {
   const formatValue = (val: number) => {
+    let formattedValue: string
     switch (format) {
       case "currency":
-        return new Intl.NumberFormat("en-US", {
+        formattedValue = new Intl.NumberFormat("en-US", {
           style: "currency",
           currency: "USD"
         }).format(val)
+        break
       case "percentage":
-        return `${val}%`
+        formattedValue = `${val}%`
+        break
       default:
-        return val.toLocaleString()
+        formattedValue = val.toLocaleString()
+        break
     }
+    return suffix ? `${formattedValue} ${suffix}` : formattedValue
   }
 
   const trend = previousValue ? ((value - previousValue) / previousValue) * 100 : 0

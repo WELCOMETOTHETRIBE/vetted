@@ -208,7 +208,7 @@ export default function JobDetailPage() {
               <MetricCard
                 title="Match Score"
                 value={94}
-                suffix="%"
+                format="percentage"
                 icon="🎯"
               />
             </HoverMorph>
