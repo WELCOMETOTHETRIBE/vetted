@@ -6,23 +6,29 @@ import { signOut } from "next-auth/react"
 import SearchBar from "./SearchBar"
 
 interface NavbarClientProps {
+  user?: {
+    name?: string | null
+    email?: string | null
+    image?: string | null
+  } | null
   isAdmin?: boolean
 }
 
-const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
+const NavbarClient = ({ user, isAdmin = false }: NavbarClientProps) => {
   const pathname = usePathname()
 
-  // Base navigation items
+  // Base navigation items - include candidates for all users
   const baseNavItems = [
     { href: "/feed", label: "Feed", icon: "📰" },
     { href: "/jobs", label: "Jobs", icon: "💼" },
+    { href: "/candidates", label: "Candidates", icon: "🎯" },
     { href: "/network", label: "Network", icon: "👥" },
     { href: "/messages", label: "Messages", icon: "💬" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 
-  // Add Candidates tab for admins - ensure it's visible
-  const adminNavItems = isAdmin ? [{ href: "/candidates", label: "Candidates", icon: "🎯" }] : []
+  // Add Admin tab for admins
+  const adminNavItems = isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️" }] : []
   const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
@@ -99,9 +105,11 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
                 aria-expanded="false"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
-                  Me
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                <span className="hidden md:inline text-sm text-neutral-800 font-medium">▼</span>
+                <span className="hidden md:inline text-sm text-neutral-800 font-medium ml-2">
+                  {user?.name || 'User'} ▼
+                </span>
               </button>
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <Link
