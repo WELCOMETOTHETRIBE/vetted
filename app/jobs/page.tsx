@@ -5,87 +5,52 @@ import { HoverMorph, StaggerContainer, LiquidButton, MagneticElement } from "@/c
 import { MetricCard, InteractiveBarChart, AnimatedCounter } from "@/components/DataVisualization"
 import { SearchFilter } from "@/components/AdvancedForms"
 
-// Mock data for demonstration (in real app, this would come from props)
-const mockJobs = [
-  {
-    id: "1",
-    title: "Senior Software Engineer",
-    company: { name: "TechCorp", logo: null },
-    location: "San Francisco, CA",
-    isRemote: true,
-    salaryMin: 120000,
-    salaryMax: 180000,
-    createdAt: new Date(),
-    applications: [],
-    views: 1250
-  },
-  {
-    id: "2",
-    title: "Product Manager",
-    company: { name: "StartupXYZ", logo: null },
-    location: "New York, NY",
-    isRemote: false,
-    salaryMin: 100000,
-    salaryMax: 140000,
-    createdAt: new Date(),
-    applications: [],
-    views: 890
-  },
-  {
-    id: "3",
-    title: "Full Stack Developer",
-    company: { name: "InnovateLab", logo: null },
-    location: "Remote",
-    isRemote: true,
-    salaryMin: 90000,
-    salaryMax: 130000,
-    createdAt: new Date(),
-    applications: [],
-    views: 2100
-  },
-  {
-    id: "4",
-    title: "DevOps Engineer",
-    company: { name: "CloudTech", logo: null },
-    location: "Austin, TX",
-    isRemote: true,
-    salaryMin: 110000,
+// Database job interface
+interface DatabaseJob {
+  id: string
+  title: string
+  company: {
+    id: string
+    name: string
+  }
+}
+
+interface JobsResponse {
+  jobs: DatabaseJob[]
+  count: number
+}
+
+// Enhanced job interface for UI
+interface UIJob {
+  id: string
+  title: string
+  company: { name: string; logo?: string | null }
+  location?: string
+  isRemote?: boolean
+  salaryMin?: number
+  salaryMax?: number
+  createdAt: Date
+  applications: any[]
+  views: number
+}
+
+// Convert database jobs to UI format
+function transformJobs(dbJobs: DatabaseJob[]): UIJob[] {
+  return dbJobs.map(job => ({
+    id: job.id,
+    title: job.title,
+    company: {
+      name: job.company.name,
+      logo: null
+    },
+    location: "Remote", // Default to remote for now
+    isRemote: true, // Default to remote
+    salaryMin: 80000, // Default salary range
     salaryMax: 150000,
     createdAt: new Date(),
     applications: [],
-    views: 1450
-  },
-  {
-    id: "5",
-    title: "UX/UI Designer",
-    company: { name: "DesignStudio", logo: null },
-    location: "Los Angeles, CA",
-    isRemote: false,
-    salaryMin: 85000,
-    salaryMax: 120000,
-    createdAt: new Date(),
-    applications: [],
-    views: 980
-  },
-  {
-    id: "6",
-    title: "Data Scientist",
-    company: { name: "DataFlow", logo: null },
-    location: "Seattle, WA",
-    isRemote: true,
-    salaryMin: 130000,
-    salaryMax: 170000,
-    createdAt: new Date(),
-    applications: [],
-    views: 1670
-  }
-]
-
-const mockStats = {
-  totalJobs: 1234,
-  newThisWeek: 89,
-  avgSalary: 125000,
-  remoteJobs: 456
+    views: Math.floor(Math.random() * 2000) + 500 // Random views for demo
+  }))
 }
 
 const mockChartData = [
@@ -142,25 +107,46 @@ function SimpleNavbar() {
 }
 
 function JobsPageContent() {
-  const [jobs, setJobs] = useState(mockJobs)
-  const [isLoading, setIsLoading] = useState(false)
+  const [jobs, setJobs] = useState<UIJob[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'grid' | 'list'>('grid')
 
-  const handleSearch = (query: string, filters: Record<string, string>) => {
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Filter jobs based on query and filters (mock implementation)
-      let filteredJobs = mockJobs
-      if (query) {
-        filteredJobs = filteredJobs.filter(job =>
-          job.title.toLowerCase().includes(query.toLowerCase()) ||
-          job.company.name.toLowerCase().includes(query.toLowerCase())
-        )
+  // Fetch jobs from database on component mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const response = await fetch('/api/jobs?limit=50')
+        if (!response.ok) {
+          throw new Error(`Failed to fetch jobs: ${response.status}`)
+        }
+        const data: JobsResponse = await response.json()
+        const transformedJobs = transformJobs(data.jobs)
+        setJobs(transformedJobs)
+      } catch (err: any) {
+        console.error('Error fetching jobs:', err)
+        setError(err.message || 'Failed to load jobs')
+      } finally {
+        setIsLoading(false)
       }
-      setJobs(filteredJobs)
-    }, 500)
+    }
+
+    fetchJobs()
+  }, [])
+
+  const handleSearch = (query: string, filters: Record<string, string>) => {
+    // For now, just filter the existing jobs
+    // In a real implementation, this would make an API call with search params
+    let filteredJobs = [...jobs]
+    if (query) {
+      filteredJobs = filteredJobs.filter(job =>
+        job.title.toLowerCase().includes(query.toLowerCase()) ||
+        job.company.name.toLowerCase().includes(query.toLowerCase())
+      )
+    }
+    setJobs(filteredJobs)
   }
 
   return (
@@ -192,43 +178,48 @@ function JobsPageContent() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12">
-        <div className="container-fluid">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <HoverMorph>
-              <MetricCard
-                title="Active Jobs"
-                value={mockStats.totalJobs}
-                previousValue={1150}
-                icon="💼"
-              />
-            </HoverMorph>
-            <HoverMorph>
-              <MetricCard
-                title="New This Week"
-                value={mockStats.newThisWeek}
-                previousValue={76}
-                icon="✨"
-              />
-            </HoverMorph>
-            <HoverMorph>
-              <MetricCard
-                title="Avg Salary"
-                value={mockStats.avgSalary}
-                format="currency"
-                icon="💰"
-              />
-            </HoverMorph>
-            <HoverMorph>
-              <MetricCard
-                title="Remote Jobs"
-                value={mockStats.remoteJobs}
-                icon="🏠"
-              />
-            </HoverMorph>
+      {!error && (
+        <section className="py-12">
+          <div className="container-fluid">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <HoverMorph>
+                <MetricCard
+                  title="Active Jobs"
+                  value={jobs.length}
+                  previousValue={Math.max(0, jobs.length - 10)}
+                  icon="💼"
+                />
+              </HoverMorph>
+              <HoverMorph>
+                <MetricCard
+                  title="Remote Jobs"
+                  value={jobs.filter(job => job.isRemote).length}
+                  previousValue={Math.max(0, jobs.filter(job => job.isRemote).length - 5)}
+                  icon="🏠"
+                />
+              </HoverMorph>
+              <HoverMorph>
+                <MetricCard
+                  title="Avg Salary"
+                  value={jobs.length > 0
+                    ? Math.round(jobs.reduce((sum, job) => sum + ((job.salaryMin || 0) + (job.salaryMax || 0)) / 2, 0) / jobs.length)
+                    : 0
+                  }
+                  format="currency"
+                  icon="💰"
+                />
+              </HoverMorph>
+              <HoverMorph>
+                <MetricCard
+                  title="Total Views"
+                  value={jobs.reduce((sum, job) => sum + job.views, 0)}
+                  icon="👁️"
+                />
+              </HoverMorph>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Main Content */}
       <section className="py-12">
@@ -270,16 +261,36 @@ function JobsPageContent() {
 
             {/* Main Content */}
             <main className="flex-1 min-w-0">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-fluid-3xl font-bold text-content-primary mb-2">
-                    {jobs.length} Jobs Found
-                  </h2>
-                  <p className="text-content-secondary">
-                    Updated in real-time • AI-powered recommendations
-                  </p>
+              {/* Error State */}
+              {error && (
+                <div className="text-center py-12">
+                  <div className="text-red-600 mb-4">
+                    <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold mb-2">Failed to Load Jobs</h3>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
                 </div>
+              )}
+
+              {/* Header */}
+              {!error && (
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-fluid-3xl font-bold text-content-primary mb-2">
+                      {isLoading ? "Loading..." : `${jobs.length} Jobs Found`}
+                    </h2>
+                    <p className="text-content-secondary">
+                      Updated in real-time • AI-powered recommendations
+                    </p>
+                  </div>
 
                 {/* View Toggle */}
                 <div className="flex items-center gap-2">
@@ -407,6 +418,7 @@ function JobsPageContent() {
                     </LiquidButton>
                   </MagneticElement>
                 </div>
+              )}
               )}
             </main>
           </div>
