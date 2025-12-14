@@ -157,7 +157,7 @@ export async function POST(req: Request) {
           // Set specific data for known companies
           let industry = 'Technology';
           let size = '11-50';
-          let companyLocation = location !== 'Location TBD' ? location : 'Costa Mesa, CA';
+          let companyLocation = 'Remote'; // Default
           let website = jobData.url.split('/').slice(0, 3).join('/');
           let about = `Technology company offering ${jobTitle} position.`;
 
