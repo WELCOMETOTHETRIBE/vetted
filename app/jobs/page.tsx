@@ -17,8 +17,9 @@ interface DatabaseJob {
 }
 
 interface JobsResponse {
-  jobs: DatabaseJob[]
-  count: number
+  jobs?: DatabaseJob[]
+  count?: number
+  error?: string
 }
 
 // Enhanced job interface for UI
