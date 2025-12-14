@@ -241,41 +241,47 @@ export default function TechTrends() {
           {trends.slice(0, 5).map((trend, idx) => (
             <div
               key={idx}
-              className="group border-b border-gray-100 last:border-b-0 pb-3 last:pb-0"
+              className="group p-4 rounded-xl bg-surface-secondary/50 hover:bg-surface-tertiary transition-all duration-200 border border-transparent hover:border-surface-tertiary/50"
             >
               <a
                 href={trend.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block hover:opacity-80 transition-opacity"
+                className="block"
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <h4 className="text-sm font-semibold text-content-primary line-clamp-2 group-hover:text-primary-600 transition-colors leading-relaxed">
                     {trend.title}
                   </h4>
-                </div>
-                
-                {trend.highlight && (
-                  <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                    {trend.highlight}
-                  </p>
-                )}
-                
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{trend.source}</span>
-                    <span className="text-xs text-gray-400">•</span>
-                    <span className="text-xs text-gray-500">
-                      {formatTimeAgo(trend.published_at)}
-                    </span>
-                  </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(
+                    className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${getCategoryColor(
                       trend.category
                     )}`}
                   >
                     {getCategoryLabel(trend.category)}
                   </span>
+                </div>
+
+                {trend.highlight && (
+                  <p className="text-xs text-content-secondary line-clamp-2 mb-3 leading-relaxed">
+                    {trend.highlight}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-content-tertiary font-medium">{trend.source}</span>
+                    <span className="text-xs text-content-tertiary">•</span>
+                    <span className="text-xs text-content-tertiary">
+                      {formatTimeAgo(trend.published_at)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-content-tertiary group-hover:text-primary-600 transition-colors">
+                    <span className="text-xs">Read more</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </div>
                 </div>
               </a>
             </div>
@@ -336,17 +342,17 @@ export default function TechTrends() {
       <>
         <div className="space-y-4">
           {startups.slice(0, 5).map((startup, idx) => {
-            const companyUrl = startup.website 
+            const companyUrl = startup.website
               ? (startup.website.startsWith('http') ? startup.website : `https://${startup.website}`)
               : startup.url
-            
+
             return (
               <div
                 key={idx}
-                className="group border-b border-gray-100 last:border-b-0 pb-3 last:pb-0"
+                className="group p-4 rounded-xl bg-surface-secondary/50 hover:bg-surface-tertiary transition-all duration-200 border border-transparent hover:border-surface-tertiary/50"
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
                     {companyUrl ? (
                       <a
                         href={companyUrl}
@@ -354,71 +360,71 @@ export default function TechTrends() {
                         rel="noopener noreferrer"
                         className="block"
                       >
-                        <h4 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                        <h4 className="text-sm font-semibold text-content-primary line-clamp-1 group-hover:text-primary-600 transition-colors">
                           {startup.name}
                         </h4>
                       </a>
                     ) : (
-                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
+                      <h4 className="text-sm font-semibold text-content-primary line-clamp-1">
                         {startup.name}
                       </h4>
                     )}
                     {startup.industry && (
-                      <span className="text-xs text-purple-600 font-medium mt-0.5 inline-block">
+                      <span className="text-xs text-accent-purple-600 font-medium mt-1 inline-block px-2 py-1 bg-accent-purple-100 rounded-full">
                         {startup.industry}
                       </span>
                     )}
                   </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                    className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
                       startup.type === "ipo"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
+                        ? "bg-success-100 text-success-700"
+                        : "bg-accent-teal-100 text-accent-teal-700"
                     }`}
                   >
-                    {startup.type === "ipo" ? "IPO" : "Cutting Edge"}
+                    {startup.type === "ipo" ? "🚀 IPO" : "⚡ Cutting Edge"}
                   </span>
                 </div>
-                
+
                 {startup.usp && (
-                  <div className="mb-2">
-                    <p className="text-xs font-medium text-gray-700 mb-1">USP:</p>
-                    <p className="text-xs text-gray-600 line-clamp-2">
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-content-primary mb-1 uppercase tracking-wide">Unique Value Proposition</p>
+                    <p className="text-xs text-content-secondary line-clamp-2 leading-relaxed">
                       {startup.usp}
                     </p>
                   </div>
                 )}
-                
+
                 {startup.highlight && (
-                  <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                  <p className="text-xs text-content-secondary line-clamp-2 mb-3 leading-relaxed">
                     {startup.highlight}
                   </p>
                 )}
-                
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
+
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     {(startup.valuation || startup.funding) && (
-                      <>
-                        <span className="text-xs text-gray-700 font-medium">
-                          {startup.valuation || startup.funding}
-                        </span>
-                        {(startup.source || startup.published_at) && (
-                          <span className="text-xs text-gray-400">•</span>
-                        )}
-                      </>
+                      <span className="text-xs font-semibold text-success-600 bg-success-100 px-2 py-1 rounded-full">
+                        {startup.valuation || startup.funding}
+                      </span>
                     )}
                     {startup.source && (
-                      <span className="text-xs text-gray-500">{startup.source}</span>
+                      <span className="text-xs text-content-tertiary">{startup.source}</span>
                     )}
                     {startup.published_at && (
-                      <>
-                        {startup.source && <span className="text-xs text-gray-400">•</span>}
-                        <span className="text-xs text-gray-500">
-                          {formatTimeAgo(startup.published_at)}
-                        </span>
-                      </>
+                      <span className="text-xs text-content-tertiary">
+                        {formatTimeAgo(startup.published_at)}
+                      </span>
                     )}
                   </div>
+                  {companyUrl && (
+                    <div className="flex items-center gap-1 text-content-tertiary group-hover:text-primary-600 transition-colors">
+                      <span className="text-xs">Visit site</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -437,28 +443,51 @@ export default function TechTrends() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2 border-b border-gray-200 -mb-4 flex-1">
+    <div className="glass-elevated rounded-2xl border border-surface-tertiary/50 p-6 shadow-elevation-2">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex gap-2 border-b border-surface-tertiary -mb-6 flex-1">
           <button
             onClick={() => setActiveTab("trends")}
-            className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${
+            className={`px-4 py-3 text-sm font-semibold transition-all duration-200 border-b-2 rounded-t-lg ${
               activeTab === "trends"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                ? "border-primary-500 text-primary-600 bg-primary-50/50"
+                : "border-transparent text-content-secondary hover:text-content-primary hover:bg-surface-secondary/50"
             }`}
           >
-            Tech Trends
+            🚀 Tech Trends
           </button>
           <button
             onClick={() => setActiveTab("startups")}
-            className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${
+            className={`px-4 py-3 text-sm font-semibold transition-all duration-200 border-b-2 rounded-t-lg ${
               activeTab === "startups"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                ? "border-primary-500 text-primary-600 bg-primary-50/50"
+                : "border-transparent text-content-secondary hover:text-content-primary hover:bg-surface-secondary/50"
             }`}
           >
-            Startups
+            💡 Startups
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setRefreshing(true)
+              if (activeTab === "trends") {
+                fetchTrends(true)
+              } else {
+                fetchStartups(true)
+              }
+            }}
+            disabled={refreshing}
+            className="p-2 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-secondary transition-colors disabled:opacity-50"
+            title={`Refresh ${activeTab === "trends" ? "trends" : "startups"}`}
+          >
+            {refreshing ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
           </button>
         </div>
       </div>

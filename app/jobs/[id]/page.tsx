@@ -1,11 +1,12 @@
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { prisma } from "@/lib/prisma"
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import Link from "next/link"
-import JobApplicationForm from "@/components/JobApplicationForm"
-import JobMatchAnalysis from "@/components/JobMatchAnalysis"
-import InterviewPrep from "@/components/InterviewPrep"
+import { HoverMorph, LiquidButton, MagneticElement, StaggerContainer } from "@/components/AdvancedAnimations"
+import { ProgressRing, MetricCard, AnimatedCounter } from "@/components/DataVisualization"
+import { useTheme } from "@/components/Providers"
 
 async function getJob(jobId: string, userId?: string) {
   const job = await prisma.job.findUnique({
