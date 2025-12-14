@@ -192,36 +192,73 @@ export async function POST(req: Request) {
 
         // Use AI enrichment if we have raw data and (missing fields OR empty arrays)
         let enrichedData = candidateData
-        let aiEnrichmentApplied = false
-        let correctionsCount = 0
-
+        let aiEnrichmentAttempted = false
+        let aiEnrichmentSuccess = false
+        let aiEnrichmentRetries = 0
+        
         if (hasRawData && (missingCriticalFields || hasEmptyArrays)) {
           console.log(`[AI ENRICHMENT] Attempting comprehensive AI enrichment for ${fullName || linkedinUrl}`)
           console.log(`  - Has raw data: ${hasRawData}`)
           console.log(`  - Missing critical fields: ${missingCriticalFields}`)
           console.log(`  - Has empty arrays: ${hasEmptyArrays}`)
-          try {
-            const aiEnriched = await enrichCandidateDataWithAI(candidateData, rawHtml, rawText)
-            if (aiEnriched) {
-              console.log(`[AI ENRICHMENT] Success for ${fullName || linkedinUrl}`)
-              console.log(`  - Enriched fields:`, Object.keys(aiEnriched))
-              if (aiEnriched.corrections && aiEnriched.corrections.length > 0) {
-                console.log(`  - Corrections applied: ${aiEnriched.corrections.length}`)
-                correctionsCount = aiEnriched.corrections.length
+          aiEnrichmentAttempted = true
+          
+          // Retry logic: if first attempt fails and we have large HTML, try with trimmed text
+          const maxRetries = 2
+          for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+              let textToUse = rawText
+              
+              // On retry, use trimmed text if HTML is very large
+              if (attempt > 0 && rawHtml && rawHtml.length > 50000) {
+                console.log(`[AI ENRICHMENT] Retry ${attempt}: Using trimmed text (original: ${rawText?.length || 0} chars)`)
+                textToUse = rawText?.substring(0, 5000) || ""
               }
-              enrichedData = mergeEnrichedData(candidateData, aiEnriched)
-              aiEnrichmentApplied = true
-            } else {
-              console.log(`[AI ENRICHMENT] Returned no data for ${fullName || linkedinUrl}`)
+              
+              const aiEnriched = await enrichCandidateDataWithAI(candidateData, rawHtml, textToUse)
+              if (aiEnriched && Object.keys(aiEnriched).length > 0) {
+                console.log(`[AI ENRICHMENT] Success for ${fullName || linkedinUrl}${attempt > 0 ? ` (retry ${attempt})` : ""}`)
+                console.log(`  - Enriched fields:`, Object.keys(aiEnriched))
+                if (aiEnriched.corrections && aiEnriched.corrections.length > 0) {
+                  console.log(`  - Corrections applied: ${aiEnriched.corrections.length}`)
+                  aiEnriched.corrections.forEach((correction: any) => {
+                    console.log(`    * ${correction.field}: "${correction.originalValue}" -> "${correction.correctedValue}" (${correction.reason})`)
+                  })
+                }
+                enrichedData = mergeEnrichedData(candidateData, aiEnriched)
+                aiEnrichmentSuccess = true
+                aiEnrichmentRetries = attempt
+                break
+              } else {
+                if (attempt < maxRetries - 1) {
+                  console.log(`[AI ENRICHMENT] Attempt ${attempt + 1} returned no data, retrying...`)
+                  aiEnrichmentRetries = attempt + 1
+                } else {
+                  console.log(`[AI ENRICHMENT] All attempts failed - returned no data for ${fullName || linkedinUrl}`)
+                }
+              }
+            } catch (error: any) {
+              if (attempt < maxRetries - 1) {
+                console.warn(`[AI ENRICHMENT] Attempt ${attempt + 1} failed: ${error.message}, retrying...`)
+                aiEnrichmentRetries = attempt + 1
+              } else {
+                console.error(`[AI ENRICHMENT] All attempts failed for ${fullName || linkedinUrl}:`, error)
+                // Continue with original data if enrichment fails
+              }
             }
-          } catch (error) {
-            console.error(`[AI ENRICHMENT] Failed for ${fullName || linkedinUrl}:`, error)
-            // Continue with original data if enrichment fails
           }
         } else if (hasRawData) {
           console.log(`[AI ENRICHMENT] Skipped for ${fullName || linkedinUrl} - data appears complete`)
         } else {
           console.log(`[AI ENRICHMENT] Skipped for ${fullName || linkedinUrl} - no raw data available`)
+        }
+        
+        // Log enrichment summary
+        if (aiEnrichmentAttempted) {
+          console.log(`[AI ENRICHMENT SUMMARY] ${fullName || linkedinUrl}:`)
+          console.log(`  - Attempted: Yes`)
+          console.log(`  - Success: ${aiEnrichmentSuccess ? "Yes" : "No"}`)
+          console.log(`  - Retries: ${aiEnrichmentRetries}`)
         }
 
         // Check if candidate already exists
