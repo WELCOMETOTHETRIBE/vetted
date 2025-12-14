@@ -2,8 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import { HoverMorph, StaggerContainer, LiquidButton, MagneticElement } from "@/components/AdvancedAnimations"
 import { MetricCard, InteractiveBarChart, AnimatedCounter } from "@/components/DataVisualization"

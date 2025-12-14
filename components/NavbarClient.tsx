@@ -81,21 +81,6 @@ const NavbarClient = ({ user, isAdmin = false }: NavbarClientProps) => {
                 <span className="sm:hidden text-base" aria-label={item.label}>{item.icon}</span>
               </Link>
             ))}
-            {/* Admin tab - separate from main nav items */}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  pathname === "/admin"
-                    ? "text-primary-700 bg-primary-50 shadow-sm"
-                    : "text-neutral-700 hover:bg-neutral-100 hover:text-primary-600"
-                } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
-                aria-current={pathname === "/admin" ? "page" : undefined}
-              >
-                <span className="hidden sm:inline">Admin</span>
-                <span className="sm:hidden text-base" aria-label="Admin">⚙️</span>
-              </Link>
-            )}
 
             {/* Profile Dropdown */}
             <div className="ml-2 relative group">
