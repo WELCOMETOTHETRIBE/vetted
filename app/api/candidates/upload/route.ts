@@ -449,7 +449,7 @@ export async function POST(req: Request) {
           companies: allCompanies.length > 0 ? JSON.stringify(allCompanies) : null,
           rawData: rawDataValue,
           addedById: session.user.id,
-          status: "ACTIVE" as const,
+          status: "ACTIVE",
         }
 
         // Quality assessment: Check if this candidate needs review
