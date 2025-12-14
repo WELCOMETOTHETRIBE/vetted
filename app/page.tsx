@@ -431,25 +431,25 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div className="animate-on-scroll">
                 <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={50000} formatter={(val) => val.toLocaleString() + "+"} />
+                  <AnimatedCounter end={50000} suffix="+" />
                 </div>
                 <div className="text-content-secondary">Professionals</div>
               </div>
               <div className="animate-on-scroll" style={{ animationDelay: '0.2s' }}>
                 <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={10000} formatter={(val) => val.toLocaleString() + "+"} />
+                  <AnimatedCounter end={10000} suffix="+" />
                 </div>
                 <div className="text-content-secondary">Companies</div>
               </div>
               <div className="animate-on-scroll" style={{ animationDelay: '0.4s' }}>
                 <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={250000} formatter={(val) => val.toLocaleString() + "+"} />
+                  <AnimatedCounter end={250000} suffix="+" />
                 </div>
                 <div className="text-content-secondary">Connections</div>
               </div>
               <div className="animate-on-scroll" style={{ animationDelay: '0.6s' }}>
                 <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={95} formatter={(val) => val.toString() + "%"} />
+                  <AnimatedCounter end={95} suffix="%" />
                 </div>
                 <div className="text-content-secondary">Success Rate</div>
               </div>
