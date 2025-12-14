@@ -184,7 +184,7 @@ export default function CandidatesPage() {
               <MetricCard
                 title="Avg Match Score"
                 value={mockStats.avgMatchScore}
-                suffix="%"
+                format="percentage"
                 icon="📈"
               />
             </HoverMorph>
