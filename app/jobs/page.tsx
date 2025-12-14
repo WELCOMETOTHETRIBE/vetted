@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react"
 import { HoverMorph, StaggerContainer, LiquidButton, MagneticElement } from "@/components/AdvancedAnimations"
 import { MetricCard, InteractiveBarChart, AnimatedCounter } from "@/components/DataVisualization"
 import { SearchFilter } from "@/components/AdvancedForms"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import SearchBar from "@/components/SearchBar"
 
 // Database job interface
 interface DatabaseJob {
@@ -117,6 +117,11 @@ function JobsNavbar() {
             </a>
           </div>
 
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xl mx-4 lg:mx-8">
+            <SearchBar />
+          </div>
+
           {/* Navigation Items */}
           <div className="flex items-center space-x-1">
             <a
@@ -192,15 +197,16 @@ function JobsPageContent() {
         setError(err.message || 'Failed to load jobs')
 
         // For demo purposes, show some sample jobs if API fails
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Using sample jobs for development')
-          setJobs(transformJobs([
-            { id: '1', title: 'Senior Software Engineer', company: { id: '1', name: 'TechCorp' } },
-            { id: '2', title: 'Product Manager', company: { id: '2', name: 'StartupXYZ' } },
-            { id: '3', title: 'Full Stack Developer', company: { id: '3', name: 'InnovateLab' } }
-          ]))
-          setError(null)
-        }
+        console.log('API failed, using sample jobs for demonstration')
+        setJobs(transformJobs([
+          { id: '1', title: 'Senior Software Engineer', company: { id: '1', name: 'TechCorp' } },
+          { id: '2', title: 'Product Manager', company: { id: '2', name: 'StartupXYZ' } },
+          { id: '3', title: 'Full Stack Developer', company: { id: '3', name: 'InnovateLab' } },
+          { id: '4', title: 'DevOps Engineer', company: { id: '4', name: 'CloudTech' } },
+          { id: '5', title: 'UX/UI Designer', company: { id: '5', name: 'DesignStudio' } },
+          { id: '6', title: 'Data Scientist', company: { id: '6', name: 'DataFlow' } }
+        ]))
+        setError(null)
       } finally {
         setIsLoading(false)
       }
