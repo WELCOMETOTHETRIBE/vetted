@@ -398,43 +398,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("[DEBUG-BG] Queue saved successfully");
         sendResponse({ success: true, queuedCount: queue.length });
         
-        // Auto-send batch if queue reaches 5 profiles or after 10 seconds
-        if (queue.length >= 5) {
-          console.log("[DEBUG-BG] Queue reached 5 profiles, sending immediately...");
-          sendBatchToVetted().then((result) => {
-            console.log("[DEBUG-BG] Batch send result:", result);
-          }).catch((error) => {
-            console.error("[DEBUG-BG] Batch send error:", error);
-          });
-        } else if (queue.length === 1) {
-          // Use chrome.alarms instead of setTimeout - alarms persist across service worker restarts
-          console.log("[DEBUG-BG] Starting 10-second alarm for auto-send...");
-          chrome.alarms.create("sendBatchToVetted", { delayInMinutes: 10 / 60 }, () => {
-            if (chrome.runtime.lastError) {
-              console.error("[DEBUG-BG] Error creating alarm:", chrome.runtime.lastError);
-              // Fallback: send immediately if alarm creation fails
-              console.log("[DEBUG-BG] Alarm creation failed, sending immediately as fallback...");
-              sendBatchToVetted().then((result) => {
-                console.log("[DEBUG-BG] Fallback batch send result:", result);
-              }).catch((error) => {
-                console.error("[DEBUG-BG] Fallback batch send error:", error);
-              });
-            } else {
-              console.log("[DEBUG-BG] Alarm created successfully");
-              // Verify alarm was created
-              chrome.alarms.get("sendBatchToVetted", (alarm) => {
-                if (chrome.runtime.lastError) {
-                  console.error("[DEBUG-BG] Error getting alarm:", chrome.runtime.lastError);
-                } else if (alarm) {
-                  console.log("[DEBUG-BG] Alarm verified, scheduled for:", new Date(alarm.scheduledTime));
-                } else {
-                  console.warn("[DEBUG-BG] Alarm not found after creation!");
-                }
-              });
-            }
-          });
+        // Auto-send batch immediately when we have profiles (more conservative)
+        if (queue.length >= 1) {
+          console.log("[DEBUG-BG] Queue has profiles, sending immediately...");
+          // Add small delay to prevent overwhelming the system
+          setTimeout(() => {
+            sendBatchToVetted().then((result) => {
+              console.log("[DEBUG-BG] Batch send result:", result);
+            }).catch((error) => {
+              console.error("[DEBUG-BG] Batch send error:", error);
+            });
+          }, 1000); // 1 second delay
         } else {
-          console.log("[DEBUG-BG] Queue length is", queue.length, "- waiting for more profiles or alarm");
+          console.log("[DEBUG-BG] Queue is empty after adding profile");
         }
       });
     });
@@ -529,9 +505,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Global flag to prevent concurrent batch processing
+let isProcessingBatch = false;
+
 // Function to send batch of profiles to Vetted
 async function sendBatchToVetted() {
   return new Promise((resolve) => {
+    // Prevent concurrent batch processing
+    if (isProcessingBatch) {
+      console.log("[DEBUG-BG] Batch processing already in progress, skipping...");
+      resolve({ success: false, error: "Batch processing already in progress" });
+      return;
+    }
+
+    isProcessingBatch = true;
+
     console.log("[DEBUG-BG] ========== sendBatchToVetted START ==========");
     // Hardcoded Vetted API URL
     const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
@@ -545,45 +533,74 @@ async function sendBatchToVetted() {
 
       if (queue.length === 0) {
         console.log("[DEBUG-BG] Queue is empty, nothing to send");
+        isProcessingBatch = false;
         resolve({ success: true, sent: 0, message: "No profiles in queue" });
         return;
       }
 
-      // Limit batch size to prevent memory issues
-      const maxBatchSize = 10;
+      // Limit batch size to prevent memory issues - reduced for stability
+      const maxBatchSize = 3;
       const batchToProcess = queue.slice(0, maxBatchSize);
       console.log("[DEBUG-BG] Processing", batchToProcess.length, "profiles from queue (limited to", maxBatchSize, ")...");
 
       try {
         // Process batch of profiles
         if (typeof ProfileProcessor === 'undefined') {
+          isProcessingBatch = false;
           resolve({ success: false, error: "Profile processor not available" });
           return;
         }
 
-        const processed = batchToProcess.map((profileDoc, index) => {
+        // Process profiles sequentially to prevent memory overload
+        const processed = [];
+        const processingTimeout = 15000; // 15 second timeout per profile
+
+        for (let i = 0; i < batchToProcess.length; i++) {
+          const profileDoc = batchToProcess[i];
+
           try {
-            console.log(`[DEBUG-BG] Processing profile ${index + 1}/${batchToProcess.length}...`);
+            console.log(`[DEBUG-BG] Processing profile ${i + 1}/${batchToProcess.length}...`);
             console.log(`[DEBUG-BG] Profile document keys:`, Object.keys(profileDoc || {}));
             console.log(`[DEBUG-BG] Calling ProfileProcessor.processProfileDocument...`);
 
+            // Process with timeout protection
             const processStartTime = Date.now();
-            const result = ProfileProcessor.processProfileDocument(profileDoc);
-            const processTime = Date.now() - processStartTime;
+            const result = await new Promise((resolve, reject) => {
+              const timeoutId = setTimeout(() => {
+                reject(new Error(`Profile processing timed out after ${processingTimeout}ms`));
+              }, processingTimeout);
 
-            console.log(`[DEBUG-BG] Profile ${index + 1} processed successfully in ${processTime}ms`);
+              try {
+                const processedResult = ProfileProcessor.processProfileDocument(profileDoc);
+                clearTimeout(timeoutId);
+                resolve(processedResult);
+              } catch (error) {
+                clearTimeout(timeoutId);
+                reject(error);
+              }
+            });
+
+            const processTime = Date.now() - processStartTime;
+            console.log(`[DEBUG-BG] Profile ${i + 1} processed successfully in ${processTime}ms`);
             console.log(`[DEBUG-BG] Processed result keys:`, result ? Object.keys(result) : 'null');
-            return result;
+
+            if (result) {
+              processed.push(result);
+            }
+
+            // Add small delay between profiles to prevent overwhelming the system
+            await new Promise(resolve => setTimeout(resolve, 500));
+
           } catch (e) {
-            console.error(`[DEBUG-BG] Error processing profile ${index + 1}:`, e);
+            console.error(`[DEBUG-BG] Error processing profile ${i + 1}:`, e);
             console.error(`[DEBUG-BG] Error details:`, {
               message: e?.message,
               name: e?.name,
               stack: e?.stack
             });
-            return null;
+            // Continue with next profile instead of failing the whole batch
           }
-        }).filter(p => p !== null);
+        }
 
         console.log("[DEBUG-BG] Processed profiles:", processed.length, "out of", queue.length);
 
@@ -592,6 +609,7 @@ async function sendBatchToVetted() {
           console.error("[DEBUG-BG] All profiles failed processing, removing from queue");
           const remainingQueue = queue.slice(batchToProcess.length);
           chrome.storage.local.set({ vettedQueue: remainingQueue });
+          isProcessingBatch = false;
           resolve({ success: false, error: "No valid profiles to send" });
           return;
         }
@@ -657,6 +675,7 @@ async function sendBatchToVetted() {
         });
 
         console.log("[DEBUG-BG] ========== sendBatchToVetted SUCCESS ==========");
+        isProcessingBatch = false;
         resolve({
           success: true,
           sent: processed.length,
@@ -671,6 +690,7 @@ async function sendBatchToVetted() {
           stack: error.stack,
           name: error.name
         });
+        isProcessingBatch = false;
         resolve({ success: false, error: error.message, sent: 0 });
       }
     });
