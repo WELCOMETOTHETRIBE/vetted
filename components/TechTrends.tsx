@@ -215,7 +215,7 @@ export default function TechTrends() {
 
     if (error) {
       return (
-        <>
+        <div className="text-center py-8">
           <p className="text-sm text-red-600 mb-2">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -223,97 +223,74 @@ export default function TechTrends() {
           >
             Refresh page
           </button>
-        </>
+        </div>
       )
     }
 
     if (trends.length === 0 && !loading) {
       return (
-        <p className="text-sm text-gray-600">
-          No trends available at the moment. Check back soon!
-        </p>
+        <div className="text-center py-8">
+          <p className="text-sm text-gray-600">
+            No trends available at the moment. Check back soon!
+          </p>
+        </div>
       )
     }
 
     return (
-      <>
-        <div className="space-y-4">
-          {trends.slice(0, 5).map((trend, idx) => (
-            <div
-              key={idx}
-              className="group relative p-5 rounded-2xl bg-gradient-to-r from-white/80 to-white/40 hover:from-white/90 hover:to-white/60 transition-all duration-300 border border-surface-tertiary/30 hover:border-primary-300/50 hover:shadow-lg hover:shadow-primary-500/10 backdrop-blur-sm transform hover:-translate-y-1"
+      <div className="space-y-4">
+        {trends.slice(0, 5).map((trend, idx) => (
+          <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <a
+              href={trend.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
             >
-              {/* Subtle gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 to-accent-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <h4 className="text-base font-semibold text-gray-900 line-clamp-2 flex-1">
+                  {trend.title}
+                </h4>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                  trend.category === "ai"
+                    ? "bg-purple-100 text-purple-800"
+                    : trend.category === "software_engineering"
+                    ? "bg-blue-100 text-blue-800"
+                    : trend.category === "startups"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-800"
+                }`}>
+                  {getCategoryLabel(trend.category)}
+                </span>
+              </div>
 
-              <a
-                href={trend.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block relative z-10"
-              >
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <h4 className="text-base font-bold text-content-primary line-clamp-2 group-hover:text-primary-700 transition-colors leading-snug flex-1">
-                    {trend.title}
-                  </h4>
-                  <div className="flex flex-col items-end gap-2">
-                    <span
-                      className={`text-xs px-3 py-1.5 rounded-full font-semibold flex-shrink-0 shadow-sm ${
-                        trend.category === "ai"
-                          ? "bg-gradient-to-r from-accent-purple-100 to-accent-purple-200 text-accent-purple-700 border border-accent-purple-300"
-                          : trend.category === "software_engineering"
-                          ? "bg-gradient-to-r from-accent-teal-100 to-accent-teal-200 text-accent-teal-700 border border-accent-teal-300"
-                          : trend.category === "startups"
-                          ? "bg-gradient-to-r from-success-100 to-success-200 text-success-700 border border-success-300"
-                          : "bg-gradient-to-r from-primary-100 to-primary-200 text-primary-700 border border-primary-300"
-                      }`}
-                    >
-                      {getCategoryLabel(trend.category)}
-                    </span>
-                  </div>
+              {trend.highlight && (
+                <div className="mb-3 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-700 line-clamp-2 italic">
+                    "{trend.highlight}"
+                  </p>
                 </div>
+              )}
 
-                {trend.highlight && (
-                  <div className="mb-4 p-3 bg-surface-secondary/40 rounded-lg border border-surface-tertiary/20">
-                    <p className="text-sm text-content-secondary line-clamp-2 leading-relaxed italic">
-                      "{trend.highlight}"
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between gap-3 pt-2 border-t border-surface-tertiary/30">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 bg-content-tertiary rounded-full" />
-                      <span className="text-xs font-medium text-content-secondary">{trend.source}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 bg-primary-400 rounded-full animate-pulse" />
-                      <span className="text-xs font-medium text-content-secondary">
-                        {formatTimeAgo(trend.published_at)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-primary-600 group-hover:text-primary-700 transition-colors font-semibold">
-                    <span className="text-sm">Explore</span>
-                    <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </div>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-4">
+                  <span>{trend.source}</span>
+                  <span>{formatTimeAgo(trend.published_at)}</span>
                 </div>
-              </a>
-            </div>
-          ))}
-        </div>
-        
+                <span className="text-blue-600 font-medium">Read more →</span>
+              </div>
+            </a>
+          </div>
+        ))}
+
         {trends.length > 5 && (
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+          <div className="text-center pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
               Showing top 5 of {trends.length} trends
             </p>
           </div>
         )}
-      </>
+      </div>
     )
   }
 
@@ -333,7 +310,7 @@ export default function TechTrends() {
 
     if (startupsError) {
       return (
-        <>
+        <div className="text-center py-8">
           <p className="text-sm text-red-600 mb-2">{startupsError}</p>
           <button
             onClick={() => {
@@ -344,208 +321,159 @@ export default function TechTrends() {
           >
             Try again
           </button>
-        </>
+        </div>
       )
     }
 
     if (startups.length === 0 && !loadingStartups) {
       return (
-        <p className="text-sm text-gray-600">
-          No startups available at the moment. Check back soon!
-        </p>
+        <div className="text-center py-8">
+          <p className="text-sm text-gray-600">
+            No startups available at the moment. Check back soon!
+          </p>
+        </div>
       )
     }
 
     return (
-      <>
-        <div className="space-y-4">
-          {startups.slice(0, 5).map((startup, idx) => {
-            const companyUrl = startup.website
-              ? (startup.website.startsWith('http') ? startup.website : `https://${startup.website}`)
-              : startup.url
+      <div className="space-y-4">
+        {startups.slice(0, 5).map((startup, idx) => {
+          const companyUrl = startup.website
+            ? (startup.website.startsWith('http') ? startup.website : `https://${startup.website}`)
+            : startup.url
 
-            return (
-              <div
-                key={idx}
-                className="group relative p-5 rounded-2xl bg-gradient-to-r from-white/80 to-white/40 hover:from-white/90 hover:to-white/60 transition-all duration-300 border border-surface-tertiary/30 hover:border-accent-purple-300/50 hover:shadow-lg hover:shadow-accent-purple-500/10 backdrop-blur-sm transform hover:-translate-y-1"
-              >
-                {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-accent-purple-500/5 to-accent-teal-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex-1 min-w-0">
-                      {companyUrl ? (
-                        <a
-                          href={companyUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          <h4 className="text-lg font-bold text-content-primary line-clamp-1 group-hover:text-accent-purple-700 transition-colors">
-                            {startup.name}
-                          </h4>
-                        </a>
-                      ) : (
-                        <h4 className="text-lg font-bold text-content-primary line-clamp-1">
-                          {startup.name}
-                        </h4>
-                      )}
-                      {startup.industry && (
-                        <div className="mt-2">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-gradient-to-r from-accent-purple-100 to-accent-purple-200 text-accent-purple-700 border border-accent-purple-300 rounded-full shadow-sm">
-                            <span className="w-1.5 h-1.5 bg-accent-purple-500 rounded-full animate-pulse" />
-                            {startup.industry}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full font-bold shadow-sm ${
-                          startup.type === "ipo"
-                            ? "bg-gradient-to-r from-success-100 to-success-200 text-success-700 border border-success-300"
-                            : "bg-gradient-to-r from-accent-teal-100 to-accent-teal-200 text-accent-teal-700 border border-accent-teal-300"
-                        }`}
-                      >
-                        <span className="text-sm">{startup.type === "ipo" ? "🚀" : "⚡"}</span>
-                        <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
+          return (
+            <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex-1 min-w-0">
+                  {companyUrl ? (
+                    <a
+                      href={companyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <h4 className="text-lg font-semibold text-gray-900 line-clamp-1 hover:text-purple-700 transition-colors">
+                        {startup.name}
+                      </h4>
+                    </a>
+                  ) : (
+                    <h4 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                      {startup.name}
+                    </h4>
+                  )}
+                  {startup.industry && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
+                        {startup.industry}
                       </span>
-                      {(startup.funding || startup.valuation) && (
-                        <span className="text-xs font-semibold text-success-600 bg-success-50 px-2 py-1 rounded-full border border-success-200">
-                          {startup.funding || startup.valuation}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {startup.usp && (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-accent-purple-50/50 to-accent-teal-50/50 rounded-xl border border-accent-purple-200/30">
-                      <p className="text-xs font-bold text-accent-purple-700 mb-2 uppercase tracking-wider">Unique Value Proposition</p>
-                      <p className="text-sm text-content-secondary line-clamp-2 leading-relaxed font-medium">
-                        {startup.usp}
-                      </p>
                     </div>
                   )}
-
-                  {startup.highlight && (
-                    <div className="mb-4 p-3 bg-surface-secondary/40 rounded-lg border border-surface-tertiary/20">
-                      <p className="text-sm text-content-secondary line-clamp-2 leading-relaxed italic">
-                        "{startup.highlight}"
-                      </p>
-                    </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full font-medium ${
+                    startup.type === "ipo"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}>
+                    <span>{startup.type === "ipo" ? "🚀" : "⚡"}</span>
+                    <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
+                  </span>
+                  {(startup.funding || startup.valuation) && (
+                    <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
+                      {startup.funding || startup.valuation}
+                    </span>
                   )}
-
-                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-surface-tertiary/30">
-                    <div className="flex items-center gap-4">
-                      {startup.source && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 bg-content-tertiary rounded-full" />
-                          <span className="text-xs font-medium text-content-secondary">{startup.source}</span>
-                        </div>
-                      )}
-                      {startup.published_at && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 bg-accent-purple-400 rounded-full animate-pulse" />
-                          <span className="text-xs font-medium text-content-secondary">
-                            {formatTimeAgo(startup.published_at)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {companyUrl && (
-                      <div className="flex items-center gap-2 text-accent-purple-600 group-hover:text-accent-purple-700 transition-colors font-semibold">
-                        <span className="text-sm">Visit Site</span>
-                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
-            )
-          })}
-        </div>
-        
+
+              {startup.usp && (
+                <div className="mb-3 p-3 bg-purple-50 rounded-md">
+                  <p className="text-xs font-semibold text-purple-800 mb-1 uppercase tracking-wide">Unique Value Proposition</p>
+                  <p className="text-sm text-gray-700 line-clamp-2">
+                    {startup.usp}
+                  </p>
+                </div>
+              )}
+
+              {startup.highlight && (
+                <div className="mb-3 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-700 line-clamp-2 italic">
+                    "{startup.highlight}"
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200">
+                <div className="flex items-center gap-4">
+                  {startup.source && <span>{startup.source}</span>}
+                  {startup.published_at && <span>{formatTimeAgo(startup.published_at)}</span>}
+                </div>
+                {companyUrl && (
+                  <span className="text-purple-600 font-medium hover:text-purple-700 transition-colors">
+                    Visit site →
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
         {startups.length > 5 && (
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+          <div className="text-center pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
               Showing top 5 of {startups.length} companies
             </p>
           </div>
         )}
-      </>
+      </div>
     )
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-surface-primary to-surface-secondary shadow-xl border border-surface-tertiary/30 backdrop-blur-xl">
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 via-accent-purple-500/5 to-accent-teal-500/5 animate-pulse opacity-50" />
-
-      {/* Header with glassmorphism */}
-      <div className="relative p-6 border-b border-surface-tertiary/20 bg-white/60 backdrop-blur-sm">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
-          {/* Tab Navigation with Modern Design */}
-          <div className="flex p-1 bg-surface-secondary/50 rounded-xl border border-surface-tertiary/30">
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 bg-white rounded-lg p-1 border border-gray-200">
             <button
               onClick={() => setActiveTab("trends")}
-              className={`relative px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "trends"
-                  ? "text-white shadow-lg transform scale-105"
-                  : "text-content-secondary hover:text-content-primary hover:bg-white/50"
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
-              style={{
-                background: activeTab === "trends"
-                  ? "linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-600)))"
-                  : "transparent"
-              }}
             >
               <span className="flex items-center gap-2">
-                <span className="text-lg">🚀</span>
+                <span>🚀</span>
                 <span className="hidden sm:inline">Tech Trends</span>
                 <span className="sm:hidden">Trends</span>
               </span>
-              {activeTab === "trends" && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full animate-bounce" />
-              )}
             </button>
             <button
               onClick={() => setActiveTab("startups")}
-              className={`relative px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "startups"
-                  ? "text-white shadow-lg transform scale-105"
-                  : "text-content-secondary hover:text-content-primary hover:bg-white/50"
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
-              style={{
-                background: activeTab === "startups"
-                  ? "linear-gradient(135deg, hsl(var(--accent-purple-500)), hsl(var(--accent-purple-600)))"
-                  : "transparent"
-              }}
             >
               <span className="flex items-center gap-2">
-                <span className="text-lg">💡</span>
+                <span>💡</span>
                 <span className="hidden sm:inline">Startups</span>
                 <span className="sm:hidden">Startups</span>
               </span>
-              {activeTab === "startups" && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full animate-bounce" />
-              )}
             </button>
           </div>
 
-          {/* Refresh Button with Modern Design */}
+          {/* Refresh Button */}
           <div className="flex items-center gap-3">
-            {/* Last Updated Badge */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-surface-secondary/70 rounded-lg border border-surface-tertiary/30">
-              <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-              <span className="text-xs text-content-secondary font-medium">
-                {activeTab === "trends" && trends.length > 0 && formatTimeAgo(trends[0]?.published_at)}
-                {activeTab === "startups" && startups.length > 0 && formatTimeAgo(startups[0]?.published_at)}
-                {((activeTab === "trends" && trends.length === 0) || (activeTab === "startups" && startups.length === 0)) && "Live"}
-              </span>
-            </div>
+            <span className="text-xs text-gray-500 hidden sm:block">
+              {activeTab === "trends" && trends.length > 0 && formatTimeAgo(trends[0]?.published_at)}
+              {activeTab === "startups" && startups.length > 0 && formatTimeAgo(startups[0]?.published_at)}
+              {((activeTab === "trends" && trends.length === 0) || (activeTab === "startups" && startups.length === 0)) && "Live"}
+            </span>
 
             <button
               onClick={() => {
@@ -557,13 +485,13 @@ export default function TechTrends() {
                 }
               }}
               disabled={refreshing}
-              className="group relative p-3 rounded-xl bg-white/70 hover:bg-white border border-surface-tertiary/30 hover:border-primary-300 transition-all duration-300 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              className="p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
               title={`Refresh ${activeTab === "trends" ? "trends" : "startups"}`}
             >
               {refreshing ? (
-                <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               ) : (
-                <svg className="w-5 h-5 text-primary-600 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               )}
@@ -571,12 +499,12 @@ export default function TechTrends() {
           </div>
         </div>
 
-        {/* Section Title with Animation */}
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-content-primary to-primary-600 bg-clip-text text-transparent">
+        {/* Section Title */}
+        <div className="mt-4">
+          <h2 className="text-xl font-bold text-gray-900">
             {activeTab === "trends" ? "🚀 Tech Trends" : "💡 Startups to Watch"}
           </h2>
-          <p className="text-sm text-content-secondary mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             {activeTab === "trends"
               ? "Stay ahead with the latest technology trends and insights"
               : "Discover innovative startups shaping the future of tech"
@@ -585,8 +513,8 @@ export default function TechTrends() {
         </div>
       </div>
 
-      {/* Content Area with Glassmorphism */}
-      <div className="relative p-6 bg-white/40 backdrop-blur-sm">
+      {/* Content Area */}
+      <div className="p-6">
         {activeTab === "trends" ? renderTrendsContent() : renderStartupsContent()}
       </div>
     </div>

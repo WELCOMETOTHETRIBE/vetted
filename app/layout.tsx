@@ -18,11 +18,6 @@ export const metadata: Metadata = {
   description: "Connect, grow, and get hired on Vetted",
   keywords: ["professional networking", "job search", "career development", "recruitment"],
   authors: [{ name: "Vetted Team" }],
-  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
@@ -39,6 +34,16 @@ export const metadata: Metadata = {
     title: "Vetted - Professional Network",
     description: "Connect, grow, and get hired on Vetted",
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({
