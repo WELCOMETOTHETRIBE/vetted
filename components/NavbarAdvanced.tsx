@@ -4,8 +4,15 @@ import NavbarClient from "./NavbarClient"
 
 // Server component wrapper to fetch user data
 const NavbarAdvanced = async () => {
-  const session = await auth()
+  let session = null
   let isAdmin = false
+
+  try {
+    session = await auth()
+  } catch (error) {
+    // Fallback if auth is not available
+    console.warn("Could not get session:", error)
+  }
 
   if (session?.user) {
     try {
