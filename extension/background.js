@@ -178,10 +178,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("[DEBUG-BG] Message type:", message?.type);
   console.log("[DEBUG-BG] Has sendResponse:", typeof sendResponse === 'function');
   console.log("[DEBUG-BG] Service worker active:", self.serviceWorker?.state || "unknown");
-  
+
+  // Set up timeout for response to prevent hanging
+  let responseTimeout;
+  const timeoutMs = 30000; // 30 second timeout
+
+  const sendTimeoutResponse = () => {
+    try {
+      console.error("[DEBUG-BG] Response timeout after", timeoutMs, "ms");
+      sendResponse({ success: false, error: "Request timed out" });
+    } catch (e) {
+      console.error("[DEBUG-BG] Could not send timeout response:", e);
+    }
+  };
+
+  if (typeof sendResponse === 'function') {
+    responseTimeout = setTimeout(sendTimeoutResponse, timeoutMs);
+  }
+
   // Check extension context validity
   if (!isExtensionContextValid()) {
     console.error("[DEBUG-BG] ERROR: Extension context invalidated");
+    clearTimeout(responseTimeout);
     try {
       sendResponse({ success: false, error: "Extension context invalidated. Please reload the extension." });
     } catch (e) {
@@ -189,10 +207,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     return false;
   }
-  
+
   // Validate message
   if (!message || !message.type) {
     console.error("[DEBUG-BG] Invalid message received:", message);
+    clearTimeout(responseTimeout);
     try {
       sendResponse({ success: false, error: "Invalid message format" });
     } catch (e) {
@@ -232,9 +251,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           // Check for duplicate by URL
           const isDuplicate = profileUrl && currentList.some(existing => {
-            const existingUrl = existing.extraction_metadata?.source_url || 
+            const existingUrl = existing.extraction_metadata?.source_url ||
                               existing.personal_info?.profile_url ||
-                              existing.comprehensive_data?.find(item => 
+                              existing.comprehensive_data?.find(item =>
                                 item.category === 'metadata' && item.data?.source_url
                               )?.data?.source_url;
             return existingUrl === profileUrl;
@@ -242,25 +261,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           if (isDuplicate) {
             console.log("[DEBUG-BG] Duplicate profile detected, skipping save");
-            sendResponse({ 
-              success: false, 
+            clearTimeout(responseTimeout);
+            sendResponse({
+              success: false,
               error: "Profile already exists",
-              count: currentList.length 
+              count: currentList.length
             });
             return;
           }
-          
+
           console.log("[DEBUG-BG] No duplicate found, proceeding with save...");
 
           // Estimate size of new profile
           const newProfileSize = estimateStorageSize(message.payload);
           const currentListSize = estimateStorageSize(currentList);
           const estimatedNewSize = currentListSize + newProfileSize;
-          
-          // Chrome storage limit is ~10MB, warn if approaching limit
+
+          // Chrome storage limit is ~10MB, check quota before saving
           const STORAGE_LIMIT = 10 * 1024 * 1024; // 10MB
-          if (estimatedNewSize > STORAGE_LIMIT * 0.9) {
-            console.warn("Storage approaching limit:", estimatedNewSize, "bytes");
+          if (estimatedNewSize > STORAGE_LIMIT * 0.95) {
+            console.error("[DEBUG-BG] Storage quota exceeded:", estimatedNewSize, "bytes");
+            clearTimeout(responseTimeout);
+            sendResponse({
+              success: false,
+              error: `Storage quota exceeded (${(estimatedNewSize / (1024 * 1024)).toFixed(2)}MB). Please clear some profiles from the extension popup.`,
+              count: currentList.length,
+              storageInfo: {
+                used: estimatedNewSize,
+                limit: STORAGE_LIMIT,
+                percentage: ((estimatedNewSize / STORAGE_LIMIT) * 100).toFixed(1)
+              }
+            });
+            return;
+          }
+
+          if (estimatedNewSize > STORAGE_LIMIT * 0.8) {
+            console.warn("[DEBUG-BG] Storage approaching limit:", estimatedNewSize, "bytes (", ((estimatedNewSize / STORAGE_LIMIT) * 100).toFixed(1), "%)");
           }
 
           currentList.push(message.payload);
@@ -268,17 +304,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // Try to save with error handling
           console.log("[DEBUG-BG] Saving profile to storage...");
           chrome.storage.local.set({ profileDocuments: currentList }, () => {
+            clearTimeout(responseTimeout);
             console.log("[DEBUG-BG] Storage set callback called");
             if (chrome.runtime.lastError) {
               console.error("[DEBUG-BG] Storage error:", chrome.runtime.lastError);
-              sendResponse({ 
-                success: false, 
+              sendResponse({
+                success: false,
                 error: chrome.runtime.lastError.message || "Storage quota exceeded. Please clear some profiles.",
                 count: currentList.length - 1 // Don't count the failed one
               });
               return;
             }
-            
+
             console.log("[DEBUG-BG] Profile saved successfully! Total count:", currentList.length);
             sendResponse({ success: true, count: currentList.length });
           });
@@ -351,12 +388,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
       // Save queue
       chrome.storage.local.set({ vettedQueue: queue }, () => {
+        clearTimeout(responseTimeout);
         if (chrome.runtime.lastError) {
           console.error("[DEBUG-BG] Error saving queue:", chrome.runtime.lastError);
           sendResponse({ success: false, error: chrome.runtime.lastError.message });
           return;
         }
-        
+
         console.log("[DEBUG-BG] Queue saved successfully");
         sendResponse({ success: true, queuedCount: queue.length });
         
@@ -455,12 +493,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("[DEBUG-BG] Calling sendProcessedProfilesToVetted...");
     sendProcessedProfilesToVetted(message.payload, message.apiKey)
       .then((result) => {
+        clearTimeout(responseTimeout);
         const elapsed = Date.now() - startTime;
         console.log("[DEBUG-BG] sendProcessedProfilesToVetted completed after", elapsed, "ms");
         console.log("[DEBUG-BG] Result:", result);
         respond(result);
       })
       .catch((error) => {
+        clearTimeout(responseTimeout);
         const elapsed = Date.now() - startTime;
         console.error("[DEBUG-BG] ERROR in SEND_PROCESSED_TO_VETTED after", elapsed, "ms");
         console.error("[DEBUG-BG] Error:", error);
@@ -497,37 +537,40 @@ async function sendBatchToVetted() {
     const VETTED_API_URL = "https://vetted-production.up.railway.app/api/candidates/upload";
     console.log("[DEBUG-BG] API URL:", VETTED_API_URL);
     console.log("[DEBUG-BG] ProfileProcessor available:", typeof ProfileProcessor !== 'undefined');
-    
+
     chrome.storage.local.get(["vettedQueue", "vettedApiKey"], async (data) => {
       const queue = Array.isArray(data.vettedQueue) ? data.vettedQueue : [];
       console.log("[DEBUG-BG] Queue length:", queue.length);
       console.log("[DEBUG-BG] Has API key:", !!data.vettedApiKey);
-      
+
       if (queue.length === 0) {
         console.log("[DEBUG-BG] Queue is empty, nothing to send");
         resolve({ success: true, sent: 0, message: "No profiles in queue" });
         return;
       }
-      
-      console.log("[DEBUG-BG] Processing", queue.length, "profiles from queue...");
+
+      // Limit batch size to prevent memory issues
+      const maxBatchSize = 10;
+      const batchToProcess = queue.slice(0, maxBatchSize);
+      console.log("[DEBUG-BG] Processing", batchToProcess.length, "profiles from queue (limited to", maxBatchSize, ")...");
 
       try {
-        // Process all profiles in queue
+        // Process batch of profiles
         if (typeof ProfileProcessor === 'undefined') {
           resolve({ success: false, error: "Profile processor not available" });
           return;
         }
 
-        const processed = queue.map((profileDoc, index) => {
+        const processed = batchToProcess.map((profileDoc, index) => {
           try {
-            console.log(`[DEBUG-BG] Processing profile ${index + 1}/${queue.length}...`);
+            console.log(`[DEBUG-BG] Processing profile ${index + 1}/${batchToProcess.length}...`);
             console.log(`[DEBUG-BG] Profile document keys:`, Object.keys(profileDoc || {}));
             console.log(`[DEBUG-BG] Calling ProfileProcessor.processProfileDocument...`);
-            
+
             const processStartTime = Date.now();
             const result = ProfileProcessor.processProfileDocument(profileDoc);
             const processTime = Date.now() - processStartTime;
-            
+
             console.log(`[DEBUG-BG] Profile ${index + 1} processed successfully in ${processTime}ms`);
             console.log(`[DEBUG-BG] Processed result keys:`, result ? Object.keys(result) : 'null');
             return result;
@@ -545,13 +588,14 @@ async function sendBatchToVetted() {
         console.log("[DEBUG-BG] Processed profiles:", processed.length, "out of", queue.length);
 
         if (processed.length === 0) {
-          // Clear queue if all failed
-          console.error("[DEBUG-BG] All profiles failed processing, clearing queue");
-          chrome.storage.local.set({ vettedQueue: [] });
+          // Remove failed profiles from queue
+          console.error("[DEBUG-BG] All profiles failed processing, removing from queue");
+          const remainingQueue = queue.slice(batchToProcess.length);
+          chrome.storage.local.set({ vettedQueue: remainingQueue });
           resolve({ success: false, error: "No valid profiles to send" });
           return;
         }
-        
+
         console.log("[DEBUG-BG] Sending", processed.length, "processed profiles to API...");
 
         // Send batch to Vetted API
@@ -569,7 +613,7 @@ async function sendBatchToVetted() {
           headers: Object.keys(headers),
           bodySize: JSON.stringify(processed).length
         });
-        
+
         const fetchStartTime = Date.now();
         const response = await fetch(VETTED_API_URL, {
           method: "POST",
@@ -577,7 +621,7 @@ async function sendBatchToVetted() {
           credentials: "include",
           body: JSON.stringify(processed),
         });
-        
+
         const fetchTime = Date.now() - fetchStartTime;
         console.log("[DEBUG-BG] Fetch completed in", fetchTime, "ms");
         console.log("[DEBUG-BG] Response status:", response.status, response.statusText);
@@ -605,15 +649,16 @@ async function sendBatchToVetted() {
 
         const result = await response.json();
         console.log("[DEBUG-BG] Batch send successful, result:", result);
-        
-        // Clear queue after successful send
-        chrome.storage.local.set({ vettedQueue: [] }, () => {
-          console.log("[DEBUG-BG] Queue cleared after successful send");
+
+        // Remove successfully sent profiles from queue, keep remaining ones
+        const remainingQueue = queue.slice(batchToProcess.length);
+        chrome.storage.local.set({ vettedQueue: remainingQueue }, () => {
+          console.log("[DEBUG-BG] Removed", batchToProcess.length, "profiles from queue, remaining:", remainingQueue.length);
         });
-        
+
         console.log("[DEBUG-BG] ========== sendBatchToVetted SUCCESS ==========");
-        resolve({ 
-          success: true, 
+        resolve({
+          success: true,
           sent: processed.length,
           result: result,
           message: `Successfully sent ${processed.length} profile(s) to Vetted`

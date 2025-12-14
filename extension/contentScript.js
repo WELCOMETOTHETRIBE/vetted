@@ -6,6 +6,9 @@
   // Avoid injecting multiple buttons if the content script runs more than once
   if (document.getElementById("profile-json-floating-btn")) return;
 
+  // Prevent multiple simultaneous extractions
+  let isProcessing = false;
+
   // Helper function to check if extension context is valid
   function isExtensionContextValid() {
     try {
@@ -89,9 +92,35 @@
       button.style.opacity = "0.9";
     });
 
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
+      // Prevent multiple simultaneous clicks
+      if (isProcessing) {
+        showToast("Already processing profile. Please wait.", true);
+        return;
+      }
+
+      isProcessing = true;
+      button.disabled = true;
+      button.textContent = "Processing...";
+
       try {
-        const profileDoc = buildProfileDocument();
+        // Add timeout wrapper around profile building
+        const profilePromise = new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error("Profile extraction timed out after 12 seconds"));
+          }, 12000); // 12 second timeout
+
+          try {
+            const result = buildProfileDocument();
+            clearTimeout(timeoutId);
+            resolve(result);
+          } catch (error) {
+            clearTimeout(timeoutId);
+            reject(error);
+          }
+        });
+
+        const profileDoc = await profilePromise;
         
         // Validate profile document before sending
         if (!profileDoc || typeof profileDoc !== 'object') {
@@ -350,16 +379,21 @@
           fileName: error.fileName,
           lineNumber: error.lineNumber
         });
-        
+
         // Check if it's an extension context error
         const errorMessage = error?.message || (error?.toString ? error.toString() : String(error)) || "Unknown error occurred";
-        if (errorMessage.includes("Extension context invalidated") || 
+        if (errorMessage.includes("Extension context invalidated") ||
             errorMessage.includes("message port closed")) {
           showExtensionReloadMessage();
           showToast("Extension was reloaded. Please refresh this page.", true);
         } else {
           showToast(`Error: ${errorMessage}. Check console for details.`);
         }
+      } finally {
+        // Always reset processing state
+        isProcessing = false;
+        button.disabled = false;
+        button.textContent = "Save Profile JSON";
       }
     });
 
@@ -434,16 +468,20 @@
     for (const heading of headings) {
       const text = heading.textContent.trim();
       if (headingTexts.some(h => text.toLowerCase().includes(h.toLowerCase()))) {
-        // Find the parent section or container
+        // Find the parent section or container with safeguard against infinite loops
         let current = heading.parentElement;
-        while (current && current !== document.body) {
-          if (current.tagName === "SECTION" || current.classList.contains("section") || 
+        let depth = 0;
+        const maxDepth = 20; // Prevent infinite traversal
+
+        while (current && current !== document.body && depth < maxDepth) {
+          if (current.tagName === "SECTION" || current.classList.contains("section") ||
               current.getAttribute("id")?.includes("section") ||
               current.getAttribute("class")?.includes("experience") ||
               current.getAttribute("class")?.includes("education")) {
             return current;
           }
           current = current.parentElement;
+          depth++;
         }
         return heading.parentElement;
       }
@@ -659,45 +697,51 @@
   // HTML fields removed to reduce data size
   function extractElementData(element) {
     if (!element) return null;
-    
-    const data = {
-      tag: element.tagName?.toLowerCase() || null,
-      text: getTextContent(element),
-      // Removed html and innerHTML to reduce data size (was causing 5MB+ files)
-      attributes: {},
-      classes: element.className ? (typeof element.className === 'string' ? element.className.split(' ').filter(c => c) : []) : [],
-      id: element.id || null,
-      href: element.href || null,
-      src: element.src || null,
-      alt: element.alt || null,
-      title: element.title || null,
-      role: element.getAttribute('role') || null,
-      'data-attributes': {},
-      aria_labels: {},
-      children_count: element.children ? element.children.length : 0
-    };
 
-    // Extract all attributes
-    if (element.attributes) {
-      Array.from(element.attributes).forEach(attr => {
-        if (attr.name.startsWith('data-')) {
-          data['data-attributes'][attr.name] = attr.value;
-        } else if (attr.name.startsWith('aria-')) {
-          data.aria_labels[attr.name] = attr.value;
-        } else {
-          data.attributes[attr.name] = attr.value;
-        }
-      });
+    try {
+      const data = {
+        tag: element.tagName?.toLowerCase() || null,
+        text: getTextContent(element),
+        // Removed html and innerHTML to reduce data size (was causing 5MB+ files)
+        attributes: {},
+        classes: element.className ? (typeof element.className === 'string' ? element.className.split(' ').filter(c => c) : []) : [],
+        id: element.id || null,
+        href: element.href || null,
+        src: element.src || null,
+        alt: element.alt || null,
+        title: element.title || null,
+        role: element.getAttribute('role') || null,
+        'data-attributes': {},
+        aria_labels: {},
+        children_count: element.children ? element.children.length : 0
+      };
+
+      // Extract all attributes with timeout protection
+      if (element.attributes && element.attributes.length < 50) { // Limit attribute extraction
+        Array.from(element.attributes).forEach(attr => {
+          if (attr.name.startsWith('data-')) {
+            data['data-attributes'][attr.name] = attr.value;
+          } else if (attr.name.startsWith('aria-')) {
+            data.aria_labels[attr.name] = attr.value;
+          } else {
+            data.attributes[attr.name] = attr.value;
+          }
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.warn("Error extracting element data:", error);
+      return null;
     }
-
-    return data;
   }
 
-  // Extract all sections from the page comprehensively
+  // Extract all sections from the page comprehensively with memory limits
   function extractAllSections() {
     const sections = [];
     const seenTexts = new Set();
-    
+    const maxSections = 30; // Limit sections to prevent memory issues
+
     // Find all potential section containers
     const sectionSelectors = [
       'section',
@@ -728,26 +772,31 @@
       '[id*="cause"]'
     ];
 
-    sectionSelectors.forEach(selector => {
+    for (const selector of sectionSelectors) {
+      if (sections.length >= maxSections) break;
+
       try {
         const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
+        for (let i = 0; i < Math.min(elements.length, 5); i++) { // Limit elements per selector
+          if (sections.length >= maxSections) break;
+
+          const el = elements[i];
           const text = getTextContent(el);
-          if (text && text.length > 10 && !seenTexts.has(text.substring(0, 100))) {
+          if (text && text.length > 10 && text.length < 5000 && !seenTexts.has(text.substring(0, 100))) {
             seenTexts.add(text.substring(0, 100));
             sections.push({
               type: 'section',
               selector: selector,
               heading: findSectionHeading(el),
               content: extractElementData(el),
-              text: text
+              text: text.substring(0, 2000) // Limit text length
             });
           }
-        });
+        }
       } catch (e) {
         // Invalid selector, skip
       }
-    });
+    }
 
     return sections;
   }
@@ -758,47 +807,65 @@
     return heading ? getTextContent(heading) : null;
   }
 
-  // Extract all list items comprehensively
+  // Extract all list items comprehensively with memory limits
   function extractAllListItems() {
     const items = [];
+    const maxItems = 50; // Limit list items
     const lists = document.querySelectorAll('ul, ol, [role="list"]');
-    
-    lists.forEach(list => {
+
+    for (let i = 0; i < Math.min(lists.length, 10); i++) { // Limit lists to process
+      if (items.length >= maxItems) break;
+
+      const list = lists[i];
       const listItems = list.querySelectorAll('li, [role="listitem"]');
-      listItems.forEach((item, index) => {
-        const itemData = extractElementData(item);
-        items.push({
-          type: 'list_item',
-          list_type: list.tagName.toLowerCase(),
-          index: index,
-          content: itemData,
-          text: getTextContent(item)
-        });
-      });
-    });
+
+      for (let j = 0; j < Math.min(listItems.length, 5); j++) { // Limit items per list
+        if (items.length >= maxItems) break;
+
+        const item = listItems[j];
+        const text = getTextContent(item);
+        if (text && text.length < 1000) { // Skip very long items
+          const itemData = extractElementData(item);
+          items.push({
+            type: 'list_item',
+            list_type: list.tagName.toLowerCase(),
+            index: j,
+            content: itemData,
+            text: text
+          });
+        }
+      }
+    }
 
     return items;
   }
 
-  // Extract all links comprehensively
+  // Extract all links comprehensively with memory limits
   function extractAllLinks() {
     const links = [];
+    const maxLinks = 100; // Limit links
     const linkElements = document.querySelectorAll('a[href]');
     const seenUrls = new Set();
-    
-    linkElements.forEach(link => {
+
+    for (let i = 0; i < Math.min(linkElements.length, maxLinks * 2); i++) { // Process up to 2x limit to account for duplicates
+      if (links.length >= maxLinks) break;
+
+      const link = linkElements[i];
       const href = link.href;
-      if (href && !seenUrls.has(href)) {
+      if (href && href.length < 500 && !seenUrls.has(href)) { // Skip very long URLs
         seenUrls.add(href);
-        links.push({
-          type: 'link',
-          href: href,
-          text: getTextContent(link),
-          title: link.title || null,
-          content: extractElementData(link)
-        });
+        const text = getTextContent(link);
+        if (text && text.length < 200) { // Skip very long link text
+          links.push({
+            type: 'link',
+            href: href,
+            text: text,
+            title: link.title || null,
+            content: extractElementData(link)
+          });
+        }
       }
-    });
+    }
 
     return links;
   }
@@ -1689,8 +1756,11 @@
     return structured;
   }
 
-  // Build the full profile document - COMPREHENSIVE VERSION
+  // Build the full profile document - COMPREHENSIVE VERSION with timeout protection
   function buildProfileDocument() {
+    const startTime = Date.now();
+    const MAX_PROCESSING_TIME = 10000; // 10 second timeout
+
     try {
       const url = window.location.href;
       // Removed full HTML extraction to reduce data size (was causing 5MB+ files)
@@ -1699,62 +1769,111 @@
       const rawText = document.body ? document.body.innerText : "";
       const now = new Date().toISOString();
 
-      // Extract ALL structured data
+      // Extract ALL structured data with timeout protection
       let structured;
       try {
-        structured = extractStructuredData();
+        // Check if we're approaching timeout
+        if (Date.now() - startTime > MAX_PROCESSING_TIME * 0.5) {
+          console.warn("Approaching timeout, simplifying extraction");
+          structured = {
+            personal_info: {},
+            experience: [],
+            education: [],
+            skills: [],
+            certifications: [],
+            languages: [],
+            projects: [],
+            publications: [],
+            volunteer_experience: [],
+            courses: [],
+            honors_awards: [],
+            organizations: [],
+            patents: [],
+            test_scores: [],
+            recommendations: [],
+            interests: { companies: [], groups: [], causes: [] },
+            activity: {},
+            contact_info: {},
+            social_links: []
+          };
+        } else {
+          structured = extractStructuredData();
+        }
       } catch (e) {
         console.error("Error in extractStructuredData:", e);
-        throw new Error(`Failed to extract structured data: ${e.message}`);
+        // Return minimal structure instead of throwing
+        structured = {
+          personal_info: {},
+          experience: [],
+          education: [],
+          skills: [],
+          certifications: [],
+          languages: [],
+          projects: [],
+          publications: [],
+          volunteer_experience: [],
+          courses: [],
+          honors_awards: [],
+          organizations: [],
+          patents: [],
+          test_scores: [],
+          recommendations: [],
+          interests: { companies: [], groups: [], causes: [] },
+          activity: {},
+          contact_info: {},
+          social_links: []
+        };
       }
 
-      // Extract ALL sections
+      // Check if we need to skip heavy extraction due to time constraints
+      const shouldSkipHeavyExtraction = Date.now() - startTime > MAX_PROCESSING_TIME * 0.7;
+
+      // Extract ALL sections with timeout protection
       let allSections = [];
-      try {
-        allSections = extractAllSections();
-      } catch (e) {
-        console.warn("Error extracting sections:", e);
+      if (!shouldSkipHeavyExtraction) {
+        try {
+          allSections = extractAllSections();
+          // Limit sections to prevent memory issues
+          if (allSections.length > 50) {
+            allSections = allSections.slice(0, 50);
+          }
+        } catch (e) {
+          console.warn("Error extracting sections:", e);
+        }
       }
 
-      // Extract ALL list items
+      // Extract ALL list items with timeout protection
       let allListItems = [];
-      try {
-        allListItems = extractAllListItems();
-      } catch (e) {
-        console.warn("Error extracting list items:", e);
+      if (!shouldSkipHeavyExtraction) {
+        try {
+          allListItems = extractAllListItems();
+          // Limit list items to prevent memory issues
+          if (allListItems.length > 100) {
+            allListItems = allListItems.slice(0, 100);
+          }
+        } catch (e) {
+          console.warn("Error extracting list items:", e);
+        }
       }
 
-      // Extract ALL links
+      // Extract ALL links with timeout protection
       let allLinks = [];
-      try {
-        allLinks = extractAllLinks();
-      } catch (e) {
-        console.warn("Error extracting links:", e);
+      if (!shouldSkipHeavyExtraction) {
+        try {
+          allLinks = extractAllLinks();
+          // Limit links to prevent memory issues
+          if (allLinks.length > 200) {
+            allLinks = allLinks.slice(0, 200);
+          }
+        } catch (e) {
+          console.warn("Error extracting links:", e);
+        }
       }
 
-      // Extract ALL images
+      // Skip images, headings, and tables for performance - these are rarely needed
       let allImages = [];
-      try {
-        allImages = extractAllImages();
-      } catch (e) {
-        console.warn("Error extracting images:", e);
-      }
-
-      // Extract ALL headings
       let allHeadings = [];
-      try {
-        allHeadings = extractAllHeadings();
-      } catch (e) {
-        console.warn("Error extracting headings:", e);
-      }
-
-      // Extract ALL tables
       let allTables = [];
-      try {
-        allTables = extractAllTables();
-      } catch (e) {
-        console.warn("Error extracting tables:", e);
-      }
 
     // Build comprehensive JSON array with ALL extracted data, sorted by category
     const comprehensiveData = [
@@ -2045,9 +2164,98 @@
         text_size_bytes: rawText.length
       }
     };
+      // Final timeout check
+      if (Date.now() - startTime > MAX_PROCESSING_TIME) {
+        console.warn("Profile extraction timed out, returning minimal data");
+        return {
+          comprehensive_data: [],
+          personal_info: structured.personal_info,
+          activity: structured.activity,
+          experience: structured.experience.slice(0, 3), // Limit to first 3 experiences
+          education: structured.education.slice(0, 2), // Limit to first 2 educations
+          skills: structured.skills.slice(0, 20), // Limit skills
+          recommendations: structured.recommendations.slice(0, 3), // Limit recommendations
+          interests: structured.interests,
+          contact_info: structured.contact_info,
+          social_links: structured.social_links,
+          raw_html: rawHtml,
+          raw_text: rawText.substring(0, 10000), // Limit raw text size
+          extraction_metadata: {
+            source_url: url,
+            extracted_at: now,
+            extractor_version: "v2.0.0-optimized",
+            total_items_extracted: 0,
+            categories_found: [],
+            html_size_bytes: rawHtml.length,
+            text_size_bytes: rawText.length,
+            timed_out: true,
+            processing_time_ms: Date.now() - startTime
+          }
+        };
+      }
+
+      return {
+        comprehensive_data: comprehensiveData,
+        personal_info: structured.personal_info,
+        activity: structured.activity,
+        current_employer: structured.current_employer,
+        past_employers: structured.past_employers,
+        employment_summary: structured.employment_summary,
+        employment_summary_array: structured.employment_summary_array,
+        experience: structured.experience,
+        education: structured.education,
+        skills: structured.skills,
+        recommendations: structured.recommendations,
+        interests: structured.interests,
+        certifications: structured.certifications,
+        languages: structured.languages,
+        projects: structured.projects,
+        publications: structured.publications,
+        volunteer_experience: structured.volunteer_experience,
+        courses: structured.courses,
+        honors_awards: structured.honors_awards,
+        organizations: structured.organizations,
+        patents: structured.patents,
+        test_scores: structured.test_scores,
+        contact_info: structured.contact_info,
+        social_links: structured.social_links,
+        raw_html: rawHtml,
+        raw_text: rawText,
+        extraction_metadata: {
+          source_url: url,
+          extracted_at: now,
+          extractor_version: "v2.0.0-comprehensive",
+          total_items_extracted: comprehensiveData.length,
+          categories_found: [...new Set(comprehensiveData.map(item => item.category))],
+          html_size_bytes: rawHtml.length,
+          text_size_bytes: rawText.length,
+          processing_time_ms: Date.now() - startTime
+        }
+      };
     } catch (error) {
       console.error("Error in buildProfileDocument:", error);
-      throw new Error(`Failed to build profile document: ${error.message}`);
+      // Return minimal data structure instead of throwing to prevent UI freeze
+      return {
+        comprehensive_data: [],
+        personal_info: { name: "Error extracting profile" },
+        activity: {},
+        experience: [],
+        education: [],
+        skills: [],
+        recommendations: [],
+        interests: { companies: [], groups: [], causes: [] },
+        contact_info: {},
+        social_links: [],
+        raw_html: "<!-- Error during extraction -->",
+        raw_text: "",
+        extraction_metadata: {
+          source_url: window.location.href,
+          extracted_at: new Date().toISOString(),
+          extractor_version: "v2.0.0-error",
+          error: error.message,
+          processing_time_ms: Date.now() - startTime
+        }
+      };
     }
   }
 })();
