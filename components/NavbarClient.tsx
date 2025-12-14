@@ -26,8 +26,8 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
   const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
-    <nav className="bg-white border-b border-neutral-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="glass-elevated sticky top-0 z-40 backdrop-blur-xl border-b border-surface-tertiary/50 shadow-elevation-1">
+      <div className="container-fluid">
         <div className="flex justify-between items-center h-16">
           {/* Logo - More Prominent */}
           <div className="flex items-center">
@@ -64,10 +64,10 @@ const NavbarClient = ({ isAdmin = false }: NavbarClientProps) => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                   pathname === item.href
                     ? "text-primary-700 bg-primary-50 shadow-sm"
-                    : "text-neutral-700 hover:bg-neutral-100 hover:text-primary-600"
+                    : "text-content-secondary hover:bg-surface-secondary hover:text-content-primary"
                 } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
                 aria-current={pathname === item.href ? "page" : undefined}
               >

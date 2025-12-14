@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 import JobCard from "@/components/JobCard"
 import JobFilters from "@/components/JobFilters"
 import CompanyFilter from "@/components/CompanyFilter"
@@ -144,7 +144,7 @@ export default async function JobsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="lg:w-72 flex-shrink-0">

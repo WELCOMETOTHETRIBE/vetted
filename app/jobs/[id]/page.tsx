@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 import Link from "next/link"
 import JobApplicationForm from "@/components/JobApplicationForm"
 import JobMatchAnalysis from "@/components/JobMatchAnalysis"
@@ -55,7 +55,7 @@ export default async function JobDetailPage({
   if (!job) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        <NavbarAdvanced />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
             <p className="text-gray-600">Job not found</p>
@@ -80,7 +80,7 @@ export default async function JobDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {/* Header Section */}

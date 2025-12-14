@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 import Sidebar from "@/components/Sidebar"
 import FeedContent from "@/components/FeedContent"
 import TechTrends from "@/components/TechTrends"
@@ -75,7 +75,7 @@ export default async function FeedPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
           <Sidebar className="hidden lg:block" />

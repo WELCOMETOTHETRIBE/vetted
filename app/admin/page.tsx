@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 import AdminContent from "@/components/AdminContent"
 import PopulateJobsButton from "@/components/PopulateJobsButton"
 import AshbyScraperButton from "@/components/AshbyScraperButton"
@@ -87,7 +87,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-neutral-900">Admin Dashboard</h1>

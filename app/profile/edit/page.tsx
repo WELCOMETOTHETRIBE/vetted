@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 import ProfileEditForm from "@/components/ProfileEditForm"
 import ResumeProfileUpload from "@/components/ResumeProfileUpload"
 
@@ -51,7 +51,7 @@ export default async function ProfileEditPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h1>
         <div className="mb-6">
@@ -65,7 +65,7 @@ export default async function ProfileEditPage() {
     console.error("Profile edit page error:", error)
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        <NavbarAdvanced />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h2 className="text-xl font-bold text-yellow-900 mb-2">Database Migration Required</h2>

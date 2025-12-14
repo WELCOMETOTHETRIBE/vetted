@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -44,7 +44,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">

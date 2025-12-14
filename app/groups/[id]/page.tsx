@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/Navbar"
+import NavbarAdvanced from "@/components/NavbarAdvanced"
 import PostComposer from "@/components/PostComposer"
 import PostCard from "@/components/PostCard"
 
@@ -89,7 +89,7 @@ export default async function GroupPage({
   if (!group) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        <NavbarAdvanced />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
             <p className="text-gray-600">Group not found</p>
@@ -103,7 +103,7 @@ export default async function GroupPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <NavbarAdvanced />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{group.name}</h1>
