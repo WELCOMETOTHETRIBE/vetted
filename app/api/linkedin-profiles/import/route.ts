@@ -73,6 +73,27 @@ export async function POST(req: Request) {
       skipped: 0,
       errors: 0,
       errorDetails: [] as any[],
+      // Quality monitoring
+      qualityMetrics: {
+        totalProfiles: profiles.length,
+        profilesWithHtml: profiles.filter(p => p.html && p.raw_text).length,
+        profilesWithUrlsOnly: profiles.filter(p => !p.html && p.linkedin_url).length,
+        parsingSuccess: 0,
+        aiEnrichmentUsed: 0,
+        criticalFieldsFilled: {
+          fullName: 0,
+          jobTitle: 0,
+          currentCompany: 0,
+          location: 0,
+          companies: 0,
+          universities: 0,
+          skillsCount: 0,
+          experienceCount: 0,
+          educationCount: 0,
+        },
+        aiCorrections: 0,
+        needsReview: 0,
+      }
     }
 
     // Process each profile
@@ -100,15 +121,23 @@ export async function POST(req: Request) {
         }
 
         // If profile has HTML, extract structured data using the extension's logic
+        // This is the same parsing pipeline that the extension uses:
+        // 1. Extension: contentScript.js extracts HTML -> JSON structure
+        // 2. Extension: profileProcessor.js processes JSON -> structured candidate data
+        // 3. SERPAPI: profile-processor-server.ts extracts HTML -> JSON structure (same as step 1)
+        // 4. SERPAPI: profileProcessor.js processes JSON -> structured candidate data (same as step 2)
+        // This ensures both methods use identical parsing logic for data enrichment
         if (profile.html && profile.raw_text) {
           try {
             // Step 1: Extract structured data from HTML (like contentScript.js does)
+            // This mimics the extension's HTML extraction logic
             const { buildProfileDocumentFromHTML } = await import("@/lib/profile-processor-server")
             const profileDocument = buildProfileDocumentFromHTML(profile.html, profile.linkedin_url)
             
             // Step 2: Process using profileProcessor.js (like the extension does)
+            // This is the exact same processor the extension uses for multi-layered parsing
             // Load the JavaScript file dynamically using vm (like Prisma client loading)
-            const profileProcessorPath = join(process.cwd(), "lib", "profile-processor.js")
+            const profileProcessorPath = join(process.cwd(), "extension", "profileProcessor.js")
             
             // Try require first (works in dev), fallback to vm evaluation (works in production)
             let profileProcessor: any
@@ -224,6 +253,7 @@ export async function POST(req: Request) {
             if (hasEssentialFields && !missingCriticalData) {
               // Use the processed data directly - it's already in the correct format
               candidateData = processedResult
+              results.qualityMetrics.parsingSuccess++
               console.log(`[STEP 3] Using processed data - SUCCESS (complete data)`)
               console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             } else {
@@ -265,6 +295,24 @@ export async function POST(req: Request) {
               },
             })
           }
+        } else {
+          // If HTML wasn't scraped, we can't use the extension's parsing pipeline
+          // Log a warning and create minimal candidate data for AI enrichment
+          console.warn(`[LINKEDIN IMPORT] Profile ${profile.linkedin_url} has no HTML. Cannot use extension parsing pipeline.`)
+          console.warn(`  - Status: ${profile.status || "unknown"}`)
+          console.warn(`  - Suggestion: Re-run search with scrape=true to get HTML`)
+          
+          // Create minimal structure for AI enrichment (will rely on AI to extract from URL/profile)
+          candidateData["Raw Data"] = JSON.stringify({
+            extraction_metadata: {
+              source_url: profile.linkedin_url,
+              extracted_at: profile.scraped_at || profile.found_at || new Date().toISOString(),
+            },
+            personal_info: {
+              profile_url: profile.linkedin_url,
+            },
+            // Note: No HTML/raw_text available - AI enrichment will be limited
+          })
         }
 
         // Send to candidate upload endpoint (internal call)
@@ -287,6 +335,56 @@ export async function POST(req: Request) {
 
         if (uploadResponse.ok) {
           results.created++
+
+          // Quality monitoring: Parse the uploaded candidate to track field quality
+          try {
+            const uploadData = await uploadResponse.json()
+            const candidate = uploadData.candidates?.[0]
+            if (candidate) {
+              // Track which critical fields were successfully filled
+              if (candidate.fullName && candidate.fullName.trim()) results.qualityMetrics.criticalFieldsFilled.fullName++
+              if (candidate.jobTitle && candidate.jobTitle.trim()) results.qualityMetrics.criticalFieldsFilled.jobTitle++
+              if (candidate.currentCompany && candidate.currentCompany.trim()) results.qualityMetrics.criticalFieldsFilled.currentCompany++
+              if (candidate.location && candidate.location.trim()) results.qualityMetrics.criticalFieldsFilled.location++
+
+              // Track array fields
+              if (candidate.companies) {
+                try {
+                  const companies = JSON.parse(candidate.companies)
+                  if (Array.isArray(companies) && companies.length > 0) results.qualityMetrics.criticalFieldsFilled.companies++
+                } catch (e) { /* ignore parse errors */ }
+              }
+              if (candidate.universities) {
+                try {
+                  const universities = JSON.parse(candidate.universities)
+                  if (Array.isArray(universities) && universities.length > 0) results.qualityMetrics.criticalFieldsFilled.universities++
+                } catch (e) { /* ignore parse errors */ }
+              }
+
+              // Track count fields
+              if (candidate.skillsCount && candidate.skillsCount > 0) results.qualityMetrics.criticalFieldsFilled.skillsCount++
+              if (candidate.experienceCount && candidate.experienceCount > 0) results.qualityMetrics.criticalFieldsFilled.experienceCount++
+              if (candidate.educationCount && candidate.educationCount > 0) results.qualityMetrics.criticalFieldsFilled.educationCount++
+
+              // Track AI enrichment usage
+              if (candidate.rawData && candidate.rawData.includes('extraction_metadata')) {
+                results.qualityMetrics.aiEnrichmentUsed++
+              }
+
+              console.log(`[QUALITY] Candidate ${candidate.fullName || profile.linkedin_url}:`)
+              console.log(`  - Full Name: ${candidate.fullName ? '✓' : '✗'}`)
+              console.log(`  - Job Title: ${candidate.jobTitle ? '✓' : '✗'}`)
+              console.log(`  - Current Company: ${candidate.currentCompany ? '✓' : '✗'}`)
+              console.log(`  - Location: ${candidate.location ? '✓' : '✗'}`)
+              console.log(`  - Companies Array: ${candidate.companies ? '✓' : '✗'}`)
+              console.log(`  - Universities Array: ${candidate.universities ? '✓' : '✗'}`)
+              console.log(`  - Skills Count: ${candidate.skillsCount || 0}`)
+              console.log(`  - Experience Count: ${candidate.experienceCount || 0}`)
+              console.log(`  - Education Count: ${candidate.educationCount || 0}`)
+            }
+          } catch (parseError) {
+            console.warn(`[QUALITY] Could not parse upload response for quality monitoring:`, parseError)
+          }
         } else {
           const errorData = await uploadResponse.json().catch(() => ({ error: "Upload failed" }))
           results.errors++
@@ -306,10 +404,42 @@ export async function POST(req: Request) {
       }
     }
 
+    // Calculate quality percentages
+    const quality = results.qualityMetrics
+    const successRate = quality.totalProfiles > 0 ? Math.round((results.created / quality.totalProfiles) * 100) : 0
+    const parsingSuccessRate = quality.profilesWithHtml > 0 ? Math.round((quality.parsingSuccess / quality.profilesWithHtml) * 100) : 0
+    const aiEnrichmentRate = results.created > 0 ? Math.round((quality.aiEnrichmentUsed / results.created) * 100) : 0
+
+    console.log(`\n========== [IMPORT QUALITY SUMMARY] ==========`)
+    console.log(`Total profiles: ${quality.totalProfiles}`)
+    console.log(`With HTML: ${quality.profilesWithHtml} (${Math.round((quality.profilesWithHtml/quality.totalProfiles)*100)}%)`)
+    console.log(`URLs only: ${quality.profilesWithUrlsOnly} (${Math.round((quality.profilesWithUrlsOnly/quality.totalProfiles)*100)}%)`)
+    console.log(`Success rate: ${successRate}% (${results.created}/${quality.totalProfiles})`)
+    console.log(`Parsing success: ${parsingSuccessRate}% (${quality.parsingSuccess}/${quality.profilesWithHtml})`)
+    console.log(`AI enrichment used: ${aiEnrichmentRate}% (${quality.aiEnrichmentUsed}/${results.created})`)
+    console.log(`\nField fill rates:`)
+    Object.entries(quality.criticalFieldsFilled).forEach(([field, count]) => {
+      const rate = results.created > 0 ? Math.round((count / results.created) * 100) : 0
+      console.log(`  - ${field}: ${rate}% (${count}/${results.created})`)
+    })
+    console.log(`========== [IMPORT QUALITY SUMMARY] ==========\n`)
+
     return NextResponse.json({
       success: true,
       results,
-      message: `Processed ${results.processed} profiles: ${results.created} created, ${results.skipped} skipped, ${results.errors} errors`,
+      qualityMetrics: quality,
+      summary: {
+        successRate,
+        parsingSuccessRate,
+        aiEnrichmentRate,
+        fieldFillRates: Object.fromEntries(
+          Object.entries(quality.criticalFieldsFilled).map(([field, count]) => [
+            field,
+            results.created > 0 ? Math.round((count / results.created) * 100) : 0
+          ])
+        )
+      },
+      message: `Processed ${results.processed} profiles: ${results.created} created, ${results.skipped} skipped, ${results.errors} errors. Quality: ${successRate}% success, ${parsingSuccessRate}% parsing success, ${aiEnrichmentRate}% AI enriched.`,
     })
   } catch (error: any) {
     console.error("[linkedin-profiles/import] Error:", error)

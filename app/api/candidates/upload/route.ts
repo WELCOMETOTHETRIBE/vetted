@@ -192,6 +192,9 @@ export async function POST(req: Request) {
 
         // Use AI enrichment if we have raw data and (missing fields OR empty arrays)
         let enrichedData = candidateData
+        let aiEnrichmentApplied = false
+        let correctionsCount = 0
+
         if (hasRawData && (missingCriticalFields || hasEmptyArrays)) {
           console.log(`[AI ENRICHMENT] Attempting comprehensive AI enrichment for ${fullName || linkedinUrl}`)
           console.log(`  - Has raw data: ${hasRawData}`)
@@ -204,8 +207,10 @@ export async function POST(req: Request) {
               console.log(`  - Enriched fields:`, Object.keys(aiEnriched))
               if (aiEnriched.corrections && aiEnriched.corrections.length > 0) {
                 console.log(`  - Corrections applied: ${aiEnriched.corrections.length}`)
+                correctionsCount = aiEnriched.corrections.length
               }
               enrichedData = mergeEnrichedData(candidateData, aiEnriched)
+              aiEnrichmentApplied = true
             } else {
               console.log(`[AI ENRICHMENT] Returned no data for ${fullName || linkedinUrl}`)
             }
@@ -447,8 +452,24 @@ export async function POST(req: Request) {
           status: "ACTIVE" as const,
         }
 
+        // Quality assessment: Check if this candidate needs review
+        const needsReview = !candidatePayload.fullName ||
+          !candidatePayload.jobTitle ||
+          !candidatePayload.currentCompany ||
+          !candidatePayload.location ||
+          (!candidatePayload.companies && !candidatePayload.currentCompany) ||
+          (!candidatePayload.universities && !candidatePayload.degrees)
+
+        if (needsReview) {
+          candidatePayload.status = "NEEDS_REVIEW"
+          console.log(`[QUALITY] ⚠️  Candidate flagged for review - missing critical fields`)
+        } else {
+          candidatePayload.status = "ACTIVE"
+          console.log(`[QUALITY] ✓ Candidate looks complete`)
+        }
+
         // Log payload summary before saving - COMPREHENSIVE
-        console.log(`[PAYLOAD] Candidate payload before database save:`)
+        console.log(`[PAYLOAD] Candidate payload before database save (${candidatePayload.status}):`)
         console.log(`  - Full Name: ${candidatePayload.fullName || "NULL"}`)
         console.log(`  - Job Title: ${candidatePayload.jobTitle || "NULL"}`)
         console.log(`  - Current Company: ${candidatePayload.currentCompany || "NULL"}`)
@@ -470,6 +491,8 @@ export async function POST(req: Request) {
         console.log(`  - Skills Count: ${candidatePayload.skillsCount || "NULL"}`)
         console.log(`  - Experience Count: ${candidatePayload.experienceCount || "NULL"}`)
         console.log(`  - Education Count: ${candidatePayload.educationCount || "NULL"}`)
+        console.log(`  - AI Enrichment Applied: ${aiEnrichmentApplied}`)
+        console.log(`  - AI Corrections: ${correctionsCount}`)
         console.log(`  - Raw Data size: ${candidatePayload.rawData ? candidatePayload.rawData.length + " chars" : "NULL"}`)
 
         let savedCandidate
