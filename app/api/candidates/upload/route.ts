@@ -195,6 +195,7 @@ export async function POST(req: Request) {
         let aiEnrichmentAttempted = false
         let aiEnrichmentSuccess = false
         let aiEnrichmentRetries = 0
+        let correctionsCount = 0
         
         if (hasRawData && (missingCriticalFields || hasEmptyArrays)) {
           console.log(`[AI ENRICHMENT] Attempting comprehensive AI enrichment for ${fullName || linkedinUrl}`)
@@ -220,7 +221,8 @@ export async function POST(req: Request) {
                 console.log(`[AI ENRICHMENT] Success for ${fullName || linkedinUrl}${attempt > 0 ? ` (retry ${attempt})` : ""}`)
                 console.log(`  - Enriched fields:`, Object.keys(aiEnriched))
                 if (aiEnriched.corrections && aiEnriched.corrections.length > 0) {
-                  console.log(`  - Corrections applied: ${aiEnriched.corrections.length}`)
+                  correctionsCount = aiEnriched.corrections.length
+                  console.log(`  - Corrections applied: ${correctionsCount}`)
                   aiEnriched.corrections.forEach((correction: any) => {
                     console.log(`    * ${correction.field}: "${correction.originalValue}" -> "${correction.correctedValue}" (${correction.reason})`)
                   })
@@ -528,7 +530,7 @@ export async function POST(req: Request) {
         console.log(`  - Skills Count: ${candidatePayload.skillsCount || "NULL"}`)
         console.log(`  - Experience Count: ${candidatePayload.experienceCount || "NULL"}`)
         console.log(`  - Education Count: ${candidatePayload.educationCount || "NULL"}`)
-        console.log(`  - AI Enrichment Applied: ${aiEnrichmentApplied}`)
+        console.log(`  - AI Enrichment Applied: ${aiEnrichmentSuccess}`)
         console.log(`  - AI Corrections: ${correctionsCount}`)
         console.log(`  - Raw Data size: ${candidatePayload.rawData ? candidatePayload.rawData.length + " chars" : "NULL"}`)
 

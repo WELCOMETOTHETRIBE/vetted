@@ -277,11 +277,7 @@ export async function POST(req: Request) {
             if (hasEssentialFields && !missingCriticalData) {
               // Use the processed data directly - it's already in the correct format
               candidateData = processedResult
-<<<<<<< HEAD
-              results.qualityMetrics.parsingSuccess++
-=======
               qualityMetrics.completeData++
->>>>>>> fdef56c (Fix SERPAPI LinkedIn import to use extension parsing pipeline with monitoring)
               console.log(`[STEP 3] Using processed data - SUCCESS (complete data)`)
               console.log(`========== [LINKEDIN IMPORT] Complete for ${profile.linkedin_url} ==========\n`)
             } else {
@@ -401,9 +397,25 @@ export async function POST(req: Request) {
       }
     }
 
-<<<<<<< HEAD
     // Calculate quality percentages
-    const quality = results.qualityMetrics
+    const quality = {
+      totalProfiles: qualityMetrics.totalProfiles,
+      profilesWithHtml: qualityMetrics.withHtml,
+      profilesWithUrlsOnly: qualityMetrics.withoutHtml,
+      parsingSuccess: qualityMetrics.profileProcessorSuccess,
+      aiEnrichmentUsed: qualityMetrics.needsAiEnrichment,
+      criticalFieldsFilled: {
+        fullName: qualityMetrics.fieldFillRates.fullName,
+        jobTitle: qualityMetrics.fieldFillRates.jobTitle,
+        currentCompany: qualityMetrics.fieldFillRates.currentCompany,
+        location: qualityMetrics.fieldFillRates.location,
+        companies: qualityMetrics.fieldFillRates.companies,
+        universities: qualityMetrics.fieldFillRates.universities,
+        skillsCount: qualityMetrics.fieldFillRates.skillsCount,
+        experienceCount: qualityMetrics.fieldFillRates.experienceCount,
+        educationCount: qualityMetrics.fieldFillRates.educationCount,
+      }
+    }
     const successRate = quality.totalProfiles > 0 ? Math.round((results.created / quality.totalProfiles) * 100) : 0
     const parsingSuccessRate = quality.profilesWithHtml > 0 ? Math.round((quality.parsingSuccess / quality.profilesWithHtml) * 100) : 0
     const aiEnrichmentRate = results.created > 0 ? Math.round((quality.aiEnrichmentUsed / results.created) * 100) : 0
@@ -421,47 +433,10 @@ export async function POST(req: Request) {
       console.log(`  - ${field}: ${rate}% (${count}/${results.created})`)
     })
     console.log(`========== [IMPORT QUALITY SUMMARY] ==========\n`)
-=======
-    // Calculate final quality metrics
-    const processedCount = qualityMetrics.htmlExtractionSuccess
-    const fieldFillRatePercentages: Record<string, number> = {}
-    if (processedCount > 0) {
-      Object.entries(qualityMetrics.fieldFillRates).forEach(([field, count]) => {
-        fieldFillRatePercentages[field] = Math.round((count / processedCount) * 100)
-      })
-    }
-
-    // Comprehensive summary for feedback loops
-    console.log(`\n========== [LINKEDIN IMPORT] BATCH SUMMARY ==========`)
-    console.log(`Total Profiles: ${qualityMetrics.totalProfiles}`)
-    console.log(`  - With HTML: ${qualityMetrics.withHtml} (${Math.round((qualityMetrics.withHtml / qualityMetrics.totalProfiles) * 100)}%)`)
-    console.log(`  - Without HTML: ${qualityMetrics.withoutHtml} (${Math.round((qualityMetrics.withoutHtml / qualityMetrics.totalProfiles) * 100)}%)`)
-    console.log(`\nHTML Extraction:`)
-    console.log(`  - Success: ${qualityMetrics.htmlExtractionSuccess}`)
-    console.log(`  - Failed: ${qualityMetrics.htmlExtractionFailed}`)
-    console.log(`\nProfileProcessor:`)
-    console.log(`  - Success: ${qualityMetrics.profileProcessorSuccess}`)
-    console.log(`  - Failed: ${qualityMetrics.profileProcessorFailed}`)
-    console.log(`\nData Quality:`)
-    console.log(`  - Complete Data (no AI needed): ${qualityMetrics.completeData}`)
-    console.log(`  - Needs AI Enrichment: ${qualityMetrics.needsAiEnrichment}`)
-    console.log(`\nField Fill Rates (${processedCount} processed):`)
-    Object.entries(fieldFillRatePercentages).forEach(([field, percentage]) => {
-      const count = qualityMetrics.fieldFillRates[field as keyof typeof qualityMetrics.fieldFillRates]
-      console.log(`  - ${field}: ${count}/${processedCount} (${percentage}%)`)
-    })
-    console.log(`\nResults:`)
-    console.log(`  - Created: ${results.created}`)
-    console.log(`  - Skipped: ${results.skipped}`)
-    console.log(`  - Errors: ${results.errors}`)
-    console.log(`========== [LINKEDIN IMPORT] BATCH SUMMARY END ==========\n`)
->>>>>>> fdef56c (Fix SERPAPI LinkedIn import to use extension parsing pipeline with monitoring)
-
     return NextResponse.json({
       success: true,
       results,
-<<<<<<< HEAD
-      qualityMetrics: quality,
+      qualityMetrics: qualityMetrics,
       summary: {
         successRate,
         parsingSuccessRate,
@@ -474,13 +449,6 @@ export async function POST(req: Request) {
         )
       },
       message: `Processed ${results.processed} profiles: ${results.created} created, ${results.skipped} skipped, ${results.errors} errors. Quality: ${successRate}% success, ${parsingSuccessRate}% parsing success, ${aiEnrichmentRate}% AI enriched.`,
-=======
-      qualityMetrics: {
-        ...qualityMetrics,
-        fieldFillRatePercentages,
-      },
-      message: `Processed ${results.processed} profiles: ${results.created} created, ${results.skipped} skipped, ${results.errors} errors`,
->>>>>>> fdef56c (Fix SERPAPI LinkedIn import to use extension parsing pipeline with monitoring)
     })
   } catch (error: any) {
     console.error("[linkedin-profiles/import] Error:", error)
