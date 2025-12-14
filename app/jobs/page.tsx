@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -89,7 +89,7 @@ const filterOptions = [
   }
 ]
 
-export default function JobsPage() {
+function JobsPageContent() {
   const searchParams = useSearchParams()
   const [jobs, setJobs] = useState(mockJobs)
   const [isLoading, setIsLoading] = useState(false)
@@ -362,6 +362,24 @@ export default function JobsPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-surface-primary via-surface-secondary to-surface-primary">
+        <NavbarAdvanced />
+        <div className="container-fluid py-16">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-content-secondary">Loading jobs...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <JobsPageContent />
+    </Suspense>
   )
 }
 
