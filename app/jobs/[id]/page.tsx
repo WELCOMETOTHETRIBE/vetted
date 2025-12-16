@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import Link from "next/link"
+import UserJobMatchAnalysis from "@/components/UserJobMatchAnalysis"
 
 async function getJob(jobId: string) {
   try {
@@ -168,6 +169,11 @@ export default async function JobDetailPage({
           </div>
         </div>
 
+        {/* AI Match Analysis */}
+        <div className="mb-6">
+          <UserJobMatchAnalysis jobId={job.id} />
+        </div>
+
         {/* Job Description */}
         {job.description && (
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
@@ -223,6 +229,49 @@ export default async function JobDetailPage({
                   </a>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* AI Quick Actions */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span>🤖</span>
+            <span>AI-Powered Tools</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link
+              href={`/jobs/${job.id}/apply`}
+              className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">📝</span>
+                <h4 className="font-semibold text-gray-900 group-hover:text-blue-700">Generate Cover Letter</h4>
+              </div>
+              <p className="text-sm text-gray-600">
+                AI-generated personalized cover letter tailored to this role
+              </p>
+            </Link>
+            <a
+              href={`/jobs/${job.id}/apply#interview-prep`}
+              className="p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🎯</span>
+                <h4 className="font-semibold text-gray-900 group-hover:text-purple-700">Interview Prep</h4>
+              </div>
+              <p className="text-sm text-gray-600">
+                Get personalized interview questions and preparation tips
+              </p>
+            </a>
+            <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">📊</span>
+                <h4 className="font-semibold text-gray-900">Match Analysis</h4>
+              </div>
+              <p className="text-sm text-gray-600">
+                See your match score and how to improve above
+              </p>
             </div>
           </div>
         </div>
