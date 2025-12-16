@@ -28,7 +28,7 @@ interface StartupItem {
   published_at: string | null
   highlight: string
   usp: string
-  type: "ipo" | "cutting_edge"
+  type: "ipo" | "cutting_edge" | "unicorn"
   valuation?: string
   funding?: string
   industry?: string
@@ -183,8 +183,9 @@ export default function TechTrends() {
     const colors: Record<string, string> = {
       startups: "bg-blue-100 text-blue-800",
       software_engineering: "bg-green-100 text-green-800",
+      engineering: "bg-green-100 text-green-800", // Same color as software_engineering
       ai: "bg-purple-100 text-purple-800",
-      engineering: "bg-orange-100 text-orange-800",
+      innovation: "bg-indigo-100 text-indigo-800",
     }
     return colors[category] || "bg-gray-100 text-gray-800"
   }
@@ -193,8 +194,9 @@ export default function TechTrends() {
     const labels: Record<string, string> = {
       startups: "Startups",
       software_engineering: "Engineering",
-      ai: "AI",
       engineering: "Engineering",
+      ai: "AI",
+      innovation: "Innovation",
     }
     return labels[category] || category
   }
@@ -247,10 +249,12 @@ export default function TechTrends() {
                 <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
                   trend.category === "ai"
                     ? "bg-purple-50 text-purple-700"
-                    : trend.category === "software_engineering"
-                    ? "bg-blue-50 text-blue-700"
-                    : trend.category === "startups"
+                    : trend.category === "software_engineering" || trend.category === "engineering"
                     ? "bg-green-50 text-green-700"
+                    : trend.category === "startups"
+                    ? "bg-blue-50 text-blue-700"
+                    : trend.category === "innovation"
+                    ? "bg-indigo-50 text-indigo-700"
                     : "bg-gray-50 text-gray-700"
                 }`}>
                   {getCategoryLabel(trend.category)}
@@ -333,10 +337,12 @@ export default function TechTrends() {
                     <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 flex items-center gap-1 ${
                       startup.type === "ipo"
                         ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
+                        : startup.type === "cutting_edge"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-purple-100 text-purple-800"
                     }`}>
-                      <span>{startup.type === "ipo" ? "🚀" : "⚡"}</span>
-                      <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
+                      <span>{startup.type === "ipo" ? "🚀" : startup.type === "cutting_edge" ? "⚡" : "🦄"}</span>
+                      <span>{startup.type === "ipo" ? "IPO Ready" : startup.type === "cutting_edge" ? "Cutting Edge" : "Unicorn"}</span>
                     </span>
                   </div>
                   {(startup.description || startup.highlight || startup.usp) && (
@@ -370,10 +376,12 @@ export default function TechTrends() {
                     <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 flex items-center gap-1 ${
                       startup.type === "ipo"
                         ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
+                        : startup.type === "cutting_edge"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-purple-100 text-purple-800"
                     }`}>
-                      <span>{startup.type === "ipo" ? "🚀" : "⚡"}</span>
-                      <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
+                      <span>{startup.type === "ipo" ? "🚀" : startup.type === "cutting_edge" ? "⚡" : "🦄"}</span>
+                      <span>{startup.type === "ipo" ? "IPO Ready" : startup.type === "cutting_edge" ? "Cutting Edge" : "Unicorn"}</span>
                     </span>
                   </div>
                   {(startup.description || startup.highlight || startup.usp) && (

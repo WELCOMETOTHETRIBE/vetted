@@ -18,7 +18,7 @@ interface StartupItem {
   published_at: string | null
   highlight: string
   usp: string // Unique Selling Proposition
-  type: "ipo" | "cutting_edge"
+  type: "ipo" | "cutting_edge" | "unicorn"
   valuation?: string
   funding?: string
   industry?: string
@@ -37,17 +37,17 @@ const STARTUP_QUERIES = [
   {
     query: "startups IPO 2025 went public",
     type: "ipo" as const,
-    num_results: 10,
+    num_results: 8,
   },
   {
     query: "cutting edge startups 2025 innovative technology",
     type: "cutting_edge" as const,
-    num_results: 10,
+    num_results: 8,
   },
   {
-    query: "unicorn startups 2025 latest funding",
-    type: "cutting_edge" as const,
-    num_results: 10,
+    query: "unicorn startups 2025 latest funding billion dollar valuation",
+    type: "unicorn" as const,
+    num_results: 8,
   },
 ]
 
@@ -369,15 +369,17 @@ export async function GET(req: Request) {
 
       if (cachedStartups.length > 0) {
         console.log(`[startups] Returning ${cachedStartups.length} fresh cached startups`)
+        // Shuffle to ensure mixed bag of types
+        const shuffled = [...cachedStartups].sort(() => Math.random() - 0.5)
         return NextResponse.json({
-          items: cachedStartups.map((startup: (typeof cachedStartups)[number]) => ({
+          items: shuffled.map((startup: (typeof cachedStartups)[number]) => ({
             name: startup.name,
             url: startup.url || undefined,
             source: startup.source || undefined,
             published_at: startup.publishedAt?.toISOString() || null,
             highlight: startup.highlight,
             usp: startup.usp,
-            type: startup.type as "ipo" | "cutting_edge",
+            type: startup.type as "ipo" | "cutting_edge" | "unicorn",
             valuation: startup.valuation || undefined,
             funding: startup.funding || undefined,
             industry: startup.industry || undefined,
@@ -413,14 +415,16 @@ export async function GET(req: Request) {
     // If we have stale startups, return them immediately
     if (returnStaleStartups) {
       console.log(`[startups] Returning ${staleStartups.length} stale startups (will refresh in background)`)
+      // Shuffle to ensure mixed bag
+      const shuffled = [...staleStartups].sort(() => Math.random() - 0.5)
       return NextResponse.json({
-        items: staleStartups.map((startup: (typeof staleStartups)[number]) => ({
+        items: shuffled.map((startup: (typeof staleStartups)[number]) => ({
           name: startup.name,
           url: startup.url,
           source: startup.source,
           published_at: startup.publishedAt?.toISOString() || null,
           highlight: startup.highlight,
-          type: startup.type as "ipo" | "cutting_edge",
+          type: startup.type as "ipo" | "cutting_edge" | "unicorn",
           valuation: startup.valuation || undefined,
           funding: startup.funding || undefined,
           industry: startup.industry || undefined,
@@ -450,7 +454,7 @@ export async function GET(req: Request) {
             source: startup.source,
             published_at: startup.publishedAt?.toISOString() || null,
             highlight: startup.highlight,
-            type: startup.type as "ipo" | "cutting_edge",
+            type: startup.type as "ipo" | "cutting_edge" | "unicorn",
             valuation: startup.valuation || undefined,
             funding: startup.funding || undefined,
             industry: startup.industry || undefined,
@@ -491,7 +495,7 @@ export async function GET(req: Request) {
             source: startup.source,
             published_at: startup.publishedAt?.toISOString() || null,
             highlight: startup.highlight,
-            type: startup.type as "ipo" | "cutting_edge",
+            type: startup.type as "ipo" | "cutting_edge" | "unicorn",
             valuation: startup.valuation || undefined,
             funding: startup.funding || undefined,
             industry: startup.industry || undefined,
@@ -579,9 +583,12 @@ export async function GET(req: Request) {
       console.log(`[startups] Cleaned up ${deleteResult.count} old startups`)
     }
 
-    // Step 8: Return response
+    // Step 8: Shuffle items to ensure mixed bag of types
+    const shuffledItems = [...enrichedItems].sort(() => Math.random() - 0.5)
+
+    // Step 9: Return response
     return NextResponse.json({
-      items: enrichedItems,
+      items: shuffledItems,
       last_updated: now.toISOString(),
       cached: false,
     })
@@ -604,7 +611,7 @@ export async function GET(req: Request) {
             published_at: startup.publishedAt?.toISOString() || null,
             highlight: startup.highlight,
             usp: startup.usp,
-            type: startup.type as "ipo" | "cutting_edge",
+            type: startup.type as "ipo" | "cutting_edge" | "unicorn",
             valuation: startup.valuation || undefined,
             funding: startup.funding || undefined,
             industry: startup.industry || undefined,

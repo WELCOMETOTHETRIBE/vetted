@@ -32,22 +32,27 @@ const TREND_QUERIES = [
   {
     query: "latest technology trends startups 2025",
     category: "startups",
-    num_results: 10,
+    num_results: 8,
   },
   {
     query: "software engineering emerging trends",
     category: "software_engineering",
-    num_results: 10,
+    num_results: 8,
   },
   {
     query: "AI startup news artificial intelligence",
     category: "ai",
-    num_results: 10,
+    num_results: 8,
   },
   {
     query: "engineering firm technology innovations",
     category: "engineering",
-    num_results: 10,
+    num_results: 8,
+  },
+  {
+    query: "tech innovation breakthroughs 2025",
+    category: "innovation",
+    num_results: 8,
   },
 ]
 
@@ -316,8 +321,10 @@ export async function GET(req: Request) {
 
       if (cachedTrends.length > 0) {
         console.log(`[trends] Returning ${cachedTrends.length} fresh cached trends`)
+        // Shuffle to ensure mixed bag of categories
+        const shuffled = [...cachedTrends].sort(() => Math.random() - 0.5)
         return NextResponse.json({
-          items: cachedTrends.map((trend: (typeof cachedTrends)[number]) => ({
+          items: shuffled.map((trend: (typeof cachedTrends)[number]) => ({
             title: trend.title,
             url: trend.url,
             source: trend.source,
@@ -355,9 +362,11 @@ export async function GET(req: Request) {
     // If we have stale trends, return them immediately
     if (returnStaleTrends) {
       console.log(`[trends] Returning ${staleTrends.length} stale trends (will refresh in background)`)
+      // Shuffle to ensure mixed bag of categories
+      const shuffled = [...staleTrends].sort(() => Math.random() - 0.5)
       // Note: Fresh fetch will happen on next request or can be triggered manually
       return NextResponse.json({
-        items: staleTrends.map((trend: (typeof staleTrends)[number]) => ({
+        items: shuffled.map((trend: (typeof staleTrends)[number]) => ({
           title: trend.title,
           url: trend.url,
           source: trend.source,
@@ -501,9 +510,12 @@ export async function GET(req: Request) {
       console.log(`[trends] Cleaned up ${deleteResult.count} old trends`)
     }
 
-    // Step 8: Return response
+    // Step 8: Shuffle items to ensure mixed bag of categories
+    const shuffledItems = [...enrichedItems].sort(() => Math.random() - 0.5)
+
+    // Step 9: Return response
     return NextResponse.json({
-      items: enrichedItems,
+      items: shuffledItems,
       last_updated: now.toISOString(),
       cached: false,
     })
