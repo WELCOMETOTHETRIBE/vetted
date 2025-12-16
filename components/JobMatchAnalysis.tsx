@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 
 interface JobMatchAnalysisProps {
@@ -37,9 +37,6 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
   const [loading, setLoading] = useState(false)
   const [expandedCandidates, setExpandedCandidates] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    loadTopCandidates()
-  }, [jobId])
 
   const loadTopCandidates = async () => {
     setLoading(true)
@@ -79,23 +76,19 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
   if (!data && !loading) {
     return (
       <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 shadow-sm p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <span>🔍</span>
-              <span>Find Top Candidates</span>
-            </h3>
-            <p className="text-sm text-gray-600">
-              AI-powered analysis of the top 3 candidates for this role
-            </p>
-          </div>
+        <div className="text-center">
+          <div className="text-4xl mb-3">🔍</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Find Top Candidates</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            AI-powered analysis of the top 3 candidates for this role
+          </p>
           <button
             onClick={loadTopCandidates}
             disabled={loading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
+            className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
           >
             <span>🤖</span>
-            <span>Refresh</span>
+            <span>Find Top 3 Candidates</span>
           </button>
         </div>
       </div>

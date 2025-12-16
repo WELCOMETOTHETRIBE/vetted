@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 interface UserJobMatchAnalysisProps {
   jobId: string
@@ -18,10 +18,6 @@ export default function UserJobMatchAnalysis({ jobId }: UserJobMatchAnalysisProp
   const [match, setMatch] = useState<MatchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    loadMatch()
-  }, [jobId])
 
   const loadMatch = async () => {
     setLoading(true)
@@ -56,15 +52,23 @@ export default function UserJobMatchAnalysis({ jobId }: UserJobMatchAnalysisProp
     )
   }
 
-  if (!match) {
+  if (!match && !loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="text-center">
           <div className="text-4xl mb-3">🎯</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Match Analysis Unavailable</h3>
-          <p className="text-sm text-gray-600">
-            AI match analysis is not available at the moment. Please try again later.
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyze Your Match</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Get AI-powered analysis of how well you match this job
           </p>
+          <button
+            onClick={loadMatch}
+            disabled={loading}
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+          >
+            <span>🤖</span>
+            <span>Analyze Match</span>
+          </button>
         </div>
       </div>
     )

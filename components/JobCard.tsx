@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 
 interface JobCardProps {
@@ -32,24 +32,20 @@ const JobCard = ({ job }: JobCardProps) => {
   const [matchScore, setMatchScore] = useState<number | null>(null)
   const [loadingMatch, setLoadingMatch] = useState(false)
 
-  useEffect(() => {
-    // Load match score on mount
-    const loadMatchScore = async () => {
-      setLoadingMatch(true)
-      try {
-        const response = await fetch(`/api/jobs/${job.id}/match`)
-        if (response.ok) {
-          const data = await response.json()
-          setMatchScore(data.matchScore)
-        }
-      } catch (error) {
-        // Silently fail - match score is optional
-      } finally {
-        setLoadingMatch(false)
+  const loadMatchScore = async () => {
+    setLoadingMatch(true)
+    try {
+      const response = await fetch(`/api/jobs/${job.id}/match`)
+      if (response.ok) {
+        const data = await response.json()
+        setMatchScore(data.matchScore)
       }
+    } catch (error) {
+      // Silently fail - match score is optional
+    } finally {
+      setLoadingMatch(false)
     }
-    loadMatchScore()
-  }, [job.id])
+  }
 
   const locationText = job.isRemote
     ? "Remote"
@@ -100,7 +96,12 @@ const JobCard = ({ job }: JobCardProps) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {matchScore !== null && !loadingMatch && (
+          {loadingMatch ? (
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm bg-neutral-50 text-neutral-700 border-neutral-200">
+              <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-neutral-600 mr-1"></span>
+              <span>Analyzing...</span>
+            </span>
+          ) : matchScore !== null ? (
             <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm ${
               matchColor === "green" ? "bg-success-50 text-success-700 border-success-200" :
               matchColor === "blue" ? "bg-primary-50 text-primary-700 border-primary-200" :
@@ -110,6 +111,18 @@ const JobCard = ({ job }: JobCardProps) => {
               <span>🎯</span>
               <span className="ml-1">{matchScore}% Match</span>
             </span>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                loadMatchScore()
+              }}
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border shadow-sm bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 transition-colors"
+            >
+              <span>🎯</span>
+              <span className="ml-1">Check Match</span>
+            </button>
           )}
           <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200 shadow-sm">
             {locationText}
