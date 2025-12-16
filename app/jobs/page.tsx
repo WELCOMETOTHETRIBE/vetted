@@ -31,7 +31,8 @@ async function getJobs() {
       take: 50,
     })
 
-    return jobs.map((job) => ({
+    type JobType = typeof jobs[0]
+    return jobs.map((job: JobType) => ({
       id: job.id,
       title: job.title,
       description: job.description,
