@@ -18,7 +18,7 @@ async function getJob(jobId: string) {
             name: true,
             slug: true,
             logo: true,
-            description: true,
+            about: true,
             website: true,
             location: true,
             size: true,
@@ -46,7 +46,7 @@ async function getJob(jobId: string) {
         name: job.company.name,
         slug: job.company.slug,
         logo: job.company.logo,
-        description: job.company.description,
+        about: job.company.about,
         website: job.company.website,
         location: job.company.location,
         size: job.company.size,
@@ -187,8 +187,8 @@ export default async function JobDetailPage({
           <div className="space-y-4">
             <div>
               <h3 className="font-semibold text-gray-900 mb-1">{job.company.name}</h3>
-              {job.company.description && (
-                <p className="text-gray-600">{job.company.description}</p>
+              {job.company.about && (
+                <p className="text-gray-600">{job.company.about}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
