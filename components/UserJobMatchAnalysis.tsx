@@ -74,6 +74,10 @@ export default function UserJobMatchAnalysis({ jobId }: UserJobMatchAnalysisProp
     )
   }
 
+  if (!match) {
+    return null
+  }
+
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm p-6">
       <div className="flex items-start justify-between mb-4">
