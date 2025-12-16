@@ -215,81 +215,55 @@ export default function TechTrends() {
 
     if (error) {
       return (
-        <div className="text-center py-8">
-          <p className="text-sm text-red-600 mb-2">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-xs text-blue-600 hover:underline"
-          >
-            Refresh page
-          </button>
+        <div className="text-center py-6">
+          <p className="text-sm text-gray-600">{error}</p>
         </div>
       )
     }
 
     if (trends.length === 0 && !loading) {
       return (
-        <div className="text-center py-8">
-          <p className="text-sm text-gray-600">
-            No trends available at the moment. Check back soon!
-          </p>
+        <div className="text-center py-6">
+          <p className="text-sm text-gray-500">No trends available</p>
         </div>
       )
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {trends.slice(0, 5).map((trend, idx) => (
-          <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-            <a
-              href={trend.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block"
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <h4 className="text-base font-semibold text-gray-900 line-clamp-2 flex-1">
+          <a
+            key={idx}
+            href={trend.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block group"
+          >
+            <div className="py-2 border-b border-gray-100 last:border-0 hover:border-gray-200 transition-colors">
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 group-hover:text-gray-700">
                   {trend.title}
                 </h4>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
                   trend.category === "ai"
-                    ? "bg-purple-100 text-purple-800"
+                    ? "bg-purple-50 text-purple-700"
                     : trend.category === "software_engineering"
-                    ? "bg-blue-100 text-blue-800"
+                    ? "bg-blue-50 text-blue-700"
                     : trend.category === "startups"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-gray-50 text-gray-700"
                 }`}>
                   {getCategoryLabel(trend.category)}
                 </span>
               </div>
-
-              {trend.highlight && (
-                <div className="mb-3 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-700 line-clamp-2 italic">
-                    "{trend.highlight}"
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center gap-4">
-                  <span>{trend.source}</span>
-                  <span>{formatTimeAgo(trend.published_at)}</span>
-                </div>
-                <span className="text-blue-600 font-medium">Read more →</span>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span>{trend.source}</span>
+                <span>•</span>
+                <span>{formatTimeAgo(trend.published_at)}</span>
               </div>
-            </a>
-          </div>
+            </div>
+          </a>
         ))}
-
-        {trends.length > 5 && (
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
-              Showing top 5 of {trends.length} trends
-            </p>
-          </div>
-        )}
       </div>
     )
   }
@@ -310,211 +284,168 @@ export default function TechTrends() {
 
     if (startupsError) {
       return (
-        <div className="text-center py-8">
-          <p className="text-sm text-red-600 mb-2">{startupsError}</p>
-          <button
-            onClick={() => {
-              setRefreshing(true)
-              fetchStartups(true)
-            }}
-            className="text-xs text-blue-600 hover:underline"
-          >
-            Try again
-          </button>
+        <div className="text-center py-6">
+          <p className="text-sm text-gray-600">{startupsError}</p>
         </div>
       )
     }
 
     if (startups.length === 0 && !loadingStartups) {
       return (
-        <div className="text-center py-8">
-          <p className="text-sm text-gray-600">
-            No startups available at the moment. Check back soon!
-          </p>
+        <div className="text-center py-6">
+          <p className="text-sm text-gray-500">No startups available</p>
         </div>
       )
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {startups.slice(0, 5).map((startup, idx) => {
           const companyUrl = startup.website
             ? (startup.website.startsWith('http') ? startup.website : `https://${startup.website}`)
             : startup.url
 
           return (
-            <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div className="flex-1 min-w-0">
-                  {companyUrl ? (
-                    <a
-                      href={companyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <h4 className="text-lg font-semibold text-gray-900 line-clamp-1 hover:text-purple-700 transition-colors">
+            <div key={idx} className="py-2 border-b border-gray-100 last:border-0">
+              {companyUrl ? (
+                <a
+                  href={companyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block group"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-1 group-hover:text-gray-700">
                         {startup.name}
                       </h4>
-                    </a>
-                  ) : (
-                    <h4 className="text-lg font-semibold text-gray-900 line-clamp-1">
-                      {startup.name}
-                    </h4>
-                  )}
-                  {startup.industry && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
-                        {startup.industry}
-                      </span>
+                      {startup.industry && (
+                        <span className="text-xs text-gray-500 mt-0.5 block">
+                          {startup.industry}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full font-medium ${
-                    startup.type === "ipo"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-blue-100 text-blue-800"
-                  }`}>
-                    <span>{startup.type === "ipo" ? "🚀" : "⚡"}</span>
-                    <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
-                  </span>
-                  {(startup.funding || startup.valuation) && (
-                    <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
-                      {startup.funding || startup.valuation}
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                      startup.type === "ipo"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-blue-50 text-blue-700"
+                    }`}>
+                      {startup.type === "ipo" ? "IPO" : "New"}
                     </span>
+                  </div>
+                  {startup.usp && (
+                    <p className="text-xs text-gray-600 line-clamp-1 mt-1">
+                      {startup.usp}
+                    </p>
                   )}
-                </div>
-              </div>
-
-              {startup.usp && (
-                <div className="mb-3 p-3 bg-purple-50 rounded-md">
-                  <p className="text-xs font-semibold text-purple-800 mb-1 uppercase tracking-wide">Unique Value Proposition</p>
-                  <p className="text-sm text-gray-700 line-clamp-2">
-                    {startup.usp}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
+                    {startup.source && <span>{startup.source}</span>}
+                    {startup.published_at && (
+                      <>
+                        {startup.source && <span>•</span>}
+                        <span>{formatTimeAgo(startup.published_at)}</span>
+                      </>
+                    )}
+                  </div>
+                </a>
+              ) : (
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-1">
+                        {startup.name}
+                      </h4>
+                      {startup.industry && (
+                        <span className="text-xs text-gray-500 mt-0.5 block">
+                          {startup.industry}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                      startup.type === "ipo"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-blue-50 text-blue-700"
+                    }`}>
+                      {startup.type === "ipo" ? "IPO" : "New"}
+                    </span>
+                  </div>
+                  {startup.usp && (
+                    <p className="text-xs text-gray-600 line-clamp-1 mt-1">
+                      {startup.usp}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
+                    {startup.source && <span>{startup.source}</span>}
+                    {startup.published_at && (
+                      <>
+                        {startup.source && <span>•</span>}
+                        <span>{formatTimeAgo(startup.published_at)}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
-
-              {startup.highlight && (
-                <div className="mb-3 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-700 line-clamp-2 italic">
-                    "{startup.highlight}"
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-4">
-                  {startup.source && <span>{startup.source}</span>}
-                  {startup.published_at && <span>{formatTimeAgo(startup.published_at)}</span>}
-                </div>
-                {companyUrl && (
-                  <span className="text-purple-600 font-medium hover:text-purple-700 transition-colors">
-                    Visit site →
-                  </span>
-                )}
-              </div>
             </div>
           )
         })}
-
-        {startups.length > 5 && (
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
-              Showing top 5 of {startups.length} companies
-            </p>
-          </div>
-        )}
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-gray-50">
+      <div className="px-4 py-3 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-white rounded-lg p-1 border border-gray-200">
+          <div className="flex gap-1">
             <button
               onClick={() => setActiveTab("trends")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
                 activeTab === "trends"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-gray-900 text-white"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
-              <span className="flex items-center gap-2">
-                <span>🚀</span>
-                <span className="hidden sm:inline">Tech Trends</span>
-                <span className="sm:hidden">Trends</span>
-              </span>
+              Trends
             </button>
             <button
               onClick={() => setActiveTab("startups")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
                 activeTab === "startups"
-                  ? "bg-purple-600 text-white"
+                  ? "bg-gray-900 text-white"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
-              <span className="flex items-center gap-2">
-                <span>💡</span>
-                <span className="hidden sm:inline">Startups</span>
-                <span className="sm:hidden">Startups</span>
-              </span>
+              Startups
             </button>
           </div>
 
-          {/* Refresh Button */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500 hidden sm:block">
-              {activeTab === "trends" && trends.length > 0 && formatTimeAgo(trends[0]?.published_at)}
-              {activeTab === "startups" && startups.length > 0 && formatTimeAgo(startups[0]?.published_at)}
-              {((activeTab === "trends" && trends.length === 0) || (activeTab === "startups" && startups.length === 0)) && "Live"}
-            </span>
-
-            <button
-              onClick={() => {
-                setRefreshing(true)
-                if (activeTab === "trends") {
-                  fetchTrends(true)
-                } else {
-                  fetchStartups(true)
-                }
-              }}
-              disabled={refreshing}
-              className="p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-              title={`Refresh ${activeTab === "trends" ? "trends" : "startups"}`}
-            >
-              {refreshing ? (
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Section Title */}
-        <div className="mt-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            {activeTab === "trends" ? "🚀 Tech Trends" : "💡 Startups to Watch"}
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {activeTab === "trends"
-              ? "Stay ahead with the latest technology trends and insights"
-              : "Discover innovative startups shaping the future of tech"
-            }
-          </p>
+          <button
+            onClick={() => {
+              setRefreshing(true)
+              if (activeTab === "trends") {
+                fetchTrends(true)
+              } else {
+                fetchStartups(true)
+              }
+            }}
+            disabled={refreshing}
+            className="p-1.5 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            {refreshing ? (
+              <div className="w-3.5 h-3.5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="p-6">
+      <div className="p-4">
         {activeTab === "trends" ? renderTrendsContent() : renderStartupsContent()}
       </div>
     </div>
