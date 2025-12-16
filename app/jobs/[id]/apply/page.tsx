@@ -1,46 +1,24 @@
-"use client"
-
-import { useEffect, useState, Suspense, useCallback } from "react"
-import { useParams, useSearchParams, useRouter } from "next/navigation"
-import Link from "next/link"
+import { Suspense } from "react"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
-import JobApplicationForm from "@/components/JobApplicationForm"
+import JobApplyContent from "./JobApplyContent"
 
-function JobApplyContent() {
-  const params = useParams()
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const jobId = params.id as string
-  const tab = searchParams.get("tab") || "apply"
-  
-  const [interviewPrep, setInterviewPrep] = useState<any>(null)
-  const [loadingInterviewPrep, setLoadingInterviewPrep] = useState(false)
-  const [resumeImprovements, setResumeImprovements] = useState<any>(null)
-  const [loadingResumeImprovements, setLoadingResumeImprovements] = useState(false)
-  const [resumeText, setResumeText] = useState("")
-
-  const loadInterviewPrep = useCallback(async () => {
-    setLoadingInterviewPrep(true)
-    try {
-      const response = await fetch(`/api/jobs/${jobId}/user-interview-prep`, {
-        method: "POST",
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setInterviewPrep(data)
-      }
-    } catch (error) {
-      console.error("Error loading interview prep:", error)
-    } finally {
-      setLoadingInterviewPrep(false)
-    }
-  }, [jobId])
-
-  useEffect(() => {
-    if (tab === "interview-prep" && !interviewPrep && !loadingInterviewPrep) {
-      loadInterviewPrep()
-    }
-  }, [tab, interviewPrep, loadingInterviewPrep, loadInterviewPrep])
+export default function JobApplyPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <NavbarAdvanced />
+      <Suspense fallback={
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading...</span>
+          </div>
+        </div>
+      }>
+        <JobApplyContent />
+      </Suspense>
+    </div>
+  )
+}
 
   const loadResumeImprovements = async () => {
     if (!resumeText.trim() || resumeText.length < 100) {
@@ -127,7 +105,23 @@ function JobApplyContent() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span className="ml-3 text-gray-600">Generating interview prep...</span>
                   </div>
-                ) : interviewPrep ? (
+                ) : !interviewPrep ? (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">🎯</div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Get Interview Preparation</h3>
+                    <p className="text-gray-600 mb-4">
+                      Generate personalized interview questions and insights tailored to this job and your profile.
+                    </p>
+                    <button
+                      onClick={loadInterviewPrep}
+                      disabled={loadingInterviewPrep}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                    >
+                      <span>🤖</span>
+                      <span>Generate Interview Prep</span>
+                    </button>
+                  </div>
+                ) : (
                   <div className="space-y-6">
                     {/* Questions */}
                     {interviewPrep.questions && (
@@ -240,20 +234,6 @@ function JobApplyContent() {
                         )}
                       </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-4xl mb-4">🎯</div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Interview Prep Not Available</h3>
-                    <p className="text-gray-600 mb-4">
-                      AI interview preparation is not available at the moment.
-                    </p>
-                    <button
-                      onClick={loadInterviewPrep}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      Try Again
-                    </button>
                   </div>
                 )}
               </div>
