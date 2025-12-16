@@ -256,6 +256,11 @@ export default function TechTrends() {
                   {getCategoryLabel(trend.category)}
                 </span>
               </div>
+              {(trend.highlight || trend.raw_excerpt) && (
+                <p className="text-xs text-gray-600 line-clamp-3 mt-1.5 mb-1.5 leading-relaxed">
+                  {trend.highlight || trend.raw_excerpt}
+                </p>
+              )}
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span>{trend.source}</span>
                 <span>•</span>
@@ -334,9 +339,9 @@ export default function TechTrends() {
                       <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
                     </span>
                   </div>
-                  {startup.usp && (
-                    <p className="text-xs text-gray-600 line-clamp-1 mt-1">
-                      {startup.usp}
+                  {(startup.description || startup.highlight || startup.usp) && (
+                    <p className="text-xs text-gray-600 line-clamp-3 mt-1.5 mb-1.5 leading-relaxed">
+                      {startup.description || startup.highlight || startup.usp}
                     </p>
                   )}
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
@@ -371,9 +376,9 @@ export default function TechTrends() {
                       <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
                     </span>
                   </div>
-                  {startup.usp && (
-                    <p className="text-xs text-gray-600 line-clamp-1 mt-1">
-                      {startup.usp}
+                  {(startup.description || startup.highlight || startup.usp) && (
+                    <p className="text-xs text-gray-600 line-clamp-3 mt-1.5 mb-1.5 leading-relaxed">
+                      {startup.description || startup.highlight || startup.usp}
                     </p>
                   )}
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
