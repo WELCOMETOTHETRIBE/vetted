@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import Link from "next/link"
 import UserJobMatchAnalysis from "@/components/UserJobMatchAnalysis"
+import JobMatchAnalysis from "@/components/JobMatchAnalysis"
 
 async function getJob(jobId: string) {
   try {
@@ -81,6 +82,12 @@ export default async function JobDetailPage({
     redirect("/auth/signin")
   }
 
+  // Get user role
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+
   const { id } = await params
   const job = await getJob(id)
 
@@ -111,6 +118,13 @@ export default async function JobDetailPage({
           <span>←</span>
           <span>Back to Jobs</span>
         </Link>
+
+        {/* Top 3 Candidates (Admin Only) */}
+        {user?.role === "ADMIN" && (
+          <div className="mb-6">
+            <JobMatchAnalysis jobId={job.id} />
+          </div>
+        )}
 
         {/* Job Header */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
@@ -242,7 +256,7 @@ export default async function JobDetailPage({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               href={`/jobs/${job.id}/apply`}
-              className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+              className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group cursor-pointer"
             >
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-2xl">📝</span>
@@ -252,9 +266,9 @@ export default async function JobDetailPage({
                 AI-generated personalized cover letter tailored to this role
               </p>
             </Link>
-            <a
-              href={`/jobs/${job.id}/apply#interview-prep`}
-              className="p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group"
+            <Link
+              href={`/jobs/${job.id}/apply?tab=interview-prep`}
+              className="p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group cursor-pointer"
             >
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-2xl">🎯</span>
@@ -263,16 +277,19 @@ export default async function JobDetailPage({
               <p className="text-sm text-gray-600">
                 Get personalized interview questions and preparation tips
               </p>
-            </a>
-            <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
+            </Link>
+            <Link
+              href={`/jobs/${job.id}/apply?tab=resume-improvement`}
+              className="p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors group cursor-pointer"
+            >
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">📊</span>
-                <h4 className="font-semibold text-gray-900">Match Analysis</h4>
+                <span className="text-2xl">📄</span>
+                <h4 className="font-semibold text-gray-900 group-hover:text-orange-700">Resume Improvement</h4>
               </div>
               <p className="text-sm text-gray-600">
-                See your match score and how to improve above
+                Upload your resume for AI-powered optimization suggestions
               </p>
-            </div>
+            </Link>
           </div>
         </div>
 

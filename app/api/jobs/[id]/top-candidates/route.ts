@@ -14,7 +14,7 @@ interface CandidateMatch {
 
 /**
  * GET /api/jobs/[id]/top-candidates
- * Find the top 5 candidates for a specific job
+ * Find the top 3 candidates for a specific job
  */
 export async function GET(
   req: Request,
@@ -142,11 +142,11 @@ Return JSON object with a "matches" array, sorted by match score (highest first)
   ]
 }
 
-Only return the top 5 matches.`
+Only return the top 3 matches.`
           },
           {
             role: "user",
-            content: `Job Description:\n${jobDescription}\n\nCandidates:\n${candidatesText}\n\nFind the top 5 candidates for this job.`
+            content: `Job Description:\n${jobDescription}\n\nCandidates:\n${candidatesText}\n\nFind the top 3 candidates for this job.`
           }
         ],
         response_format: { type: "json_object" },
@@ -160,8 +160,8 @@ Only return the top 5 matches.`
 
       const parsed = JSON.parse(content) as { matches: CandidateMatch[] }
       
-      // Get full candidate details for the matches
-      const matchedCandidates = parsed.matches.slice(0, 5).map((match) => {
+      // Get full candidate details for the matches (top 3)
+      const matchedCandidates = parsed.matches.slice(0, 3).map((match) => {
         const candidate = candidates.find((c: any) => c.id === match.candidateId)
         return {
           ...match,

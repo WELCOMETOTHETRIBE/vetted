@@ -325,12 +325,13 @@ export default function TechTrends() {
                         </span>
                       )}
                     </div>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 flex items-center gap-1 ${
                       startup.type === "ipo"
-                        ? "bg-green-50 text-green-700"
-                        : "bg-blue-50 text-blue-700"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800"
                     }`}>
-                      {startup.type === "ipo" ? "IPO" : "New"}
+                      <span>{startup.type === "ipo" ? "🚀" : "⚡"}</span>
+                      <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
                     </span>
                   </div>
                   {startup.usp && (
@@ -361,12 +362,13 @@ export default function TechTrends() {
                         </span>
                       )}
                     </div>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 flex items-center gap-1 ${
                       startup.type === "ipo"
-                        ? "bg-green-50 text-green-700"
-                        : "bg-blue-50 text-blue-700"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800"
                     }`}>
-                      {startup.type === "ipo" ? "IPO" : "New"}
+                      <span>{startup.type === "ipo" ? "🚀" : "⚡"}</span>
+                      <span>{startup.type === "ipo" ? "IPO Ready" : "Cutting Edge"}</span>
                     </span>
                   </div>
                   {startup.usp && (

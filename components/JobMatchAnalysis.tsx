@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 
 interface JobMatchAnalysisProps {
@@ -36,6 +36,10 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
   const [data, setData] = useState<TopCandidatesResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [expandedCandidates, setExpandedCandidates] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    loadTopCandidates()
+  }, [jobId])
 
   const loadTopCandidates = async () => {
     setLoading(true)
@@ -82,15 +86,16 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
               <span>Find Top Candidates</span>
             </h3>
             <p className="text-sm text-gray-600">
-              Get AI-powered analysis of the top 5 candidates for this role
+              AI-powered analysis of the top 3 candidates for this role
             </p>
           </div>
           <button
             onClick={loadTopCandidates}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
+            disabled={loading}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
           >
             <span>🤖</span>
-            <span>Find Top 5</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -130,7 +135,7 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <span>🔍</span>
-            <span>Top 5 Candidates</span>
+            <span>Top 3 Candidates</span>
           </h3>
           <button
             onClick={loadTopCandidates}
@@ -140,7 +145,7 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
           </button>
         </div>
         <p className="text-sm text-gray-600">
-          Analyzed {data.totalCandidatesAnalyzed} candidates • Showing top {data.candidates.length}
+          Analyzed {data.totalCandidatesAnalyzed} candidates • Showing top 3 matches
         </p>
       </div>
 
