@@ -152,12 +152,6 @@ export default async function CandidatesPage({
     <div className="min-h-screen bg-gray-50">
       <NavbarAdvanced />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Candidates</h1>
-          <div className="text-sm text-gray-600">
-            Total: {data.total} candidates
-          </div>
-        </div>
         <Suspense fallback={<div className="p-8 text-center text-gray-600">Loading...</div>}>
           <CandidatesContent
             initialCandidates={data.candidates}

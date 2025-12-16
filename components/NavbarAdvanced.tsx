@@ -27,7 +27,7 @@ const NavbarAdvanced = async () => {
     }
   }
 
-  return <NavbarClient user={session?.user} isAdmin={isAdmin} />
+  return <NavbarClient user={session?.user} userId={session?.user?.id} isAdmin={isAdmin} />
 }
 
 export default NavbarAdvanced

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
+import { useState, useEffect, useRef } from "react"
 import SearchBar from "./SearchBar"
 
 interface NavbarClientProps {
@@ -11,11 +12,31 @@ interface NavbarClientProps {
     email?: string | null
     image?: string | null
   } | null
+  userId?: string
   isAdmin?: boolean
 }
 
-const NavbarClient = ({ user, isAdmin = false }: NavbarClientProps) => {
+const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
   const pathname = usePathname()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [dropdownOpen])
 
   // Base navigation items - include candidates for all users
   const baseNavItems = [
@@ -83,11 +104,12 @@ const NavbarClient = ({ user, isAdmin = false }: NavbarClientProps) => {
             ))}
 
             {/* Profile Dropdown */}
-            <div className="ml-2 relative group">
+            <div className="ml-2 relative" ref={dropdownRef}>
               <button 
+                onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
                 aria-label="Profile menu"
-                aria-expanded="false"
+                aria-expanded={dropdownOpen}
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
                   {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
@@ -96,27 +118,36 @@ const NavbarClient = ({ user, isAdmin = false }: NavbarClientProps) => {
                   {user?.name || 'User'} ▼
                 </span>
               </button>
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <Link
-                  href="/profile/edit"
-                  className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
-                >
-                  View Profile
-                </Link>
-                <Link
-                  href="/profile/edit"
-                  className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
-                >
-                  Settings
-                </Link>
-                <div className="border-t border-neutral-200 my-1"></div>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="block w-full text-left px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 z-50">
+                  {userId && (
+                    <Link
+                      href={`/profile/${userId}`}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
+                    >
+                      View My Profile
+                    </Link>
+                  )}
+                  <Link
+                    href="/profile/edit"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
+                  >
+                    Settings
+                  </Link>
+                  <div className="border-t border-neutral-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false)
+                      signOut({ callbackUrl: "/" })
+                    }}
+                    className="block w-full text-left px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
