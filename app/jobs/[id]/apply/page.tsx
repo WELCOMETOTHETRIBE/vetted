@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense, useCallback } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import JobApplicationForm from "@/components/JobApplicationForm"
 
-export default function JobApplyPage() {
+function JobApplyContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -19,13 +19,7 @@ export default function JobApplyPage() {
   const [loadingResumeImprovements, setLoadingResumeImprovements] = useState(false)
   const [resumeText, setResumeText] = useState("")
 
-  useEffect(() => {
-    if (tab === "interview-prep" && !interviewPrep && !loadingInterviewPrep) {
-      loadInterviewPrep()
-    }
-  }, [tab])
-
-  const loadInterviewPrep = async () => {
+  const loadInterviewPrep = useCallback(async () => {
     setLoadingInterviewPrep(true)
     try {
       const response = await fetch(`/api/jobs/${jobId}/user-interview-prep`, {
@@ -40,7 +34,13 @@ export default function JobApplyPage() {
     } finally {
       setLoadingInterviewPrep(false)
     }
-  }
+  }, [jobId])
+
+  useEffect(() => {
+    if (tab === "interview-prep" && !interviewPrep && !loadingInterviewPrep) {
+      loadInterviewPrep()
+    }
+  }, [tab, interviewPrep, loadingInterviewPrep, loadInterviewPrep])
 
   const loadResumeImprovements = async () => {
     if (!resumeText.trim() || resumeText.length < 100) {
@@ -406,6 +406,24 @@ export default function JobApplyPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function JobApplyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50">
+        <NavbarAdvanced />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading...</span>
+          </div>
+        </div>
+      </div>
+    }>
+      <JobApplyContent />
+    </Suspense>
   )
 }
 
