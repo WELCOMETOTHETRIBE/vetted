@@ -4,7 +4,30 @@ import { prisma } from "@/lib/prisma"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import JobCard from "@/components/JobCard"
 
-async function getJobs() {
+type JobForCard = {
+  id: string
+  title: string
+  description?: string | null
+  company: {
+    id: string
+    name: string
+    slug: string
+    logo?: string | null
+  }
+  location?: string | null
+  isRemote: boolean
+  isHybrid: boolean
+  employmentType: string
+  salaryMin?: number | null
+  salaryMax?: number | null
+  salaryCurrency?: string | null
+  createdAt: Date
+  views: number
+  applications?: Array<{ id: string }>
+  originalUrl?: string | null
+}
+
+async function getJobs(): Promise<JobForCard[]> {
   try {
     const jobs = await prisma.job.findMany({
       where: {
@@ -31,8 +54,8 @@ async function getJobs() {
       take: 50,
     })
 
-    type JobType = typeof jobs[0]
-    return jobs.map((job: JobType) => ({
+    type PrismaJob = typeof jobs[0]
+    return jobs.map((job: PrismaJob) => ({
       id: job.id,
       title: job.title,
       description: job.description,
@@ -91,7 +114,7 @@ export default async function JobsPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {jobs.map((job) => (
+            {jobs.map((job: JobForCard) => (
               <JobCard key={job.id} job={job} />
             ))}
           </div>
