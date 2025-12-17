@@ -262,6 +262,7 @@ export default function CandidatesContent({
   const [aiLoading, setAiLoading] = useState<string | null>(null)
   const [aiResults, setAiResults] = useState<any>(null)
   const [showColumnSelector, setShowColumnSelector] = useState(false)
+  const [activeRightTab, setActiveRightTab] = useState<"recommendations" | "workflows" | "timeline" | "actions">("recommendations")
   
   // Define all available columns with display names and categories
   const allColumns = [
@@ -1221,95 +1222,160 @@ export default function CandidatesContent({
               )}
                 </div>
 
-                {/* Right Column - Actions & Workflows (1/3 width) */}
-                <div className="space-y-6">
-                  {/* Predictive Score Section */}
-                  <PredictiveScore
-                    candidateId={selectedCandidate.id}
-                    onScoreCalculated={(score) => {
-                      loadCandidateDetails(selectedCandidate.id)
-                    }}
-                  />
+                {/* Right Column - Tabs View (1/3 width) */}
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                  {/* Tabs Header */}
+                  <div className="flex border-b border-gray-200">
+                    <button
+                      onClick={() => setActiveRightTab("recommendations")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                        activeRightTab === "recommendations"
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <span>⭐</span>
+                        <span className="hidden sm:inline">Recommendations</span>
+                        <span className="sm:hidden">Recs</span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setActiveRightTab("workflows")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                        activeRightTab === "workflows"
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <span>🔄</span>
+                        <span className="hidden sm:inline">Workflows</span>
+                        <span className="sm:hidden">Work</span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setActiveRightTab("timeline")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                        activeRightTab === "timeline"
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <span>📅</span>
+                        <span className="hidden sm:inline">Timeline</span>
+                        <span className="sm:hidden">Time</span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setActiveRightTab("actions")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                        activeRightTab === "actions"
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <span>🤖</span>
+                        <span className="hidden sm:inline">Actions</span>
+                        <span className="sm:hidden">AI</span>
+                      </span>
+                    </button>
+                  </div>
 
-                  {/* Engagement Workflow Section */}
-                  <EngagementWorkflow candidateId={selectedCandidate.id} />
-
-                  {/* Candidate Timeline Section */}
-                  <CandidateTimeline candidateId={selectedCandidate.id} />
-
-                  {/* AI Action Buttons */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">AI Quick Actions</h3>
-                    <div className="space-y-2">
-                      <button
-                        onClick={async () => {
-                          setAiLoading("match")
-                          try {
-                            const response = await fetch(`/api/candidates/${selectedCandidate.id}/match-jobs`)
-                            if (response.ok) {
-                              const data = await response.json()
-                              setAiResults({ type: "match", data })
-                            }
-                          } catch (error) {
-                            console.error("Error matching jobs:", error)
-                          } finally {
-                            setAiLoading(null)
-                          }
+                  {/* Tab Content */}
+                  <div className="p-4">
+                    {activeRightTab === "recommendations" && (
+                      <PredictiveScore
+                        candidateId={selectedCandidate.id}
+                        onScoreCalculated={(score) => {
+                          loadCandidateDetails(selectedCandidate.id)
                         }}
-                        disabled={aiLoading !== null}
-                        className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                      >
-                        {aiLoading === "match" ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Matching...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            Match to Jobs
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={async () => {
-                          setAiLoading("outreach")
-                          try {
-                            const response = await fetch(`/api/candidates/${selectedCandidate.id}/outreach`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({}),
-                            })
-                            if (response.ok) {
-                              const data = await response.json()
-                              setAiResults({ type: "outreach", data })
+                      />
+                    )}
+
+                    {activeRightTab === "workflows" && (
+                      <EngagementWorkflow candidateId={selectedCandidate.id} />
+                    )}
+
+                    {activeRightTab === "timeline" && (
+                      <CandidateTimeline candidateId={selectedCandidate.id} />
+                    )}
+
+                    {activeRightTab === "actions" && (
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3">AI Quick Actions</h3>
+                        <button
+                          onClick={async () => {
+                            setAiLoading("match")
+                            try {
+                              const response = await fetch(`/api/candidates/${selectedCandidate.id}/match-jobs`)
+                              if (response.ok) {
+                                const data = await response.json()
+                                setAiResults({ type: "match", data })
+                              }
+                            } catch (error) {
+                              console.error("Error matching jobs:", error)
+                            } finally {
+                              setAiLoading(null)
                             }
-                          } catch (error) {
-                            console.error("Error generating outreach:", error)
-                          } finally {
-                            setAiLoading(null)
-                          }
-                        }}
-                        disabled={aiLoading !== null}
-                        className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                      >
-                        {aiLoading === "outreach" ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                            Generate Outreach
-                          </>
-                        )}
-                      </button>
-                    </div>
+                          }}
+                          disabled={aiLoading !== null}
+                          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          {aiLoading === "match" ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Matching...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                              Match to Jobs
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setAiLoading("outreach")
+                            try {
+                              const response = await fetch(`/api/candidates/${selectedCandidate.id}/outreach`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({}),
+                              })
+                              if (response.ok) {
+                                const data = await response.json()
+                                setAiResults({ type: "outreach", data })
+                              }
+                            } catch (error) {
+                              console.error("Error generating outreach:", error)
+                            } finally {
+                              setAiLoading(null)
+                            }
+                          }}
+                          disabled={aiLoading !== null}
+                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          {aiLoading === "outreach" ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              Generate Outreach
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -119,13 +119,6 @@ export default async function JobDetailPage({
           <span>Back to Jobs</span>
         </Link>
 
-        {/* Top 3 Candidates (Admin Only) */}
-        {user?.role === "ADMIN" && (
-          <div className="mb-6">
-            <JobMatchAnalysis jobId={job.id} />
-          </div>
-        )}
-
         {/* Job Header */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
           <div className="flex items-start gap-6 mb-6">
@@ -181,11 +174,6 @@ export default async function JobDetailPage({
               </span>
             </div>
           </div>
-        </div>
-
-        {/* AI Match Analysis */}
-        <div className="mb-6">
-          <UserJobMatchAnalysis jobId={job.id} />
         </div>
 
         {/* Job Description */}
@@ -253,7 +241,20 @@ export default async function JobDetailPage({
             <span>🤖</span>
             <span>AI-Powered Tools</span>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Analyze Match - Compact */}
+            <div className="p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors">
+              <UserJobMatchAnalysis jobId={job.id} compact={true} />
+            </div>
+
+            {/* Find Top Candidates - Admin Only */}
+            {user?.role === "ADMIN" && (
+              <div className="p-4 border-2 border-indigo-200 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
+                <JobMatchAnalysis jobId={job.id} compact={true} />
+              </div>
+            )}
+
+            {/* Generate Cover Letter */}
             <Link
               href={`/jobs/${job.id}/apply`}
               className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group cursor-pointer"
@@ -266,6 +267,8 @@ export default async function JobDetailPage({
                 AI-generated personalized cover letter tailored to this role
               </p>
             </Link>
+
+            {/* Interview Prep */}
             <Link
               href={`/jobs/${job.id}/apply?tab=interview-prep`}
               className="p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group cursor-pointer"
@@ -278,6 +281,8 @@ export default async function JobDetailPage({
                 Get personalized interview questions and preparation tips
               </p>
             </Link>
+
+            {/* Resume Improvement */}
             <Link
               href={`/jobs/${job.id}/apply?tab=resume-improvement`}
               className="p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors group cursor-pointer"

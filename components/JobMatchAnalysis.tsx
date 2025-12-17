@@ -5,6 +5,7 @@ import Link from "next/link"
 
 interface JobMatchAnalysisProps {
   jobId: string
+  compact?: boolean
 }
 
 interface CandidateMatch {
@@ -32,7 +33,7 @@ interface TopCandidatesResponse {
   totalCandidatesAnalyzed: number
 }
 
-export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
+export default function JobMatchAnalysis({ jobId, compact = false }: JobMatchAnalysisProps) {
   const [data, setData] = useState<TopCandidatesResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [expandedCandidates, setExpandedCandidates] = useState<Set<string>>(new Set())
@@ -74,6 +75,27 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
   }
 
   if (!data && !loading) {
+    if (compact) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">🔍</span>
+            <h4 className="font-semibold text-gray-900">Find Top Candidates</h4>
+          </div>
+          <p className="text-sm text-gray-600 mb-4 flex-1">
+            AI-powered analysis of the top 3 candidates for this role
+          </p>
+          <button
+            onClick={loadTopCandidates}
+            disabled={loading}
+            className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span>🤖</span>
+            <span>Find Top 3</span>
+          </button>
+        </div>
+      )
+    }
     return (
       <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 shadow-sm p-6">
         <div className="text-center">
@@ -97,16 +119,29 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center justify-center gap-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-          <p className="text-gray-600">Analyzing candidates...</p>
-        </div>
+      <div className="flex items-center justify-center gap-3 h-full min-h-[120px]">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+        <p className="text-sm text-gray-600">Analyzing...</p>
       </div>
     )
   }
 
   if (!data || data.candidates.length === 0) {
+    if (compact) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="text-center flex-1 flex flex-col justify-center">
+            <div className="text-2xl mb-2">👥</div>
+            <h4 className="font-semibold text-gray-900 mb-1 text-sm">No candidates found</h4>
+            <p className="text-xs text-gray-600">
+              {data?.totalCandidatesAnalyzed === 0
+                ? "No active candidates"
+                : "No strong matches"}
+            </p>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="text-center">
@@ -118,6 +153,38 @@ export default function JobMatchAnalysis({ jobId }: JobMatchAnalysisProps) {
               : "No strong matches found for this role"}
           </p>
         </div>
+      </div>
+    )
+  }
+
+  if (compact) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl">🔍</span>
+          <h4 className="font-semibold text-gray-900">Top 3 Candidates</h4>
+        </div>
+        <div className="space-y-2 flex-1 overflow-y-auto">
+          {data.candidates.slice(0, 3).map((candidate, index) => (
+            <div key={candidate.candidateId} className="bg-white rounded border border-gray-200 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h5 className="font-medium text-gray-900 text-sm truncate">{candidate.candidateName}</h5>
+                  <p className="text-xs text-gray-600 line-clamp-1">{candidate.reasoning}</p>
+                </div>
+                <div className={`inline-flex items-center px-2 py-1 rounded border font-bold text-sm ${getScoreColor(candidate.matchScore)}`}>
+                  {candidate.matchScore}%
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={loadTopCandidates}
+          className="mt-2 text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+        >
+          Refresh
+        </button>
       </div>
     )
   }

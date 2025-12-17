@@ -4,6 +4,7 @@ import { useState } from "react"
 
 interface UserJobMatchAnalysisProps {
   jobId: string
+  compact?: boolean
 }
 
 interface MatchResult {
@@ -14,7 +15,7 @@ interface MatchResult {
   recommendations: string[]
 }
 
-export default function UserJobMatchAnalysis({ jobId }: UserJobMatchAnalysisProps) {
+export default function UserJobMatchAnalysis({ jobId, compact = false }: UserJobMatchAnalysisProps) {
   const [match, setMatch] = useState<MatchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -43,16 +44,35 @@ export default function UserJobMatchAnalysis({ jobId }: UserJobMatchAnalysisProp
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center justify-center gap-3">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-gray-600">Analyzing your match...</p>
-        </div>
+      <div className="flex items-center justify-center gap-3 h-full min-h-[120px]">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+        <p className="text-sm text-gray-600">Analyzing...</p>
       </div>
     )
   }
 
   if (!match && !loading) {
+    if (compact) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">🎯</span>
+            <h4 className="font-semibold text-gray-900">Analyze Match</h4>
+          </div>
+          <p className="text-sm text-gray-600 mb-4 flex-1">
+            Get AI-powered analysis of how well you match this job
+          </p>
+          <button
+            onClick={loadMatch}
+            disabled={loading}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+          >
+            <span>🤖</span>
+            <span>Analyze Match</span>
+          </button>
+        </div>
+      )
+    }
     return (
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="text-center">
@@ -76,6 +96,41 @@ export default function UserJobMatchAnalysis({ jobId }: UserJobMatchAnalysisProp
 
   if (!match) {
     return null
+  }
+
+  if (compact) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl">🎯</span>
+          <h4 className="font-semibold text-gray-900">Match Score</h4>
+          <div className={`ml-auto inline-flex items-center px-3 py-1 rounded-lg border-2 font-bold text-lg ${getScoreColor(match.matchScore)}`}>
+            {match.matchScore}%
+          </div>
+        </div>
+        <p className="text-xs text-gray-600 mb-3 line-clamp-2 flex-1">{match.reasoning}</p>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-green-600 hover:text-green-700 font-medium transition-colors text-left"
+        >
+          {expanded ? "Show Less" : "Show Details"}
+        </button>
+        {expanded && (
+          <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-xs">
+            {match.strengths && match.strengths.length > 0 && (
+              <div>
+                <h5 className="font-semibold text-green-700 mb-1">Strengths</h5>
+                <ul className="list-disc list-inside space-y-0.5 text-gray-700 ml-2">
+                  {match.strengths.slice(0, 2).map((strength, idx) => (
+                    <li key={idx} className="line-clamp-1">{strength}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
