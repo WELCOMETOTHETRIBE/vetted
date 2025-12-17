@@ -60,9 +60,11 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
     fetchEngagements()
   }, [candidateId])
 
-  const fetchWorkflows = async () => {
+  const fetchWorkflows = async (retryCount = 0) => {
     try {
-      setLoading(true)
+      if (retryCount === 0) {
+        setLoading(true)
+      }
       const response = await fetch("/api/engagement/workflows")
       if (response.ok) {
         const data = await response.json()
@@ -70,10 +72,11 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
         setWorkflows(fetchedWorkflows)
         console.log(`[EngagementWorkflow] Loaded ${fetchedWorkflows.length} workflows`)
         
-        // If no workflows, the API should have auto-created them, so refresh
-        if (fetchedWorkflows.length === 0) {
-          console.log("[EngagementWorkflow] No workflows found, waiting for auto-creation...")
-          setTimeout(() => fetchWorkflows(), 1000)
+        // If no workflows and we haven't retried too many times, retry once
+        if (fetchedWorkflows.length === 0 && retryCount < 1) {
+          console.log("[EngagementWorkflow] No workflows found, retrying after auto-creation...")
+          setTimeout(() => fetchWorkflows(1), 1500)
+          return
         }
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -82,7 +85,9 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
     } catch (error) {
       console.error("[EngagementWorkflow] Error fetching workflows:", error)
     } finally {
-      setLoading(false)
+      if (retryCount === 0) {
+        setLoading(false)
+      }
     }
   }
 

@@ -40,6 +40,29 @@ export async function GET() {
       
       for (const [templateKey, template] of Object.entries(WORKFLOW_TEMPLATES)) {
         try {
+          // Check if workflow already exists (in case of race condition)
+          const existing = await prisma.engagementWorkflow.findFirst({
+            where: {
+              createdById: session.user.id,
+              name: template.name,
+              isActive: true,
+            },
+          })
+          
+          if (existing) {
+            // Use existing workflow
+            createdWorkflows.push({
+              id: existing.id,
+              name: existing.name,
+              description: existing.description || undefined,
+              steps: JSON.parse(existing.steps),
+              isActive: existing.isActive,
+              createdAt: existing.createdAt,
+              updatedAt: existing.updatedAt,
+            })
+            continue
+          }
+          
           const workflow = await createWorkflowFromTemplate(
             templateKey as keyof typeof WORKFLOW_TEMPLATES,
             session.user.id
@@ -47,11 +70,19 @@ export async function GET() {
           createdWorkflows.push(workflow)
         } catch (error: any) {
           console.error(`[engagement-workflows] Error creating template ${templateKey}:`, error.message)
+          // Try to fetch existing workflows as fallback
+          const fallbackWorkflows = await getUserWorkflows(session.user.id)
+          if (fallbackWorkflows.length > 0) {
+            workflows = fallbackWorkflows
+            break
+          }
         }
       }
       
-      workflows = createdWorkflows
-      console.log(`[engagement-workflows] Created ${createdWorkflows.length} default workflows`)
+      if (createdWorkflows.length > 0) {
+        workflows = createdWorkflows
+        console.log(`[engagement-workflows] Created ${createdWorkflows.length} default workflows`)
+      }
     }
 
     return NextResponse.json({ workflows, templates: WORKFLOW_TEMPLATES })
