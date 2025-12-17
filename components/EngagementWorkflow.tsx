@@ -62,13 +62,25 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
 
   const fetchWorkflows = async () => {
     try {
+      setLoading(true)
       const response = await fetch("/api/engagement/workflows")
       if (response.ok) {
         const data = await response.json()
-        setWorkflows(data.workflows || [])
+        const fetchedWorkflows = data.workflows || []
+        setWorkflows(fetchedWorkflows)
+        console.log(`[EngagementWorkflow] Loaded ${fetchedWorkflows.length} workflows`)
+        
+        // If no workflows, the API should have auto-created them, so refresh
+        if (fetchedWorkflows.length === 0) {
+          console.log("[EngagementWorkflow] No workflows found, waiting for auto-creation...")
+          setTimeout(() => fetchWorkflows(), 1000)
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[EngagementWorkflow] Error fetching workflows:", errorData)
       }
     } catch (error) {
-      console.error("Error fetching workflows:", error)
+      console.error("[EngagementWorkflow] Error fetching workflows:", error)
     } finally {
       setLoading(false)
     }

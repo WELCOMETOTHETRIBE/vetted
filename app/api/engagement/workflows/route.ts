@@ -31,7 +31,28 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const workflows = await getUserWorkflows(session.user.id)
+    let workflows = await getUserWorkflows(session.user.id)
+
+    // If user has no workflows, auto-create default templates
+    if (workflows.length === 0) {
+      console.log("[engagement-workflows] No workflows found, creating default templates")
+      const createdWorkflows: any[] = []
+      
+      for (const [templateKey, template] of Object.entries(WORKFLOW_TEMPLATES)) {
+        try {
+          const workflow = await createWorkflowFromTemplate(
+            templateKey as keyof typeof WORKFLOW_TEMPLATES,
+            session.user.id
+          )
+          createdWorkflows.push(workflow)
+        } catch (error: any) {
+          console.error(`[engagement-workflows] Error creating template ${templateKey}:`, error.message)
+        }
+      }
+      
+      workflows = createdWorkflows
+      console.log(`[engagement-workflows] Created ${createdWorkflows.length} default workflows`)
+    }
 
     return NextResponse.json({ workflows, templates: WORKFLOW_TEMPLATES })
   } catch (error: any) {

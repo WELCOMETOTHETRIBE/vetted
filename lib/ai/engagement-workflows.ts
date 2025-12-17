@@ -275,11 +275,14 @@ export async function executeWorkflow(
 }
 
 /**
- * Get all workflows for a user
+ * Get all workflows for a user (including active ones)
  */
 export async function getUserWorkflows(userId: string): Promise<EngagementWorkflowData[]> {
   const workflows = await prisma.engagementWorkflow.findMany({
-    where: { createdById: userId },
+    where: { 
+      createdById: userId,
+      isActive: true,
+    },
     orderBy: { createdAt: "desc" },
   })
 
