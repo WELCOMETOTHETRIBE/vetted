@@ -32,20 +32,20 @@ interface StartupsResponse {
   warning?: string
 }
 
-// Search queries for startups
+// Search queries for startups - focused on actual companies, not articles
 const STARTUP_QUERIES = [
   {
-    query: "startups IPO 2025 went public",
+    query: "companies IPO 2025 list went public",
     type: "ipo" as const,
     num_results: 8,
   },
   {
-    query: "cutting edge startups 2025 innovative technology",
+    query: "innovative tech companies 2025 breakthrough technology",
     type: "cutting_edge" as const,
     num_results: 8,
   },
   {
-    query: "unicorn startups 2025 latest funding billion dollar valuation",
+    query: "unicorn companies list 2025 billion dollar valuation",
     type: "unicorn" as const,
     num_results: 8,
   },
@@ -153,17 +153,40 @@ function normalizeStartupResults(rawItems: any[]): StartupItem[] {
     // Also try to extract from snippet if title doesn't have clear company name
     let name = title.split(/[-:–—]/)[0].trim() || title.substring(0, 50)
     
-    // Try to extract company name from snippet if title is generic
-    const companyNamePatterns = [
-      /(?:^|\.)\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(?:raised|raised|IPO|went public|valuation|funding|startup|company)/i,
-      /(?:startup|company|firm)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/i,
+    // Filter out generic/question titles that aren't company names
+    const genericPatterns = [
+      /^why\s+/i,
+      /^what\s+/i,
+      /^how\s+/i,
+      /^when\s+/i,
+      /^where\s+/i,
+      /^the\s+(valuation|growth|future|rise|fall)/i,
+      /^(unicorn|startup|company|companies)\s+(are|is|have|will)/i,
+      /^\d+\s+(startups|companies|unicorns)/i,
     ]
     
-    for (const pattern of companyNamePatterns) {
-      const match = snippet.match(pattern)
-      if (match && match[1] && match[1].length > 2 && match[1].length < 50) {
-        name = match[1].trim()
-        break
+    const isGenericTitle = genericPatterns.some(pattern => pattern.test(name))
+    
+    // Try to extract company name from snippet if title is generic
+    const companyNamePatterns = [
+      /(?:^|\.)\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(?:raised|IPO|went public|valuation|funding|startup|company|launched)/i,
+      /(?:startup|company|firm|platform)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/i,
+      /([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(?:has|announced|raised|secured|reached|achieved)/i,
+      /([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s+(?:IPO|valuation|funding)/i,
+    ]
+    
+    if (isGenericTitle) {
+      // Title is generic, try harder to extract from snippet
+      for (const pattern of companyNamePatterns) {
+        const match = snippet.match(pattern)
+        if (match && match[1] && match[1].length > 2 && match[1].length < 50) {
+          const extractedName = match[1].trim()
+          // Make sure it's not a generic term
+          if (!/^(Startup|Company|Unicorn|Valuation|Funding|IPO)/i.test(extractedName)) {
+            name = extractedName
+            break
+          }
+        }
       }
     }
 
@@ -223,17 +246,23 @@ async function enrichStartupsWithAI(items: StartupItem[]): Promise<StartupItem[]
       const messages = [
         {
           role: "system" as const,
-          content: `You are a startup investment analyst. For each startup article, extract:
-1. The actual company name (not article title)
+          content: `You are a startup investment analyst. For each result, extract:
+1. The actual COMPANY NAME (not article title, not question, not generic term)
+   - If the title is an article about a company, extract the company name from the title or description
+   - If the title is a question or generic term, extract the company name from the description
+   - Examples: "Urban Company IPO" -> "Urban Company", "Why are startups called unicorns?" -> extract company from description
+   - Skip if no actual company name can be identified (e.g., generic articles about "unicorns" or "startups")
 2. A compelling description explaining why this company is noteworthy (max 60 words)
    - For IPO type: Explain why they went public, their growth trajectory, market position, financial performance
    - For Cutting Edge type: Explain their innovative technology, breakthrough, market disruption, or unique approach
    - For Unicorn type: Explain their valuation milestone, funding success, market dominance, or rapid growth
    The description should be clear and compelling, focusing on what makes them stand out.
 
+IMPORTANT: Only return results where you can identify a specific company name. Skip generic articles, questions, or trends.
+
 Return JSON array with objects: {companyName: string, highlight: string, usp: string}
 Where highlight is the "why noteworthy" description that will be displayed below the company name.
-One object per article in the same order.`,
+One object per result in the same order. If a result doesn't have a company name, return null for that item.`,
         },
         {
           role: "user" as const,
@@ -269,6 +298,12 @@ One object per article in the same order.`,
             if (Array.isArray(enrichedData) && enrichedData.length === batch.length) {
               for (let j = 0; j < batch.length; j++) {
                 const data = enrichedData[j]
+                // Skip null entries (where no company name was found)
+                if (data === null || !data.companyName || data.companyName.trim().length < 2) {
+                  // Mark for removal
+                  batch[j]._skip = true
+                  continue
+                }
                 if (data.companyName) {
                   batch[j].name = data.companyName.trim()
                 }
@@ -306,7 +341,9 @@ One object per article in the same order.`,
         }
       }
 
-      enriched.push(...batch)
+      // Filter out skipped items (those without company names)
+      const validBatch = batch.filter(item => !item._skip)
+      enriched.push(...validBatch)
 
       // Small delay between batches
       if (i + batchSize < items.length) {
