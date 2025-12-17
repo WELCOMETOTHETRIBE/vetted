@@ -40,16 +40,16 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
 
   // Base navigation items - include candidates for all users
   const baseNavItems = [
-    { href: "/feed", label: "Feed", icon: "📰" },
-    { href: "/jobs", label: "Jobs", icon: "💼" },
-    { href: "/candidates", label: "Candidates", icon: "🎯" },
-    { href: "/network", label: "Network", icon: "👥" },
-    { href: "/messages", label: "Messages", icon: "💬" },
-    { href: "/notifications", label: "Notifications", icon: "🔔" },
+    { href: "/feed", label: "Feed", icon: "📰", iconOnly: false },
+    { href: "/jobs", label: "Jobs", icon: "💼", iconOnly: false },
+    { href: "/candidates", label: "Candidates", icon: "🎯", iconOnly: false },
+    { href: "/network", label: "Network", icon: "👥", iconOnly: false },
+    { href: "/messages", label: "Messages", icon: "💬", iconOnly: true },
+    { href: "/notifications", label: "Notifications", icon: "🔔", iconOnly: true },
   ]
 
   // Add Admin tab for admins
-  const adminNavItems = isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️" }] : []
+  const adminNavItems = isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️", iconOnly: true }] : []
   const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
@@ -86,21 +86,71 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
 
           {/* Navigation Items */}
           <div className="flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  pathname === item.href
-                    ? "text-primary-700 bg-primary-50 shadow-sm"
-                    : "text-content-secondary hover:bg-surface-secondary hover:text-content-primary"
-                } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
-                aria-current={pathname === item.href ? "page" : undefined}
-              >
-                <span className="hidden sm:inline">{item.label}</span>
-                <span className="sm:hidden text-base" aria-label={item.label}>{item.icon}</span>
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isIconOnly = item.iconOnly || false
+              const isActive = pathname === item.href
+              
+              // Render icon-only items (Admin, Notifications, Messages)
+              if (isIconOnly) {
+                let iconSvg = null
+                if (item.href === "/admin") {
+                  // Robot/Administrator icon
+                  iconSvg = (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                  )
+                } else if (item.href === "/notifications") {
+                  // Bell icon
+                  iconSvg = (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                  )
+                } else if (item.href === "/messages") {
+                  // Letter/Envelope icon
+                  iconSvg = (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  )
+                }
+                
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`p-2.5 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "text-primary-700 bg-primary-50 shadow-sm"
+                        : "text-content-secondary hover:bg-surface-secondary hover:text-content-primary"
+                    } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
+                    aria-current={isActive ? "page" : undefined}
+                    aria-label={item.label}
+                    title={item.label}
+                  >
+                    {iconSvg}
+                  </Link>
+                )
+              }
+              
+              // Render text items (Feed, Jobs, Candidates, Network)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "text-primary-700 bg-primary-50 shadow-sm"
+                      : "text-content-secondary hover:bg-surface-secondary hover:text-content-primary"
+                  } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <span className="hidden sm:inline">{item.label}</span>
+                  <span className="sm:hidden text-base" aria-label={item.label}>{item.icon}</span>
+                </Link>
+              )
+            })}
 
             {/* Profile Dropdown */}
             <div className="ml-2 relative" ref={dropdownRef}>
