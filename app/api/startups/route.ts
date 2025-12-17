@@ -560,10 +560,26 @@ export async function GET(req: Request) {
     // Step 4: Normalize results
     console.log(`[startups] Normalizing ${rawItems.length} raw items`)
     const normalizedItems = normalizeStartupResults(rawItems)
+    
+    // Filter out items with generic/question titles before AI enrichment
+    const validItems = normalizedItems.filter(item => {
+      const name = item.name.toLowerCase()
+      // Skip generic terms, questions, and very short names
+      const skipPatterns = [
+        /^(why|what|how|when|where|the)\s+/,
+        /^(unicorn|startup|company|companies|valuation|funding|ipo)\s*$/,
+        /^\d+\s+(startups|companies|unicorns)/,
+        /^(are|is|have|will|can)\s+/,
+      ]
+      const isGeneric = skipPatterns.some(pattern => pattern.test(name))
+      return !isGeneric && name.length >= 3 && name.length <= 50
+    })
+    
+    console.log(`[startups] Filtered to ${validItems.length} valid items (removed ${normalizedItems.length - validItems.length} generic/question results)`)
 
     // Step 5: Enrich with AI highlights
-    console.log(`[startups] Enriching ${normalizedItems.length} items with AI`)
-    const enrichedItems = await enrichStartupsWithAI(normalizedItems)
+    console.log(`[startups] Enriching ${validItems.length} items with AI`)
+    const enrichedItems = await enrichStartupsWithAI(validItems)
 
     // Step 6: Store startups in database
     console.log(`[startups] Storing ${enrichedItems.length} startups in database`)
