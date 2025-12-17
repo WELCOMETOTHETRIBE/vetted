@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 interface PredictiveScoreProps {
   candidateId: string
@@ -35,14 +35,11 @@ export default function PredictiveScore({
   candidateId,
   onScoreCalculated,
 }: PredictiveScoreProps) {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [topJobs, setTopJobs] = useState<TopJob[]>([])
   const [error, setError] = useState<string | null>(null)
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadTopJobs()
-  }, [candidateId])
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   const loadTopJobs = async () => {
     setLoading(true)
@@ -58,6 +55,7 @@ export default function PredictiveScore({
 
       const data: TopJobsResponse = await response.json()
       setTopJobs(data.topJobs || [])
+      setHasLoaded(true)
 
       // Call callback with highest score if available
       if (data.topJobs && data.topJobs.length > 0 && onScoreCalculated) {
@@ -125,28 +123,55 @@ export default function PredictiveScore({
             Jobs with highest predictive success scores for this candidate
           </p>
         </div>
-        <button
-          onClick={loadTopJobs}
-          disabled={loading}
-          className="px-3 py-1.5 text-sm bg-white border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 disabled:opacity-50 transition-colors flex items-center gap-1"
-          title="Refresh recommendations"
-        >
-          <svg
-            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {hasLoaded && (
+          <button
+            onClick={loadTopJobs}
+            disabled={loading}
+            className="px-3 py-1.5 text-sm bg-white border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 disabled:opacity-50 transition-colors flex items-center gap-1"
+            title="Refresh recommendations"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Refresh
-        </button>
+            <svg
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh
+          </button>
+        )}
       </div>
+
+      {!hasLoaded && !loading && (
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-4">Get AI-powered job recommendations for this candidate</p>
+          <button
+            onClick={loadTopJobs}
+            disabled={loading}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium flex items-center gap-2 mx-auto"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Analyzing...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Get Top 3 Recommended Jobs</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {loading && (
         <div className="flex items-center justify-center py-12">
@@ -169,7 +194,7 @@ export default function PredictiveScore({
         </div>
       )}
 
-      {!loading && !error && topJobs.length === 0 && (
+      {hasLoaded && !loading && !error && topJobs.length === 0 && (
         <div className="text-center py-8">
           <p className="text-gray-600 mb-2">No recommended jobs found</p>
           <p className="text-sm text-gray-500">
@@ -178,7 +203,7 @@ export default function PredictiveScore({
         </div>
       )}
 
-      {!loading && !error && topJobs.length > 0 && (
+      {hasLoaded && !loading && !error && topJobs.length > 0 && (
         <div className="space-y-4">
           {topJobs.map((job, index) => (
             <div

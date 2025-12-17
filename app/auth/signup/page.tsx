@@ -63,11 +63,11 @@ export default function SignUpPage() {
         <div>
           <div className="flex justify-center mb-8">
             <Image
-              src="/vetted.png"
+              src="/vetted_2.png"
               alt="Vetted"
-              width={160}
-              height={64}
-              className="h-20 w-auto drop-shadow-md"
+              width={200}
+              height={80}
+              className="h-32 w-auto drop-shadow-md"
               priority
             />
           </div>

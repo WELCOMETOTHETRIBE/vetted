@@ -940,258 +940,72 @@ export default function CandidatesContent({
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Predictive Score Section */}
-              <PredictiveScore
-                candidateId={selectedCandidate.id}
-                onScoreCalculated={(score) => {
-                  // Refresh candidate data to show updated score
-                  loadCandidateDetails(selectedCandidate.id)
-                }}
-              />
-
-              {/* Engagement Workflow Section */}
-              <EngagementWorkflow candidateId={selectedCandidate.id} />
-
-              {/* Candidate Timeline Section */}
-              <CandidateTimeline candidateId={selectedCandidate.id} />
-
-              {/* AI Action Buttons */}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={async () => {
-                    setAiLoading("match")
-                    try {
-                      const response = await fetch(`/api/candidates/${selectedCandidate.id}/match-jobs`)
-                      if (response.ok) {
-                        const data = await response.json()
-                        setAiResults({ type: "match", data })
-                      }
-                    } catch (error) {
-                      console.error("Error matching jobs:", error)
-                    } finally {
-                      setAiLoading(null)
-                    }
-                  }}
-                  disabled={aiLoading !== null}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center gap-2"
-                >
-                  {aiLoading === "match" ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Matching...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      Match to Jobs
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={async () => {
-                    setAiLoading("outreach")
-                    try {
-                      const response = await fetch(`/api/candidates/${selectedCandidate.id}/outreach`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({}),
-                      })
-                      if (response.ok) {
-                        const data = await response.json()
-                        setAiResults({ type: "outreach", data })
-                      }
-                    } catch (error) {
-                      console.error("Error generating outreach:", error)
-                    } finally {
-                      setAiLoading(null)
-                    }
-                  }}
-                  disabled={aiLoading !== null}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center gap-2"
-                >
-                  {aiLoading === "outreach" ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      Generate Outreach
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={async () => {
-                    const jobId = prompt("Enter Job ID for interview prep:")
-                    if (!jobId) return
-                    setAiLoading("interview")
-                    try {
-                      const response = await fetch(`/api/candidates/${selectedCandidate.id}/interview-prep`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ jobId }),
-                      })
-                      if (response.ok) {
-                        const data = await response.json()
-                        setAiResults({ type: "interview", data })
-                      }
-                    } catch (error) {
-                      console.error("Error generating interview prep:", error)
-                    } finally {
-                      setAiLoading(null)
-                    }
-                  }}
-                  disabled={aiLoading !== null}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center gap-2 opacity-60"
-                  title="Interview prep has been moved to the Jobs tab. Select a job and candidate there for better workflow."
-                >
-                  {aiLoading === "interview" ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Preparing...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Interview Prep (Deprecated)
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* AI Results Display */}
-              {aiResults && (
+              {/* AI Summary Section - Full Width at Top */}
+              {selectedCandidate.aiSummary && (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-                  {aiResults.type === "match" && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        Job Matches
-                      </h3>
-                      {aiResults.data.matches && aiResults.data.matches.length > 0 ? (
-                        <div className="space-y-3">
-                          {aiResults.data.matches.slice(0, 5).map((match: any, i: number) => (
-                            <div key={i} className="bg-white rounded-lg p-4 border border-gray-200">
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{match.jobTitle}</h4>
-                                  <p className="text-sm text-gray-600">{match.companyName}</p>
-                                </div>
-                                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
-                                  {match.matchScore}% match
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-700 mb-2">{match.reasoning}</p>
-                              {match.strengths && match.strengths.length > 0 && (
-                                <div className="text-xs text-gray-600">
-                                  <strong>Strengths:</strong> {match.strengths.join(", ")}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-600">No matches found</p>
-                      )}
-                    </div>
-                  )}
-                  {aiResults.type === "outreach" && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        Generated Outreach Message
-                      </h3>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
-                        <p className="text-gray-700 whitespace-pre-wrap">{aiResults.data.message}</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h3 className="font-semibold text-gray-900">AI Summary</h3>
+                    {selectedCandidate.aiSummaryGeneratedAt && (
+                      <span className="text-xs text-gray-500 ml-auto">
+                        Generated {new Date(selectedCandidate.aiSummaryGeneratedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-700 mb-4 leading-relaxed">{selectedCandidate.aiSummary}</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedCandidate.aiKeyStrengths && (
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2 text-sm">Key Strengths</h4>
+                        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                          {(() => {
+                            try {
+                              const strengths = JSON.parse(selectedCandidate.aiKeyStrengths || "[]")
+                              return Array.isArray(strengths) ? strengths.slice(0, 3).map((s: string, i: number) => (
+                                <li key={i}>{s}</li>
+                              )) : null
+                            } catch {
+                              return <li>{selectedCandidate.aiKeyStrengths}</li>
+                            }
+                          })()}
+                        </ul>
                       </div>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(aiResults.data.message)
-                          alert("Message copied to clipboard!")
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                      >
-                        Copy to Clipboard
-                      </button>
-                    </div>
-                  )}
-                  {aiResults.type === "interview" && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Interview Preparation
-                      </h3>
-                      {aiResults.data.questions && (
-                        <div className="mb-4">
-                          <h4 className="font-medium text-gray-900 mb-3">Questions</h4>
-                          <div className="space-y-4">
-                            {aiResults.data.questions.technical && aiResults.data.questions.technical.length > 0 && (
-                              <div>
-                                <strong className="text-sm text-gray-700 block mb-2">Technical:</strong>
-                                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-2">
-                                  {aiResults.data.questions.technical.map((q: string, i: number) => (
-                                    <li key={i}>{q}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {aiResults.data.questions.behavioral && aiResults.data.questions.behavioral.length > 0 && (
-                              <div>
-                                <strong className="text-sm text-gray-700 block mb-2">Behavioral:</strong>
-                                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-2">
-                                  {aiResults.data.questions.behavioral.map((q: string, i: number) => (
-                                    <li key={i}>{q}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                    )}
+                    
+                    {selectedCandidate.aiBestFitRoles && (
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2 text-sm">Best Fit Roles</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {(() => {
+                            try {
+                              const roles = JSON.parse(selectedCandidate.aiBestFitRoles || "[]")
+                              return Array.isArray(roles) ? roles.slice(0, 4).map((r: string, i: number) => (
+                                <span key={i} className="px-2 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-medium">
+                                  {r}
+                                </span>
+                              )) : null
+                            } catch {
+                              return <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-medium">
+                                {selectedCandidate.aiBestFitRoles}
+                              </span>
+                            }
+                          })()}
                         </div>
-                      )}
-                      {aiResults.data.insights && (
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-3">Insights</h4>
-                          {aiResults.data.insights.candidateStrengths && aiResults.data.insights.candidateStrengths.length > 0 && (
-                            <div className="mb-3">
-                              <strong className="text-sm text-gray-700 block mb-2">Strengths:</strong>
-                              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-2">
-                                {aiResults.data.insights.candidateStrengths.map((s: string, i: number) => (
-                                  <li key={i}>{s}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {aiResults.data.insights.talkingPoints && aiResults.data.insights.talkingPoints.length > 0 && (
-                            <div>
-                              <strong className="text-sm text-gray-700 block mb-2">Talking Points:</strong>
-                              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-2">
-                                {aiResults.data.insights.talkingPoints.map((p: string, i: number) => (
-                                  <li key={i}>{p}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Predictive Score Display */}
+              {/* Main Content Grid - Left: Details, Right: Actions */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Candidate Details (2/3 width) */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Candidate Details Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {selectedCandidate.predictiveScore !== null && selectedCandidate.predictiveScore !== undefined && (
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border-2 border-purple-200">
                   <div className="flex items-center justify-between mb-4">
@@ -1282,102 +1096,9 @@ export default function CandidatesContent({
                 </div>
               )}
 
-              {/* AI Summary Section */}
-              {selectedCandidate.aiSummary && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    <h3 className="font-semibold text-gray-900">AI Summary</h3>
-                    {selectedCandidate.aiSummaryGeneratedAt && (
-                      <span className="text-xs text-gray-500 ml-auto">
-                        Generated {new Date(selectedCandidate.aiSummaryGeneratedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-700 mb-4 leading-relaxed">{selectedCandidate.aiSummary}</p>
-                  
-                  {selectedCandidate.aiKeyStrengths && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Key Strengths</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {(() => {
-                          try {
-                            const strengths = JSON.parse(selectedCandidate.aiKeyStrengths || "[]")
-                            return Array.isArray(strengths) ? strengths.map((s: string, i: number) => (
-                              <li key={i}>{s}</li>
-                            )) : null
-                          } catch {
-                            return <li>{selectedCandidate.aiKeyStrengths}</li>
-                          }
-                        })()}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {selectedCandidate.aiBestFitRoles && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Best Fit Roles</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(() => {
-                          try {
-                            const roles = JSON.parse(selectedCandidate.aiBestFitRoles || "[]")
-                            return Array.isArray(roles) ? roles.map((r: string, i: number) => (
-                              <span key={i} className="px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-sm font-medium">
-                                {r}
-                              </span>
-                            )) : null
-                          } catch {
-                            return <span className="px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-sm font-medium">
-                              {selectedCandidate.aiBestFitRoles}
-                            </span>
-                          }
-                        })()}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedCandidate.aiHighlights && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Notable Highlights</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {(() => {
-                          try {
-                            const highlights = JSON.parse(selectedCandidate.aiHighlights || "[]")
-                            return Array.isArray(highlights) ? highlights.map((h: string, i: number) => (
-                              <li key={i}>{h}</li>
-                            )) : null
-                          } catch {
-                            return <li>{selectedCandidate.aiHighlights}</li>
-                          }
-                        })()}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {selectedCandidate.aiConcerns && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Areas to Explore</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                        {(() => {
-                          try {
-                            const concerns = JSON.parse(selectedCandidate.aiConcerns || "[]")
-                            return Array.isArray(concerns) ? concerns.map((c: string, i: number) => (
-                              <li key={i}>{c}</li>
-                            )) : null
-                          } catch {
-                            return <li>{selectedCandidate.aiConcerns}</li>
-                          }
-                        })()}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
 
-              {/* Candidate Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Candidate Details Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {selectedCandidate.location && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</h3>
@@ -1405,10 +1126,10 @@ export default function CandidatesContent({
                       {statusIcons[selectedCandidate.status]} {selectedCandidate.status}
                     </span>
                   </div>
-                )}
-              </div>
+                  )}
+                  </div>
 
-              {/* Education Section */}
+                  {/* Education Section */}
               {(selectedCandidate.universities || selectedCandidate.fieldsOfStudy || selectedCandidate.degrees) && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1465,7 +1186,7 @@ export default function CandidatesContent({
                 </div>
               )}
 
-              {/* Experience Section */}
+                  {/* Experience Section */}
               {(selectedCandidate.companies || selectedCandidate.previousTitles || selectedCandidate.currentCompany) && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1533,7 +1254,7 @@ export default function CandidatesContent({
                 </div>
               )}
 
-              {/* Additional Information */}
+                  {/* Additional Information */}
               {(selectedCandidate.certifications || selectedCandidate.languages || selectedCandidate.projects) && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
@@ -1560,7 +1281,7 @@ export default function CandidatesContent({
                 </div>
               )}
 
-              {/* Notes */}
+                  {/* Notes */}
               {selectedCandidate.notes && (
                 <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -1573,7 +1294,7 @@ export default function CandidatesContent({
                 </div>
               )}
 
-              {/* Raw Data */}
+                  {/* Raw Data */}
               {selectedCandidate.rawData && (
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
                   <details className="text-sm">
@@ -1589,6 +1310,163 @@ export default function CandidatesContent({
                         : JSON.stringify(selectedCandidate.rawData, null, 2)}
                     </pre>
                   </details>
+                </div>
+              )}
+                </div>
+
+                {/* Right Column - Actions & Workflows (1/3 width) */}
+                <div className="space-y-6">
+                  {/* Predictive Score Section */}
+                  <PredictiveScore
+                    candidateId={selectedCandidate.id}
+                    onScoreCalculated={(score) => {
+                      loadCandidateDetails(selectedCandidate.id)
+                    }}
+                  />
+
+                  {/* Engagement Workflow Section */}
+                  <EngagementWorkflow candidateId={selectedCandidate.id} />
+
+                  {/* Candidate Timeline Section */}
+                  <CandidateTimeline candidateId={selectedCandidate.id} />
+
+                  {/* AI Action Buttons */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3">AI Quick Actions</h3>
+                    <div className="space-y-2">
+                      <button
+                        onClick={async () => {
+                          setAiLoading("match")
+                          try {
+                            const response = await fetch(`/api/candidates/${selectedCandidate.id}/match-jobs`)
+                            if (response.ok) {
+                              const data = await response.json()
+                              setAiResults({ type: "match", data })
+                            }
+                          } catch (error) {
+                            console.error("Error matching jobs:", error)
+                          } finally {
+                            setAiLoading(null)
+                          }
+                        }}
+                        disabled={aiLoading !== null}
+                        className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        {aiLoading === "match" ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Matching...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Match to Jobs
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setAiLoading("outreach")
+                          try {
+                            const response = await fetch(`/api/candidates/${selectedCandidate.id}/outreach`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({}),
+                            })
+                            if (response.ok) {
+                              const data = await response.json()
+                              setAiResults({ type: "outreach", data })
+                            }
+                          } catch (error) {
+                            console.error("Error generating outreach:", error)
+                          } finally {
+                            setAiLoading(null)
+                          }
+                        }}
+                        disabled={aiLoading !== null}
+                        className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        {aiLoading === "outreach" ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Generate Outreach
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Results Display - Full Width */}
+              {aiResults && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                  {aiResults.type === "match" && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Job Matches
+                      </h3>
+                      {aiResults.data.matches && aiResults.data.matches.length > 0 ? (
+                        <div className="space-y-3">
+                          {aiResults.data.matches.slice(0, 5).map((match: any, i: number) => (
+                            <div key={i} className="bg-white rounded-lg p-4 border border-gray-200">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{match.jobTitle}</h4>
+                                  <p className="text-sm text-gray-600">{match.companyName}</p>
+                                </div>
+                                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
+                                  {match.matchScore}% match
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 mb-2">{match.reasoning}</p>
+                              {match.strengths && match.strengths.length > 0 && (
+                                <div className="text-xs text-gray-600">
+                                  <strong>Strengths:</strong> {match.strengths.join(", ")}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600">No matches found</p>
+                      )}
+                    </div>
+                  )}
+                  {aiResults.type === "outreach" && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Generated Outreach Message
+                      </h3>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
+                        <p className="text-gray-700 whitespace-pre-wrap">{aiResults.data.message}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(aiResults.data.message)
+                          alert("Message copied to clipboard!")
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        Copy to Clipboard
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

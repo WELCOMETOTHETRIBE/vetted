@@ -377,11 +377,11 @@ export default function Home() {
             <div className={`flex justify-center mb-12 transition-all duration-1000 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
               <div className="relative">
                 <Image
-                  src="/vetted.png"
+                  src="/vetted_2.png"
                   alt="Vetted"
-                  width={280}
-                  height={112}
-                  className="h-32 w-auto drop-shadow-2xl animate-float"
+                  width={350}
+                  height={140}
+                  className="h-44 w-auto drop-shadow-2xl animate-float"
                   priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-400/20 to-primary-600/20 blur-3xl animate-pulse" />

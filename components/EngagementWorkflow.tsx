@@ -102,16 +102,21 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
       })
 
       if (response.ok) {
-        alert("Workflow executed successfully! Engagements have been scheduled.")
+        const result = await response.json()
+        // Show success message
+        const workflowName = workflows.find((w) => w.id === selectedWorkflow)?.name || "Workflow"
+        alert(`✅ ${workflowName} executed successfully! Engagements have been scheduled.`)
         fetchEngagements()
         setSelectedWorkflow("")
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error || "Failed to execute workflow"}`)
+        const errorMessage = error.error || error.details || "Failed to execute workflow"
+        alert(`❌ Error: ${errorMessage}`)
+        console.error("[EngagementWorkflow] Execution error:", error)
       }
     } catch (error: any) {
-      console.error("Error executing workflow:", error)
-      alert(`Error: ${error.message || "Failed to execute workflow"}`)
+      console.error("[EngagementWorkflow] Error executing workflow:", error)
+      alert(`❌ Error: ${error.message || "Failed to execute workflow. Please try again."}`)
     } finally {
       setExecuting(false)
     }

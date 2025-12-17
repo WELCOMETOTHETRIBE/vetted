@@ -45,6 +45,7 @@ export default function CandidateTimeline({ candidateId }: CandidateTimelineProp
   const [nextActions, setNextActions] = useState<NextAction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [healthExpanded, setHealthExpanded] = useState(false)
 
   useEffect(() => {
     fetchTimeline()
@@ -60,7 +61,26 @@ export default function CandidateTimeline({ candidateId }: CandidateTimelineProp
       }
       const data = await response.json()
       setTimeline(data.timeline || [])
-      setHealth(data.health || null)
+      
+      // Reset health when no correspondence
+      const healthData = data.health || null
+      if (healthData && healthData.totalInteractions === 0) {
+        setHealth({
+          ...healthData,
+          score: 50, // Neutral score when no interactions
+          level: "fair",
+          factors: [
+            {
+              factor: "No Engagement Yet",
+              impact: "neutral",
+              description: "No interactions recorded - initiate first outreach to establish relationship",
+            },
+          ],
+        })
+      } else {
+        setHealth(healthData)
+      }
+      
       setNextActions(data.nextActions || [])
     } catch (err: any) {
       console.error("[CandidateTimeline] Error:", err)
@@ -162,58 +182,78 @@ export default function CandidateTimeline({ candidateId }: CandidateTimelineProp
 
       {/* Relationship Health Score */}
       {health && (
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Relationship Health</p>
-              <p className="text-3xl font-bold text-gray-900">{health.score}/100</p>
-            </div>
-            <span
-              className={`px-3 py-1 text-sm font-medium rounded-lg border ${getHealthColor(
-                health.level
-              )}`}
-            >
-              {health.level.toUpperCase()}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">Total Interactions:</span>{" "}
-              <strong className="text-gray-900">{health.totalInteractions}</strong>
-            </div>
-            <div>
-              <span className="text-gray-600">Response Rate:</span>{" "}
-              <strong className="text-gray-900">{health.responseRate}%</strong>
-            </div>
-            {health.lastInteraction && (
-              <div className="col-span-2">
-                <span className="text-gray-600">Last Interaction:</span>{" "}
-                <strong className="text-gray-900">
-                  {new Date(health.lastInteraction).toLocaleDateString()} (
-                  {health.daysSinceLastInteraction} days ago)
-                </strong>
-              </div>
-            )}
-          </div>
-          {health.factors.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-blue-200">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Key Factors:</p>
-              <div className="space-y-1">
-                {health.factors.slice(0, 3).map((factor, idx) => (
-                  <div
-                    key={idx}
-                    className={`text-xs px-2 py-1 rounded ${
-                      factor.impact === "positive"
-                        ? "bg-green-100 text-green-700"
-                        : factor.impact === "negative"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-700"
-                    }`}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <button
+            onClick={() => setHealthExpanded(!healthExpanded)}
+            className="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Relationship Health</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-3xl font-bold text-gray-900">{health.score}/100</p>
+                  <span
+                    className={`px-3 py-1 text-sm font-medium rounded-lg border ${getHealthColor(
+                      health.level
+                    )}`}
                   >
-                    {factor.factor}: {factor.description}
-                  </div>
-                ))}
+                    {health.level.toUpperCase()}
+                  </span>
+                </div>
               </div>
+            </div>
+            <svg
+              className={`w-5 h-5 text-gray-600 transition-transform ${healthExpanded ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {healthExpanded && (
+            <div className="p-4 border-t border-gray-200 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Total Interactions:</span>{" "}
+                  <strong className="text-gray-900">{health.totalInteractions}</strong>
+                </div>
+                <div>
+                  <span className="text-gray-600">Response Rate:</span>{" "}
+                  <strong className="text-gray-900">{health.responseRate}%</strong>
+                </div>
+                {health.lastInteraction && (
+                  <div className="col-span-2">
+                    <span className="text-gray-600">Last Interaction:</span>{" "}
+                    <strong className="text-gray-900">
+                      {new Date(health.lastInteraction).toLocaleDateString()} (
+                      {health.daysSinceLastInteraction} days ago)
+                    </strong>
+                  </div>
+                )}
+              </div>
+              {health.factors.length > 0 && (
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Key Factors:</p>
+                  <div className="space-y-1">
+                    {health.factors.map((factor, idx) => (
+                      <div
+                        key={idx}
+                        className={`text-xs px-2 py-1 rounded ${
+                          factor.impact === "positive"
+                            ? "bg-green-100 text-green-700"
+                            : factor.impact === "negative"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {factor.factor}: {factor.description}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

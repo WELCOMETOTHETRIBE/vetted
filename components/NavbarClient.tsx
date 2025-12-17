@@ -60,9 +60,9 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
           <div className="flex items-center">
             <Link href="/feed" className="flex items-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg p-1">
               <img
-                src="/vetted-logo.png"
+                src="/vetted_2.png"
                 alt="Vetted"
-                className="h-14 w-auto"
+                className="h-20 w-auto"
                 onError={(e) => {
                   // Fallback to text if image fails to load
                   const target = e.target as HTMLImageElement
