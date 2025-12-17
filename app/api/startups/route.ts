@@ -23,6 +23,7 @@ interface StartupItem {
   funding?: string
   industry?: string
   website?: string
+  _skip?: boolean // Internal flag to mark items for removal
 }
 
 interface StartupsResponse {
