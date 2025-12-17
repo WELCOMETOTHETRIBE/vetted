@@ -225,10 +225,14 @@ async function enrichStartupsWithAI(items: StartupItem[]): Promise<StartupItem[]
           role: "system" as const,
           content: `You are a startup investment analyst. For each startup article, extract:
 1. The actual company name (not article title)
-2. A short investment highlight (max 40 words) focusing on why it's worth investing in
-3. A Unique Selling Proposition (USP) - what makes this company unique/valuable (max 30 words)
+2. A compelling description explaining why this company is noteworthy (max 60 words)
+   - For IPO type: Explain why they went public, their growth trajectory, market position, financial performance
+   - For Cutting Edge type: Explain their innovative technology, breakthrough, market disruption, or unique approach
+   - For Unicorn type: Explain their valuation milestone, funding success, market dominance, or rapid growth
+   The description should be clear and compelling, focusing on what makes them stand out.
 
 Return JSON array with objects: {companyName: string, highlight: string, usp: string}
+Where highlight is the "why noteworthy" description that will be displayed below the company name.
 One object per article in the same order.`,
         },
         {
