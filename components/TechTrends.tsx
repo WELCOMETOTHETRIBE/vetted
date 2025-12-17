@@ -325,29 +325,31 @@ export default function TechTrends() {
                 >
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-1 group-hover:text-gray-700">
+                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-gray-700">
                         {startup.name}
                       </h4>
-                      {startup.industry && (
-                        <span className="text-xs text-gray-500 mt-0.5 block">
-                          {startup.industry}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
+                          startup.type === "ipo"
+                            ? "bg-green-100 text-green-800"
+                            : startup.type === "cutting_edge"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-purple-100 text-purple-800"
+                        }`}>
+                          <span>{startup.type === "ipo" ? "🚀" : startup.type === "cutting_edge" ? "⚡" : "🦄"}</span>
+                          <span>{startup.type === "ipo" ? "IPO Ready" : startup.type === "cutting_edge" ? "Cutting Edge" : "Unicorn"}</span>
                         </span>
-                      )}
+                        {startup.industry && (
+                          <span className="text-xs text-gray-500">
+                            {startup.industry}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 flex items-center gap-1 ${
-                      startup.type === "ipo"
-                        ? "bg-green-100 text-green-800"
-                        : startup.type === "cutting_edge"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-purple-100 text-purple-800"
-                    }`}>
-                      <span>{startup.type === "ipo" ? "🚀" : startup.type === "cutting_edge" ? "⚡" : "🦄"}</span>
-                      <span>{startup.type === "ipo" ? "IPO Ready" : startup.type === "cutting_edge" ? "Cutting Edge" : "Unicorn"}</span>
-                    </span>
                   </div>
-                  {(startup.description || startup.highlight || startup.usp) && (
-                    <p className="text-xs text-gray-600 line-clamp-3 mt-1.5 mb-1.5 leading-relaxed">
-                      {startup.description || startup.highlight || startup.usp}
+                  {(startup.highlight || startup.usp || startup.description) && (
+                    <p className="text-xs text-gray-700 line-clamp-3 mt-2 mb-1.5 leading-relaxed">
+                      {startup.highlight || startup.usp || startup.description}
                     </p>
                   )}
                   <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
