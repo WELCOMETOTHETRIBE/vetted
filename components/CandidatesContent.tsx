@@ -1383,9 +1383,9 @@ export default function CandidatesContent({
                 </div>
               </div>
 
-                {/* AI Results Display - Full Width */}
-                {aiResults && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200 mt-4">
+              {/* AI Results Display - Full Width */}
+              {aiResults && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200 mt-4">
                   {aiResults.type === "match" && (
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
