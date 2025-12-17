@@ -1009,35 +1009,35 @@ export default function CandidatesContent({
                   <div className="lg:col-span-2 space-y-4">
                     {/* Candidate Details Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {selectedCandidate.location && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</h3>
-                    <p className="text-gray-900">{selectedCandidate.location}</p>
-                  </div>
-                )}
-                {selectedCandidate.totalYearsExperience && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Experience</h3>
-                    <p className="text-gray-900">{selectedCandidate.totalYearsExperience} years</p>
-                  </div>
-                )}
-                {selectedCandidate.skillsCount && selectedCandidate.skillsCount > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Skills</h3>
-                    <p className="text-gray-900">
-                      {selectedCandidate.skillsCount} skill{selectedCandidate.skillsCount !== 1 ? 's' : ''} listed
-                    </p>
-                  </div>
-                )}
-                {selectedCandidate.status && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</h3>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusColors[selectedCandidate.status]}`}>
-                      {statusIcons[selectedCandidate.status]} {selectedCandidate.status}
-                    </span>
-                  </div>
-                )}
-              </div>
+                      {selectedCandidate.location && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</h3>
+                          <p className="text-gray-900">{selectedCandidate.location}</p>
+                        </div>
+                      )}
+                      {selectedCandidate.totalYearsExperience && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Experience</h3>
+                          <p className="text-gray-900">{selectedCandidate.totalYearsExperience} years</p>
+                        </div>
+                      )}
+                      {selectedCandidate.skillsCount && selectedCandidate.skillsCount > 0 && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Skills</h3>
+                          <p className="text-gray-900">
+                            {selectedCandidate.skillsCount} skill{selectedCandidate.skillsCount !== 1 ? 's' : ''} listed
+                          </p>
+                        </div>
+                      )}
+                      {selectedCandidate.status && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</h3>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusColors[selectedCandidate.status]}`}>
+                            {statusIcons[selectedCandidate.status]} {selectedCandidate.status}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Education Section */}
                     {(selectedCandidate.universities || selectedCandidate.fieldsOfStudy || selectedCandidate.degrees) && (
