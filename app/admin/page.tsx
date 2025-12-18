@@ -75,8 +75,8 @@ async function getAdminData() {
       },
       orderBy: { createdAt: "desc" },
       take: 50,
-    }),
-    prisma.linkedInProfileUrl.count(),
+    }).catch(() => []), // Return empty array if table doesn't exist
+    prisma.linkedInProfileUrl.count().catch(() => 0), // Return 0 if table doesn't exist
   ])
 
   return { users, posts, jobs, candidates, linkedInUrls, linkedInUrlsTotal }
