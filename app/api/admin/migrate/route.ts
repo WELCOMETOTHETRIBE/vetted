@@ -90,6 +90,7 @@ export async function POST(req: Request) {
       
       let output: string
       try {
+        console.log(`[migrate] Running command: ${prismaCmd}`)
         output = execSync(
           prismaCmd,
           {
@@ -103,9 +104,10 @@ export async function POST(req: Request) {
             },
             stdio: ['pipe', 'pipe', 'pipe'],
             maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-            timeout: 60000, // 60 second timeout
+            timeout: 120000, // 120 second timeout (increased for migrations)
           }
         )
+        console.log(`[migrate] Migration output: ${output.substring(0, 500)}`)
       } finally {
         // Restore all renamed config files
         for (const { original, backup } of renamedConfigs) {
