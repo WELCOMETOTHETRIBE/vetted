@@ -43,34 +43,67 @@ export function buildQuery(template: QueryTemplate, vars: QueryVariables): strin
     replacements.roleKeywords = String(template.defaultVars.roleKeywords)
   }
 
-  // Apply replacements
+  // Apply replacements for placeholders that exist in template
   Object.entries(replacements).forEach(([key, value]) => {
     const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g")
-    query = query.replace(regex, value)
+    if (query.includes(`{{${key}}}`) || query.includes(`{{ ${key} }}`)) {
+      query = query.replace(regex, value)
+    }
   })
 
-  // Add include keywords
-  if (vars.includeKeywords && vars.includeKeywords.length > 0) {
-    const includeStr = vars.includeKeywords.map((k) => `"${k}"`).join(" OR ")
-    query = `(${query}) AND (${includeStr})`
+  // Build additional search terms that aren't in template placeholders
+  const additionalTerms: string[] = []
+
+  // Add company if provided and not already in template
+  if (vars.company && !query.includes(vars.company) && !query.match(/\{\{.*company.*\}\}/i)) {
+    additionalTerms.push(`"${vars.company}"`)
   }
 
-  // Add exclude keywords
-  if (vars.excludeKeywords && vars.excludeKeywords.length > 0) {
-    const excludeStr = vars.excludeKeywords.map((k) => `-${k}`).join(" ")
-    query = `${query} ${excludeStr}`
+  // Add role keywords if provided and not already in template
+  if (vars.roleKeywords && !query.includes(vars.roleKeywords) && !query.match(/\{\{.*roleKeywords.*\}\}/i)) {
+    additionalTerms.push(`"${vars.roleKeywords}"`)
+  }
+
+  // Add seniority filters
+  if (vars.seniority && vars.seniority.length > 0) {
+    // Check if seniority terms are already in the query
+    const hasSeniorityInQuery = vars.seniority.some((s) =>
+      query.toLowerCase().includes(s.toLowerCase())
+    )
+    if (!hasSeniorityInQuery) {
+      const seniorityStr = vars.seniority.map((s) => `"${s}"`).join(" OR ")
+      additionalTerms.push(`(${seniorityStr})`)
+    }
   }
 
   // Add domain focus keywords
   if (vars.domainFocus && vars.domainFocus.length > 0) {
-    const domainStr = vars.domainFocus.map((d) => `"${d}"`).join(" OR ")
-    query = `(${query}) AND (${domainStr})`
+    // Check if domain focus terms are already in the query
+    const hasDomainInQuery = vars.domainFocus.some((d) =>
+      query.toLowerCase().includes(d.toLowerCase())
+    )
+    if (!hasDomainInQuery) {
+      const domainStr = vars.domainFocus.map((d) => `"${d}"`).join(" OR ")
+      additionalTerms.push(`(${domainStr})`)
+    }
   }
 
-  // Add seniority filters (if not already in template)
-  if (vars.seniority && vars.seniority.length > 0 && !query.includes("Staff") && !query.includes("Principal")) {
-    const seniorityStr = vars.seniority.map((s) => `"${s}"`).join(" OR ")
-    query = `(${query}) AND (${seniorityStr})`
+  // Add include keywords
+  if (vars.includeKeywords && vars.includeKeywords.length > 0) {
+    const includeStr = vars.includeKeywords.map((k) => `"${k}"`).join(" OR ")
+    additionalTerms.push(`(${includeStr})`)
+  }
+
+  // Combine all additional terms
+  if (additionalTerms.length > 0) {
+    const additionalQuery = additionalTerms.join(" AND ")
+    query = `(${query}) AND (${additionalQuery})`
+  }
+
+  // Add exclude keywords (always at the end)
+  if (vars.excludeKeywords && vars.excludeKeywords.length > 0) {
+    const excludeStr = vars.excludeKeywords.map((k) => `-${k}`).join(" ")
+    query = `${query} ${excludeStr}`
   }
 
   return query.trim()
