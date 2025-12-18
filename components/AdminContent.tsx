@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import EngineerFinder from "./EngineerFinder"
 import LinkedInProfileSearch from "./LinkedInProfileSearch"
+import ATSJobScraper from "./ATSJobScraper"
 
 interface AdminContentProps {
   initialData: {
@@ -1119,6 +1120,9 @@ export default function AdminContent({ initialData }: AdminContentProps) {
             <div>
               <LinkedInProfileSearch />
             </div>
+          </div>
+          <div>
+            <ATSJobScraper />
           </div>
         </div>
       )}

@@ -30,13 +30,58 @@ SOURCE_CONFIG = {
     },
     "greenhouse": {
         "site": "boards.greenhouse.io",
-        "default_query": "Product Designer",
+        "default_query": "software engineer",
         "search_template": 'site:boards.greenhouse.io "{query}"',
     },
     "lever": {
         "site": "lever.co",
-        "default_query": "Recruiter",
+        "default_query": "software engineer",
         "search_template": 'site:lever.co "{query}"',
+    },
+    "workday": {
+        "site": "myworkdayjobs.com",
+        "default_query": "software engineer",
+        "search_template": 'site:myworkdayjobs.com "{query}"',
+    },
+    "workday_wd5": {
+        "site": "wd5.myworkdayjobs.com",
+        "default_query": "machine learning engineer",
+        "search_template": 'site:wd5.myworkdayjobs.com "{query}"',
+    },
+    "smartrecruiters": {
+        "site": "jobs.smartrecruiters.com",
+        "default_query": "software engineer",
+        "search_template": 'site:jobs.smartrecruiters.com "{query}"',
+    },
+    "jobvite": {
+        "site": "jobs.jobvite.com",
+        "default_query": "software engineer",
+        "search_template": 'site:jobs.jobvite.com "{query}"',
+    },
+    "icims": {
+        "site": "icims.com",
+        "default_query": "software engineer",
+        "search_template": 'site:icims.com inurl:/jobs/ "{query}"',
+    },
+    "icims_careers": {
+        "site": "careers.icims.com",
+        "default_query": "software engineer",
+        "search_template": 'site:careers.icims.com "{query}"',
+    },
+    "workable": {
+        "site": "apply.workable.com",
+        "default_query": "software engineer",
+        "search_template": 'site:apply.workable.com "{query}"',
+    },
+    "workable_jobs": {
+        "site": "jobs.workable.com",
+        "default_query": "software engineer",
+        "search_template": 'site:jobs.workable.com "{query}"',
+    },
+    "taleo": {
+        "site": "taleo.net",
+        "default_query": "software engineer",
+        "search_template": 'site:taleo.net inurl:careersection "{query}"',
     },
 }
 
@@ -124,7 +169,7 @@ def extract_company_from_title(title: str | None) -> str | None:
 
 
 def extract_company_from_url(url: str, source: str) -> str | None:
-    """Extract company name from URL for Greenhouse and Lever."""
+    """Extract company name from URL for various ATS systems."""
     try:
         if source == "greenhouse":
             # Greenhouse URLs: https://boards.greenhouse.io/companyname/job-id
@@ -642,6 +687,12 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
             company = extract_company_greenhouse(soup, url)
         elif source == "lever":
             company = extract_company_lever(soup, url)
+        else:
+            # For other ATS systems, try URL extraction first
+            company = extract_company_from_url(url, source)
+            # Fallback to title extraction
+            if not company:
+                company = extract_company_from_title(raw_title)
         
         # If still no company, try URL extraction as fallback
         if not company:
@@ -658,7 +709,7 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
             location = fields.get("location") or find_field_value(soup, "Location")
             employment_type = fields.get("employment_type") or find_field_value(soup, "Employment Type")
             department = fields.get("department") or find_field_value(soup, "Department")
-        else:  # ashby
+        else:  # ashby and other ATS systems
             location = find_field_value(soup, "Location")
             employment_type = find_field_value(soup, "Employment Type")
             department = find_field_value(soup, "Department")
@@ -745,6 +796,15 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
             "ashby": "ashbyhq",
             "greenhouse": "greenhouse",
             "lever": "lever",
+            "workday": "workday",
+            "workday_wd5": "workday",
+            "smartrecruiters": "smartrecruiters",
+            "jobvite": "jobvite",
+            "icims": "icims",
+            "icims_careers": "icims",
+            "workable": "workable",
+            "workable_jobs": "workable",
+            "taleo": "taleo",
         }
         
         job_data = {
@@ -842,7 +902,10 @@ def main():
     try:
         parser = argparse.ArgumentParser(description="Scrape jobs from various job boards")
         parser.add_argument("query", nargs="?", help="Search query (e.g., 'software engineer', 'Product Designer')")
-        parser.add_argument("--source", default="ashby", choices=["ashby", "greenhouse", "lever"],
+        parser.add_argument("--source", default="ashby", 
+                          choices=["ashby", "greenhouse", "lever", "workday", "workday_wd5", 
+                                  "smartrecruiters", "jobvite", "icims", "icims_careers", 
+                                  "workable", "workable_jobs", "taleo"],
                           help="Job board source (default: ashby)")
         
         args = parser.parse_args()
