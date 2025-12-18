@@ -113,6 +113,9 @@ model User {
   // LinkedIn URLs added
   linkedInUrlsAdded LinkedInProfileUrl[] @relation("LinkedInUrlsAdded")
 
+  // Engineer Finder runs
+  engineerFinderRuns EngineerFinderRun[] @relation("EngineerFinderRuns")
+
   @@index([email])
   @@index([handle])
 }
@@ -798,11 +801,11 @@ enum RewardStatus {
 model LinkedInProfileUrl {
   id          String   @id @default(cuid())
   url         String   @unique
-  searchQuery String?  // The search query that found this URL
-  location    String?  // Location filter used in search
-  company     String?  // Company filter used in search
-  title       String?  // Title filter used in search
-  addedById   String?  // Admin who added this URL
+  searchQuery String? // The search query that found this URL
+  location    String? // Location filter used in search
+  company     String? // Company filter used in search
+  title       String? // Title filter used in search
+  addedById   String? // Admin who added this URL
   notes       String?  @db.Text // Optional notes
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -813,4 +816,41 @@ model LinkedInProfileUrl {
   @@index([addedById])
   @@index([createdAt])
   @@index([searchQuery])
+}
+
+// Engineer Finder - Search runs and results
+model EngineerFinderRun {
+  id          String   @id @default(cuid())
+  query       String   @db.Text
+  filtersJson String?  @db.Text // JSON object with filters (location, company, role, etc.)
+  resultCount Int      @default(0)
+  createdById String? // Admin who ran the search
+  createdAt   DateTime @default(now())
+
+  createdBy User?                  @relation("EngineerFinderRuns", fields: [createdById], references: [id], onDelete: SetNull)
+  results   EngineerFinderResult[]
+
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model EngineerFinderResult {
+  id             String   @id @default(cuid())
+  runId          String
+  title          String
+  link           String
+  displayLink    String? // Domain/source
+  snippet        String?  @db.Text
+  source         String? // "linkedin", "github", "scholar", etc.
+  signalsJson    String?  @db.Text // JSON array of detected signals
+  score          Float? // Numeric score
+  enrichmentJson String?  @db.Text // JSON object (GitHub stars, etc.)
+  createdAt      DateTime @default(now())
+
+  run EngineerFinderRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([source])
+  @@index([score])
+  @@index([createdAt])
 }
