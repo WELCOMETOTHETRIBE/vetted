@@ -217,6 +217,64 @@ def extract_company_from_url(url: str, source: str) -> str | None:
                     else:
                         title_words.append(word.capitalize())
                 return ' '.join(title_words)
+        elif source in ["workday", "workday_wd5"]:
+            # Workday URLs: https://*.myworkdayjobs.com/CompanyName/...
+            match = re.search(r'myworkdayjobs\.com/([^/]+)', url)
+            if match:
+                company = match.group(1)
+                if company.lower() not in ['external', 'en-us', 'job']:
+                    company = company.replace('-', ' ').replace('_', ' ')
+                    words = company.split()
+                    title_words = [w.capitalize() if not w.isupper() or len(w) == 1 else w for w in words]
+                    return ' '.join(title_words)
+        elif source == "smartrecruiters":
+            # SmartRecruiters URLs: https://jobs.smartrecruiters.com/CompanyName/...
+            match = re.search(r'jobs\.smartrecruiters\.com/([^/]+)', url)
+            if match:
+                company = match.group(1)
+                if company.lower() not in ['jobs', 'search']:
+                    company = company.replace('-', ' ').replace('_', ' ')
+                    words = company.split()
+                    title_words = [w.capitalize() if not w.isupper() or len(w) == 1 else w for w in words]
+                    return ' '.join(title_words)
+        elif source == "jobvite":
+            # Jobvite URLs: https://jobs.jobvite.com/companyname/...
+            match = re.search(r'jobs\.jobvite\.com/([^/]+)', url)
+            if match:
+                company = match.group(1)
+                company = company.replace('-', ' ').replace('_', ' ')
+                words = company.split()
+                title_words = [w.capitalize() if not w.isupper() or len(w) == 1 else w for w in words]
+                return ' '.join(title_words)
+        elif source in ["icims", "icims_careers"]:
+            # iCIMS URLs: https://careers-company.icims.com/... or https://careers.icims.com/...
+            match = re.search(r'careers-([^.]+)\.icims\.com', url)
+            if match:
+                company = match.group(1)
+                company = company.replace('-', ' ').replace('_', ' ')
+                words = company.split()
+                title_words = [w.capitalize() if not w.isupper() or len(w) == 1 else w for w in words]
+                return ' '.join(title_words)
+        elif source in ["workable", "workable_jobs"]:
+            # Workable URLs: https://apply.workable.com/companyname/... or https://jobs.workable.com/companyname/...
+            match = re.search(r'(?:apply|jobs)\.workable\.com/([^/]+)', url)
+            if match:
+                company = match.group(1)
+                if company.lower() not in ['careers', 'jobs']:
+                    company = company.replace('-', ' ').replace('_', ' ')
+                    words = company.split()
+                    title_words = [w.capitalize() if not w.isupper() or len(w) == 1 else w for w in words]
+                    return ' '.join(title_words)
+        elif source == "taleo":
+            # Taleo URLs: https://company.taleo.net/... or https://taleo.net/careersection/company/...
+            match = re.search(r'([^.]+)\.taleo\.net', url)
+            if match:
+                company = match.group(1)
+                if company.lower() not in ['taleo', 'www']:
+                    company = company.replace('-', ' ').replace('_', ' ')
+                    words = company.split()
+                    title_words = [w.capitalize() if not w.isupper() or len(w) == 1 else w for w in words]
+                    return ' '.join(title_words)
     except Exception as e:
         print(f"[extract_company_from_url] Error: {e}")
     return None
