@@ -7,38 +7,17 @@ import EngineerFinder from "./EngineerFinder"
 import LinkedInProfileSearch from "./LinkedInProfileSearch"
 import ATSJobScraper from "./ATSJobScraper"
 
-function CandidateSearchTabs() {
-  const [activeCandidateTab, setActiveCandidateTab] = useState<"advanced" | "basic">("advanced")
+function RecruitingToolsTabs() {
+  const [activeRecruitingTab, setActiveRecruitingTab] = useState<"candidates" | "jobs">("candidates")
 
   return (
-    <>
-      {/* Tabs */}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Main Tabs */}
       <div className="flex border-b border-gray-200 bg-gray-50">
         <button
-          onClick={() => setActiveCandidateTab("advanced")}
+          onClick={() => setActiveRecruitingTab("candidates")}
           className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
-            activeCandidateTab === "advanced"
-              ? "text-blue-600 bg-white"
-              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          }`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            <span>Advanced Search</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-              Templates
-            </span>
-          </div>
-          {activeCandidateTab === "advanced" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveCandidateTab("basic")}
-          className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
-            activeCandidateTab === "basic"
+            activeRecruitingTab === "candidates"
               ? "text-blue-600 bg-white"
               : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           }`}
@@ -47,12 +26,27 @@ function CandidateSearchTabs() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span>Basic Search</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-              LinkedIn
-            </span>
+            <span>Candidate Search</span>
           </div>
-          {activeCandidateTab === "basic" && (
+          {activeRecruitingTab === "candidates" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveRecruitingTab("jobs")}
+          className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
+            activeRecruitingTab === "jobs"
+              ? "text-blue-600 bg-white"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span>Job Scraper</span>
+          </div>
+          {activeRecruitingTab === "jobs" && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
           )}
         </button>
@@ -60,6 +54,70 @@ function CandidateSearchTabs() {
 
       {/* Tab Content */}
       <div className="p-6">
+        {activeRecruitingTab === "candidates" && <CandidateSearchTabs />}
+        {activeRecruitingTab === "jobs" && <ATSJobScraper />}
+      </div>
+    </div>
+  )
+}
+
+function CandidateSearchTabs() {
+  const [activeCandidateTab, setActiveCandidateTab] = useState<"advanced" | "basic">("advanced")
+
+  return (
+    <>
+      {/* Sub-tabs for Candidate Search */}
+      <div className="flex border-b border-gray-200 bg-gray-50 mb-6 -mx-6 -mt-6">
+        <div className="px-6 w-full">
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setActiveCandidateTab("advanced")}
+              className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
+                activeCandidateTab === "advanced"
+                  ? "text-blue-600 bg-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span>Advanced Search</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  Templates
+                </span>
+              </div>
+              {activeCandidateTab === "advanced" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveCandidateTab("basic")}
+              className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
+                activeCandidateTab === "basic"
+                  ? "text-blue-600 bg-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Basic Search</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  LinkedIn
+                </span>
+              </div>
+              {activeCandidateTab === "basic" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div>
         {activeCandidateTab === "advanced" && <EngineerFinder />}
         {activeCandidateTab === "basic" && <LinkedInProfileSearch />}
       </div>
@@ -1172,37 +1230,7 @@ export default function AdminContent({ initialData }: AdminContentProps) {
 
       {/* Recruiting Tools Tab */}
       {activeTab === "recruiting" && (
-        <div className="space-y-6">
-          {/* Header Section */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Recruiting Tools</h2>
-            <p className="text-gray-600">
-              Search for candidates and job postings across multiple platforms
-            </p>
-          </div>
-
-          {/* Candidate Search Section with Tabs */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-6 pt-6 pb-4 border-b border-gray-200">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-900">Candidate Search</h3>
-            </div>
-            <CandidateSearchTabs />
-          </div>
-
-          {/* Job Scraper Section */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-900">Job Scraper</h3>
-            </div>
-            <ATSJobScraper />
-          </div>
-        </div>
+        <RecruitingToolsTabs />
       )}
 
       {/* User Detail Modal */}
