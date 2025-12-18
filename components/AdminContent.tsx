@@ -1113,15 +1113,50 @@ export default function AdminContent({ initialData }: AdminContentProps) {
       {/* Recruiting Tools Tab */}
       {activeTab === "recruiting" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <EngineerFinder />
+          {/* Header Section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Recruiting Tools</h2>
+            <p className="text-gray-600">
+              Search for candidates and job postings across multiple platforms
+            </p>
+          </div>
+
+          {/* Candidate Search Section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-900">Candidate Search</h3>
             </div>
-            <div>
-              <LinkedInProfileSearch />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <div className="mb-3">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Advanced
+                  </span>
+                </div>
+                <EngineerFinder />
+              </div>
+              <div>
+                <div className="mb-3">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Basic
+                  </span>
+                </div>
+                <LinkedInProfileSearch />
+              </div>
             </div>
           </div>
-          <div>
+
+          {/* Job Scraper Section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-900">Job Scraper</h3>
+            </div>
             <ATSJobScraper />
           </div>
         </div>

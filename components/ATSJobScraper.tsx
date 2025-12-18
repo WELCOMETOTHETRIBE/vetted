@@ -126,35 +126,40 @@ const ROLE_PRESETS = [
   "site reliability engineer",
 ]
 
-function buildQuery(system: ATSSystem, query: string): string {
+function buildQuery(system: ATSSystem, query: string, location?: string): string {
   const config = ATS_CONFIG[system]
   const baseQuery = query.trim()
+  let finalQuery = ""
 
   // Handle special query patterns
   if (system === "icims") {
-    return `site:icims.com inurl:/jobs/ "${baseQuery}"`
-  }
-  if (system === "taleo") {
-    return `site:taleo.net inurl:careersection "${baseQuery}"`
-  }
-  if (system === "greenhouse") {
-    return `site:boards.greenhouse.io "${baseQuery}"`
-  }
-  if (system === "lever") {
-    return `site:lever.co "${baseQuery}"`
-  }
-  if (system === "ashby") {
-    return `site:jobs.ashbyhq.com "${baseQuery}"`
+    finalQuery = `site:icims.com inurl:/jobs/ "${baseQuery}"`
+  } else if (system === "taleo") {
+    finalQuery = `site:taleo.net inurl:careersection "${baseQuery}"`
+  } else if (system === "greenhouse") {
+    finalQuery = `site:boards.greenhouse.io "${baseQuery}"`
+  } else if (system === "lever") {
+    finalQuery = `site:lever.co "${baseQuery}"`
+  } else if (system === "ashby") {
+    finalQuery = `site:jobs.ashbyhq.com "${baseQuery}"`
+  } else {
+    // Default pattern
+    finalQuery = `site:${config.site} "${baseQuery}"`
   }
 
-  // Default pattern
-  return `site:${config.site} "${baseQuery}"`
+  // Add location if provided
+  if (location && location.trim()) {
+    finalQuery = `${finalQuery} "${location.trim()}"`
+  }
+
+  return finalQuery
 }
 
 export default function ATSJobScraper() {
   const [activeTab, setActiveTab] = useState<"primary" | "enterprise" | "modern">("primary")
   const [selectedSystem, setSelectedSystem] = useState<ATSSystem>("ashby")
   const [searchQuery, setSearchQuery] = useState(ATS_CONFIG.ashby.defaultQuery)
+  const [location, setLocation] = useState("")
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -192,7 +197,11 @@ export default function ATSJobScraper() {
     setResults(null)
 
     try {
-      const queryParam = encodeURIComponent(searchQuery.trim())
+      // Build the full query with location if provided
+      const fullQuery = location.trim()
+        ? `${searchQuery.trim()} ${location.trim()}`
+        : searchQuery.trim()
+      const queryParam = encodeURIComponent(fullQuery)
       const sourceParam = encodeURIComponent(selectedSystem)
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
@@ -296,7 +305,7 @@ export default function ATSJobScraper() {
     }
   }
 
-  const finalQuery = buildQuery(selectedSystem, searchQuery)
+  const finalQuery = buildQuery(selectedSystem, searchQuery, location)
   const systemsByCategory = {
     primary: (Object.keys(ATS_CONFIG) as ATSSystem[]).filter(
       (s) => ATS_CONFIG[s].category === "primary"
@@ -425,6 +434,26 @@ export default function ATSJobScraper() {
         />
         <p className="mt-1 text-xs text-gray-500">
           Keep queries simple (avoid Boolean operators like OR/AND)
+        </p>
+      </div>
+
+      {/* Location Input */}
+      <div className="mb-4">
+        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+          Location (optional)
+        </label>
+        <input
+          id="location"
+          type="text"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="e.g., San Francisco, New York, Remote"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={loading}
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Add location to narrow down results (e.g., "San Francisco", "Remote")
         </p>
       </div>
 
