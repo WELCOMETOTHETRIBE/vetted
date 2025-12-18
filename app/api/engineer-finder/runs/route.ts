@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         run: {
           ...run,
           filtersJson: run.filtersJson ? JSON.parse(run.filtersJson) : null,
-          results: run.results.map((r) => ({
+          results: run.results.map((r: any) => ({
             ...r,
             signalsJson: r.signalsJson ? JSON.parse(r.signalsJson) : [],
             enrichmentJson: r.enrichmentJson ? JSON.parse(r.enrichmentJson) : null,
