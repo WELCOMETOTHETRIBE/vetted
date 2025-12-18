@@ -124,10 +124,7 @@ export default async function AdminPage() {
         
         <div className="mt-8">
           <LinkedInUrlsList 
-            initialUrls={adminData.linkedInUrls.map(url => ({
-              ...url,
-              createdAt: url.createdAt,
-            }))}
+            initialUrls={adminData.linkedInUrls as any}
             initialTotal={adminData.linkedInUrlsTotal}
           />
         </div>
