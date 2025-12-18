@@ -81,9 +81,9 @@ export async function GET(req: NextRequest) {
     const total = await prisma.engineerFinderRun.count()
 
     return NextResponse.json({
-      runs: runs.map((run) => ({
+      runs: runs.map((run: any) => ({
         ...run,
-        filtersJson: run.filtersJson ? JSON.parse(r.filtersJson) : null,
+        filtersJson: run.filtersJson ? JSON.parse(run.filtersJson) : null,
         resultCount: run._count.results,
       })),
       total,
