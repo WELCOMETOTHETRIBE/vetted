@@ -228,6 +228,50 @@ function isValidCompanyName(company) {
   if (!company || company.length < 2) return false;
   if (company.length > 100) return false;
   
+  const trimmed = company.trim();
+  
+  // List of invalid company names - common field names, skills, domain terms that aren't companies
+  const invalidCompanyNames = [
+    'Machine Learning',
+    'ML',
+    'AI',
+    'Artificial Intelligence',
+    'Data Science',
+    'Deep Learning',
+    'Natural Language Processing',
+    'NLP',
+    'Computer Vision',
+    'Software Engineering',
+    'Web Development',
+    'Mobile Development',
+    'Cloud Computing',
+    'DevOps',
+    'Cybersecurity',
+    'Information Technology',
+    'IT',
+    'Business Intelligence',
+    'BI',
+    'Data Analytics',
+    'Product Management',
+    'Project Management',
+    'Agile',
+    'Scrum',
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Internship',
+    'Present',
+    'Remote',
+    'Hybrid',
+    'On-site',
+    'Onsite'
+  ];
+  
+  // Check exact match (case-insensitive) against invalid names
+  if (invalidCompanyNames.some(invalid => invalid.toLowerCase() === trimmed.toLowerCase())) {
+    return false;
+  }
+  
   const invalidPatterns = [
     /^full-time$/i,
     /^part-time$/i,
@@ -243,7 +287,6 @@ function isValidCompanyName(company) {
   
   // Check if it contains job title patterns (but allow if it's a valid company name with title words)
   // Only reject if it's clearly a job title, not a company name that happens to contain title words
-  const trimmed = company.trim();
   const titleOnlyPatterns = [
     /^(Senior|Junior|Lead|Principal|Staff|Chief|Head|Director|Manager|Engineer|Developer|Designer|Analyst|Specialist|Coordinator|Associate|Executive|Vice President|VP|President|Founder|Co-founder|Co-Founder)\s+(Engineer|Developer|Designer|Manager|Director|Analyst|Specialist|Coordinator|Associate|Executive|Recruiter|Scientist|Architect|Consultant|Advisor|Strategist|Researcher|Writer|Editor|Producer|Coordinator|Representative|Assistant|Intern)$/i,
     /^(Software|Hardware|Frontend|Backend|Full.?Stack|DevOps|SRE|QA|Product|Marketing|Sales|Business|Data|Machine Learning|ML|AI|Security|Cloud|Infrastructure|Systems|Network|Database|Mobile|Web|UI|UX|Graphic|Visual|Content|Social Media|Growth|Operations|HR|Human Resources|Talent|Recruiting|Recruitment)\s+(Engineer|Developer|Designer|Manager|Director|Analyst|Specialist|Coordinator|Associate|Executive|Recruiter|Scientist|Architect|Consultant|Advisor|Strategist|Researcher|Writer|Editor|Producer|Coordinator|Representative|Assistant|Intern)$/i,
@@ -251,6 +294,18 @@ function isValidCompanyName(company) {
   
   // If it matches a title-only pattern and doesn't look like a company, reject it
   if (titleOnlyPatterns.some(pattern => pattern.test(trimmed)) && !trimmed.includes('Inc') && !trimmed.includes('LLC') && !trimmed.includes('Corp') && !trimmed.includes('Ltd') && trimmed.length < 40) {
+    return false;
+  }
+  
+  // Reject if it's a common skill/field name (standalone, not part of a longer company name)
+  // This catches cases like "Machine Learning" being extracted as a company
+  const skillFieldPatterns = [
+    /^(Machine Learning|ML|AI|Artificial Intelligence|Data Science|Deep Learning|NLP|Natural Language Processing|Computer Vision)$/i,
+    /^(Software Engineering|Web Development|Mobile Development|Cloud Computing|DevOps|Cybersecurity|Information Technology|IT)$/i,
+    /^(Business Intelligence|BI|Data Analytics|Product Management|Project Management|Agile|Scrum)$/i
+  ];
+  
+  if (skillFieldPatterns.some(pattern => pattern.test(trimmed))) {
     return false;
   }
   
@@ -1729,7 +1784,14 @@ function processProfileDocument(data) {
   
   if (currentEmployerData) {
     // Use comprehensive current_employer data
-    currentCompany = currentEmployerData.company || null;
+    // Validate company name to reject invalid values like "Machine Learning", skills, etc.
+    const rawCompany = currentEmployerData.company || null;
+    if (rawCompany && isValidCompanyName(rawCompany) && !isDateOrTenureOnly(rawCompany)) {
+      currentCompany = rawCompany;
+    } else {
+      // If company from comprehensive_data is invalid, try to extract from other fields
+      currentCompany = null;
+    }
     currentTitle = currentEmployerData.title || null;
     yearsInCurrent = currentEmployerData.years_in_tenure || null;
     currentDateTenure = {
@@ -1738,6 +1800,31 @@ function processProfileDocument(data) {
       years: currentEmployerData.years_in_tenure || null,
       months: currentEmployerData.months_in_tenure || null
     };
+    
+    // If company validation failed, try to extract from experience list as fallback
+    if (!currentCompany && experienceList && experienceList.length > 0) {
+      // Find current experience entry
+      let currentExp = null;
+      for (const exp of experienceList) {
+        if (exp.is_current === true) {
+          currentExp = exp;
+          break;
+        }
+      }
+      if (!currentExp) {
+        for (const exp of experienceList) {
+          const duration = exp.duration || "";
+          if (duration && /Present/i.test(duration)) {
+            currentExp = exp;
+            break;
+          }
+        }
+      }
+      if (currentExp) {
+        const title = currentExp.title || "";
+        currentCompany = extractCompanyFromFields(currentExp, rawText, title);
+      }
+    }
   } else {
     // Fallback to old extraction method - check experience list for current position
     let currentExp = null;

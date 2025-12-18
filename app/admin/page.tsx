@@ -8,10 +8,11 @@ import AshbyScraperButton from "@/components/AshbyScraperButton"
 import MigrateButton from "@/components/MigrateButton"
 import SetupGroupsButton from "@/components/SetupGroupsButton"
 import LinkedInScraperButton from "@/components/LinkedInScraperButton"
+import LinkedInUrlsList from "@/components/LinkedInUrlsList"
 import Link from "next/link"
 
 async function getAdminData() {
-  const [users, posts, jobs, candidates] = await Promise.all([
+  const [users, posts, jobs, candidates, linkedInUrls, linkedInUrlsTotal] = await Promise.all([
     prisma.user.findMany({
       where: { isActive: true },
       select: {
@@ -62,9 +63,23 @@ async function getAdminData() {
       orderBy: { createdAt: "desc" },
       take: 500,
     }),
+    prisma.linkedInProfileUrl.findMany({
+      include: {
+        addedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.linkedInProfileUrl.count(),
   ])
 
-  return { users, posts, jobs, candidates }
+  return { users, posts, jobs, candidates, linkedInUrls, linkedInUrlsTotal }
 }
 
 export default async function AdminPage() {
@@ -106,6 +121,16 @@ export default async function AdminPage() {
         </div>
         <SetupGroupsButton />
         <AdminContent initialData={adminData} />
+        
+        <div className="mt-8">
+          <LinkedInUrlsList 
+            initialUrls={adminData.linkedInUrls.map(url => ({
+              ...url,
+              createdAt: url.createdAt,
+            }))}
+            initialTotal={adminData.linkedInUrlsTotal}
+          />
+        </div>
       </div>
     </div>
   )

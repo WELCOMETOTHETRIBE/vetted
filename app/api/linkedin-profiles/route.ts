@@ -66,10 +66,50 @@ export async function GET(req: Request) {
         const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60)
         
         if (ageHours < 24 && profiles.length > 0) {
+          // Save cached URLs to database
+          let savedCount = 0
+          let skippedCount = 0
+          
+          for (const profileUrl of profiles) {
+            if (typeof profileUrl === 'string' && profileUrl.includes('linkedin.com/in/')) {
+              try {
+                await prisma.linkedInProfileUrl.upsert({
+                  where: { url: profileUrl },
+                  update: {
+                    searchQuery: searchQuery || undefined,
+                    location: location || undefined,
+                    company: company || undefined,
+                    title: title || undefined,
+                    addedById: session.user.id,
+                  },
+                  create: {
+                    url: profileUrl,
+                    searchQuery: searchQuery || undefined,
+                    location: location || undefined,
+                    company: company || undefined,
+                    title: title || undefined,
+                    addedById: session.user.id,
+                  },
+                })
+                savedCount++
+              } catch (error: any) {
+                if (error.code === 'P2002') {
+                  skippedCount++
+                } else {
+                  console.error(`[linkedin-profiles] Error saving cached URL ${profileUrl}:`, error)
+                }
+              }
+            }
+          }
+
           return NextResponse.json({
-            profiles,
+            success: true,
+            saved: savedCount,
+            skipped: skippedCount,
+            total: profiles.length,
             cached: true,
             age_hours: Math.round(ageHours * 10) / 10,
+            message: `Saved ${savedCount} LinkedIn profile URL${savedCount !== 1 ? 's' : ''} to database${skippedCount > 0 ? ` (${skippedCount} already existed)` : ''} (from cache)`,
           })
         }
       } catch (error) {
@@ -239,10 +279,49 @@ export async function GET(req: Request) {
     try {
       const profiles = JSON.parse(data)
 
+      // Save URLs to database instead of returning them
+      let savedCount = 0
+      let skippedCount = 0
+      
+      for (const profileUrl of profiles) {
+        if (typeof profileUrl === 'string' && profileUrl.includes('linkedin.com/in/')) {
+          try {
+            await prisma.linkedInProfileUrl.upsert({
+              where: { url: profileUrl },
+              update: {
+                searchQuery: searchQuery || undefined,
+                location: location || undefined,
+                company: company || undefined,
+                title: title || undefined,
+                addedById: session.user.id,
+              },
+              create: {
+                url: profileUrl,
+                searchQuery: searchQuery || undefined,
+                location: location || undefined,
+                company: company || undefined,
+                title: title || undefined,
+                addedById: session.user.id,
+              },
+            })
+            savedCount++
+          } catch (error: any) {
+            if (error.code === 'P2002') {
+              // Unique constraint violation - URL already exists
+              skippedCount++
+            } else {
+              console.error(`[linkedin-profiles] Error saving URL ${profileUrl}:`, error)
+            }
+          }
+        }
+      }
+
       return NextResponse.json({
-        profiles,
-        cached: false,
-        count: profiles.length,
+        success: true,
+        saved: savedCount,
+        skipped: skippedCount,
+        total: profiles.length,
+        message: `Saved ${savedCount} LinkedIn profile URL${savedCount !== 1 ? 's' : ''} to database${skippedCount > 0 ? ` (${skippedCount} already existed)` : ''}`,
       })
     } catch (error) {
       console.error("[linkedin-profiles] Error reading output file:", error)

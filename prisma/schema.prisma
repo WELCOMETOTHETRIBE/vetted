@@ -110,6 +110,9 @@ model User {
   // Referrals
   referralsMade Referral[] @relation("Referrer")
 
+  // LinkedIn URLs added
+  linkedInUrlsAdded LinkedInProfileUrl[] @relation("LinkedInUrlsAdded")
+
   @@index([email])
   @@index([handle])
 }
@@ -789,4 +792,25 @@ enum RewardStatus {
   APPROVED // Reward approved
   PAID // Reward paid out
   DENIED // Reward denied
+}
+
+// LinkedIn Profile URLs (saved for future reference)
+model LinkedInProfileUrl {
+  id          String   @id @default(cuid())
+  url         String   @unique
+  searchQuery String?  // The search query that found this URL
+  location    String?  // Location filter used in search
+  company     String?  // Company filter used in search
+  title       String?  // Title filter used in search
+  addedById   String?  // Admin who added this URL
+  notes       String?  @db.Text // Optional notes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  addedBy User? @relation("LinkedInUrlsAdded", fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@index([url])
+  @@index([addedById])
+  @@index([createdAt])
+  @@index([searchQuery])
 }
