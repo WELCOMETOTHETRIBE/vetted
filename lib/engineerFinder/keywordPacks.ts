@@ -77,7 +77,7 @@ export const keywordPacks = {
 export type KeywordPackName = keyof typeof keywordPacks
 
 export function getKeywordPack(name: KeywordPackName): string[] {
-  return keywordPacks[name] || []
+  return [...(keywordPacks[name] || [])]
 }
 
 export function getAllKeywords(): string[] {
