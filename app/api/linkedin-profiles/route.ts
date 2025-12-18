@@ -71,37 +71,52 @@ export async function GET(req: Request) {
           let skippedCount = 0
           let errorCount = 0
           
-          for (const profileUrl of profiles) {
-            if (typeof profileUrl === 'string' && profileUrl.includes('linkedin.com/in/')) {
-              try {
-                await prisma.linkedInProfileUrl.upsert({
-                  where: { url: profileUrl },
-                  update: {
-                    searchQuery: searchQuery || undefined,
-                    location: location || undefined,
-                    company: company || undefined,
-                    title: title || undefined,
-                    addedById: session.user.id,
-                  },
-                  create: {
-                    url: profileUrl,
-                    searchQuery: searchQuery || undefined,
-                    location: location || undefined,
-                    company: company || undefined,
-                    title: title || undefined,
-                    addedById: session.user.id,
-                  },
-                })
-                savedCount++
-              } catch (error: any) {
-                if (error.code === 'P2002') {
-                  skippedCount++
-                } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
-                  errorCount++
-                } else {
-                  console.error(`[linkedin-profiles] Error saving cached URL ${profileUrl}:`, error)
-                  errorCount++
-                }
+          for (const profile of profiles) {
+            // Handle both string URLs and object format from scraper
+            let url: string | null = null
+            
+            if (typeof profile === 'string') {
+              url = profile
+            } else if (typeof profile === 'object' && profile !== null) {
+              url = profile.linkedin_url || profile.url || null
+            }
+            
+            if (!url || typeof url !== 'string' || !url.includes('linkedin.com/in/')) {
+              continue
+            }
+            
+            // Clean URL
+            const cleanUrl = url.split('?')[0].split('#')[0].trim()
+            if (!cleanUrl) continue
+            
+            try {
+              await prisma.linkedInProfileUrl.upsert({
+                where: { url: cleanUrl },
+                update: {
+                  searchQuery: searchQuery || undefined,
+                  location: location || undefined,
+                  company: company || undefined,
+                  title: title || undefined,
+                  addedById: session.user.id,
+                },
+                create: {
+                  url: cleanUrl,
+                  searchQuery: searchQuery || undefined,
+                  location: location || undefined,
+                  company: company || undefined,
+                  title: title || undefined,
+                  addedById: session.user.id,
+                },
+              })
+              savedCount++
+            } catch (error: any) {
+              if (error.code === 'P2002') {
+                skippedCount++
+              } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+                errorCount++
+              } else {
+                console.error(`[linkedin-profiles] Error saving cached URL ${cleanUrl}:`, error)
+                errorCount++
               }
             }
           }
@@ -295,46 +310,73 @@ export async function GET(req: Request) {
     
     try {
       const profiles = JSON.parse(data)
+      console.log(`[linkedin-profiles] Parsed ${profiles.length} profiles from JSON`)
+      console.log(`[linkedin-profiles] First profile sample:`, JSON.stringify(profiles[0] || {}, null, 2))
 
       // Save URLs to database instead of returning them
       let savedCount = 0
       let skippedCount = 0
       let errorCount = 0
       
-      for (const profileUrl of profiles) {
-        if (typeof profileUrl === 'string' && profileUrl.includes('linkedin.com/in/')) {
-          try {
-            await prisma.linkedInProfileUrl.upsert({
-              where: { url: profileUrl },
-              update: {
-                searchQuery: searchQuery || undefined,
-                location: location || undefined,
-                company: company || undefined,
-                title: title || undefined,
-                addedById: session.user.id,
-              },
-              create: {
-                url: profileUrl,
-                searchQuery: searchQuery || undefined,
-                location: location || undefined,
-                company: company || undefined,
-                title: title || undefined,
-                addedById: session.user.id,
-              },
-            })
-            savedCount++
-          } catch (error: any) {
-            if (error.code === 'P2002') {
-              // Unique constraint violation - URL already exists
-              skippedCount++
-            } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
-              // Table doesn't exist yet
-              console.error(`[linkedin-profiles] Table LinkedInProfileUrl doesn't exist. Please run migrations.`)
-              errorCount++
-            } else {
-              console.error(`[linkedin-profiles] Error saving URL ${profileUrl}:`, error)
-              errorCount++
-            }
+      for (const profile of profiles) {
+        // Handle both string URLs and object format from scraper
+        let url: string | null = null
+        
+        if (typeof profile === 'string') {
+          // Direct string URL
+          url = profile
+        } else if (typeof profile === 'object' && profile !== null) {
+          // Object format from scraper (when scrape=false, returns {linkedin_url, profile_slug, ...})
+          url = profile.linkedin_url || profile.url || null
+        }
+        
+        // Validate URL
+        if (!url || typeof url !== 'string' || !url.includes('linkedin.com/in/')) {
+          console.warn(`[linkedin-profiles] Skipping invalid profile:`, profile)
+          continue
+        }
+        
+        // Clean URL (remove query params and fragments)
+        const cleanUrl = url.split('?')[0].split('#')[0].trim()
+        
+        if (!cleanUrl) {
+          console.warn(`[linkedin-profiles] Skipping empty URL after cleaning`)
+          continue
+        }
+        
+        try {
+          await prisma.linkedInProfileUrl.upsert({
+            where: { url: cleanUrl },
+            update: {
+              searchQuery: searchQuery || undefined,
+              location: location || undefined,
+              company: company || undefined,
+              title: title || undefined,
+              addedById: session.user.id,
+            },
+            create: {
+              url: cleanUrl,
+              searchQuery: searchQuery || undefined,
+              location: location || undefined,
+              company: company || undefined,
+              title: title || undefined,
+              addedById: session.user.id,
+            },
+          })
+          savedCount++
+          console.log(`[linkedin-profiles] Saved URL: ${cleanUrl}`)
+        } catch (error: any) {
+          if (error.code === 'P2002') {
+            // Unique constraint violation - URL already exists
+            skippedCount++
+            console.log(`[linkedin-profiles] URL already exists: ${cleanUrl}`)
+          } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+            // Table doesn't exist yet
+            console.error(`[linkedin-profiles] Table LinkedInProfileUrl doesn't exist. Please run migrations.`)
+            errorCount++
+          } else {
+            console.error(`[linkedin-profiles] Error saving URL ${cleanUrl}:`, error.message || error)
+            errorCount++
           }
         }
       }
