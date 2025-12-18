@@ -69,6 +69,7 @@ export async function GET(req: Request) {
           // Save cached URLs to database
           let savedCount = 0
           let skippedCount = 0
+          let errorCount = 0
           
           for (const profileUrl of profiles) {
             if (typeof profileUrl === 'string' && profileUrl.includes('linkedin.com/in/')) {
@@ -95,11 +96,27 @@ export async function GET(req: Request) {
               } catch (error: any) {
                 if (error.code === 'P2002') {
                   skippedCount++
+                } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+                  errorCount++
                 } else {
                   console.error(`[linkedin-profiles] Error saving cached URL ${profileUrl}:`, error)
+                  errorCount++
                 }
               }
             }
+          }
+          
+          if (errorCount > 0 && savedCount === 0) {
+            return NextResponse.json({
+              success: false,
+              saved: 0,
+              skipped: skippedCount,
+              total: profiles.length,
+              error: "LinkedInProfileUrl table doesn't exist. Please run migrations at /api/admin/migrate",
+              message: `Found ${profiles.length} URLs in cache but couldn't save them. Table doesn't exist yet.`,
+              cached: true,
+              age_hours: Math.round(ageHours * 10) / 10,
+            })
           }
 
           return NextResponse.json({
@@ -282,6 +299,7 @@ export async function GET(req: Request) {
       // Save URLs to database instead of returning them
       let savedCount = 0
       let skippedCount = 0
+      let errorCount = 0
       
       for (const profileUrl of profiles) {
         if (typeof profileUrl === 'string' && profileUrl.includes('linkedin.com/in/')) {
@@ -309,11 +327,27 @@ export async function GET(req: Request) {
             if (error.code === 'P2002') {
               // Unique constraint violation - URL already exists
               skippedCount++
+            } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+              // Table doesn't exist yet
+              console.error(`[linkedin-profiles] Table LinkedInProfileUrl doesn't exist. Please run migrations.`)
+              errorCount++
             } else {
               console.error(`[linkedin-profiles] Error saving URL ${profileUrl}:`, error)
+              errorCount++
             }
           }
         }
+      }
+      
+      if (errorCount > 0 && savedCount === 0) {
+        return NextResponse.json({
+          success: false,
+          saved: 0,
+          skipped: skippedCount,
+          total: profiles.length,
+          error: "LinkedInProfileUrl table doesn't exist. Please run migrations at /api/admin/migrate",
+          message: `Found ${profiles.length} URLs but couldn't save them. Table doesn't exist yet.`,
+        })
       }
 
       return NextResponse.json({

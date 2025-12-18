@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         path.join(process.cwd(), 'prisma.config.ts.backup'),
         path.join(process.cwd(), 'prisma.config.js.backup'),
       ]
-      // Rename all config files that exist
+      // Try to rename config files, but continue even if it fails (permission issues in production)
       const renamedConfigs: Array<{ original: string; backup: string }> = []
       for (let i = 0; i < configPaths.length; i++) {
         const configPath = configPaths[i]
@@ -77,15 +77,9 @@ export async function POST(req: Request) {
             console.log(`Temporarily renamed ${path.basename(configPath)} to avoid module dependency`)
           } catch (e: any) {
             console.warn(`Failed to rename ${path.basename(configPath)}:`, e.message)
-            // If rename fails, try copying and deleting
-            try {
-              fs.copyFileSync(configPath, configBackupPath)
-              fs.unlinkSync(configPath)
-              renamedConfigs.push({ original: configPath, backup: configBackupPath })
-              console.log(`Copied and removed ${path.basename(configPath)}`)
-            } catch (e2: any) {
-              console.warn(`Failed to copy/remove ${path.basename(configPath)}:`, e2.message)
-            }
+            // If rename fails due to permissions, just continue - Prisma should still work
+            // The config files are optional and Prisma can work without them
+            console.log(`Continuing without renaming ${path.basename(configPath)} - Prisma should still work`)
           }
         }
       }

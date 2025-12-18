@@ -52,24 +52,46 @@ export async function GET(req: Request) {
       ]
     }
 
-    const [urls, total] = await Promise.all([
-      prisma.linkedInProfileUrl.findMany({
-        where,
-        include: {
-          addedBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+    // Handle case where table doesn't exist yet
+    let urls: any[] = []
+    let total = 0
+    
+    try {
+      const [urlsResult, totalResult] = await Promise.all([
+        prisma.linkedInProfileUrl.findMany({
+          where,
+          include: {
+            addedBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.linkedInProfileUrl.count({ where }),
-    ])
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.linkedInProfileUrl.count({ where }),
+      ])
+      urls = urlsResult
+      total = totalResult
+    } catch (error: any) {
+      // If table doesn't exist, return empty results
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        console.warn("[linkedin-urls] Table doesn't exist yet, returning empty results")
+        return NextResponse.json({
+          urls: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+          message: "LinkedInProfileUrl table doesn't exist yet. Please run migrations first.",
+        })
+      }
+      throw error
+    }
 
     return NextResponse.json({
       urls,
