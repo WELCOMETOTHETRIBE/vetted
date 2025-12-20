@@ -524,6 +524,124 @@ def extract_fields_lever(soup: BeautifulSoup) -> dict:
     return fields
 
 
+def extract_fields_workday(soup: BeautifulSoup) -> dict:
+    """Extract job fields from Workday page structure."""
+    fields = {
+        "location": None,
+        "employment_type": None,
+        "department": None,
+    }
+    
+    # Workday uses data-automation-id attributes for structured data
+    # Common patterns:
+    # - data-automation-id="jobPostingHeader" for title
+    # - data-automation-id="jobPostingLocation" for location
+    # - Various class names like "css-*" for styling
+    
+    # Try to find location using Workday-specific selectors
+    location_selectors = [
+        soup.find("div", {"data-automation-id": "jobPostingLocation"}),
+        soup.find("span", {"data-automation-id": "jobPostingLocation"}),
+        soup.find("div", class_=re.compile(r"location|jobPostingLocation", re.I)),
+        soup.find("dd", class_=re.compile(r"location", re.I)),
+    ]
+    
+    for elem in location_selectors:
+        if elem:
+            text = elem.get_text(strip=True)
+            if text and len(text) < 200:  # Reasonable location length
+                fields["location"] = text
+                break
+    
+    # Try to find employment type
+    employment_selectors = [
+        soup.find("div", {"data-automation-id": "jobPostingEmploymentType"}),
+        soup.find("span", {"data-automation-id": "jobPostingEmploymentType"}),
+        soup.find("div", class_=re.compile(r"employment.*type|jobPostingEmploymentType", re.I)),
+        soup.find("dd", class_=re.compile(r"employment|type", re.I)),
+    ]
+    
+    for elem in employment_selectors:
+        if elem:
+            text = elem.get_text(strip=True)
+            if text:
+                # Normalize employment type
+                text_lower = text.lower()
+                if "full" in text_lower and "time" in text_lower:
+                    fields["employment_type"] = "FULL_TIME"
+                elif "part" in text_lower and "time" in text_lower:
+                    fields["employment_type"] = "PART_TIME"
+                elif "contract" in text_lower:
+                    fields["employment_type"] = "CONTRACT"
+                elif "intern" in text_lower:
+                    fields["employment_type"] = "INTERNSHIP"
+                else:
+                    fields["employment_type"] = text
+                break
+    
+    # Try to find department
+    department_selectors = [
+        soup.find("div", {"data-automation-id": "jobPostingDepartment"}),
+        soup.find("span", {"data-automation-id": "jobPostingDepartment"}),
+        soup.find("div", class_=re.compile(r"department|jobPostingDepartment", re.I)),
+        soup.find("dd", class_=re.compile(r"department", re.I)),
+    ]
+    
+    for elem in department_selectors:
+        if elem:
+            text = elem.get_text(strip=True)
+            if text and len(text) < 100:
+                fields["department"] = text
+                break
+    
+    # Alternative: Look for structured data in definition lists (dl/dt/dd)
+    # Workday sometimes uses this pattern
+    dl_elements = soup.find_all("dl")
+    for dl in dl_elements:
+        dts = dl.find_all("dt")
+        dds = dl.find_all("dd")
+        for dt, dd in zip(dts, dds):
+            dt_text = dt.get_text(strip=True).lower()
+            dd_text = dd.get_text(strip=True)
+            if not dd_text:
+                continue
+            
+            if "location" in dt_text and not fields["location"]:
+                fields["location"] = dd_text
+            elif ("employment" in dt_text or "type" in dt_text) and not fields["employment_type"]:
+                text_lower = dd_text.lower()
+                if "full" in text_lower and "time" in text_lower:
+                    fields["employment_type"] = "FULL_TIME"
+                elif "part" in text_lower and "time" in text_lower:
+                    fields["employment_type"] = "PART_TIME"
+                elif "contract" in text_lower:
+                    fields["employment_type"] = "CONTRACT"
+                elif "intern" in text_lower:
+                    fields["employment_type"] = "INTERNSHIP"
+                else:
+                    fields["employment_type"] = dd_text
+            elif "department" in dt_text and not fields["department"]:
+                fields["department"] = dd_text
+    
+    # Fallback: Try generic field finder
+    if not fields["location"]:
+        location = find_field_value(soup, "Location")
+        if location:
+            fields["location"] = location
+    
+    if not fields["employment_type"]:
+        emp_type = find_field_value(soup, "Employment Type")
+        if emp_type:
+            fields["employment_type"] = emp_type
+    
+    if not fields["department"]:
+        dept = find_field_value(soup, "Department")
+        if dept:
+            fields["department"] = dept
+    
+    return fields
+
+
 def find_field_value(soup: BeautifulSoup, label: str) -> str | None:
     """Find a field value by label in the HTML."""
     node = soup.find(string=re.compile(rf"^{label}\s*$", re.IGNORECASE))
@@ -551,6 +669,46 @@ def find_field_value(soup: BeautifulSoup, label: str) -> str | None:
 
 def extract_description_text(soup: BeautifulSoup, source: str = "ashby") -> str:
     """Extract all paragraph text as description."""
+    # For Workday, use specific extraction
+    if source in ["workday", "workday_wd5"]:
+        # Workday typically uses data-automation-id attributes and specific class names
+        # Look for the main job description container
+        description_selectors = [
+            soup.find("div", {"data-automation-id": "jobPostingDescription"}),
+            soup.find("div", class_=re.compile(r"jobPostingDescription|job-description|jobPosting", re.I)),
+            soup.find("div", {"data-automation-id": re.compile(r"jobPosting|description", re.I)}),
+            soup.find("section", class_=re.compile(r"jobPosting|description", re.I)),
+        ]
+        
+        for selector in description_selectors:
+            if selector:
+                # Get all text content, preserving structure
+                description = selector.get_text("\n", strip=True)
+                # Clean up Workday-specific elements
+                description = re.sub(r'Apply Now.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+                description = re.sub(r'Share.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+                description = re.sub(r'Powered by Workday.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+                description = description.strip()
+                if description and len(description) > 100:  # Ensure we have meaningful content
+                    max_chars = 20000
+                    if len(description) > max_chars:
+                        description = description[:max_chars] + " ...[truncated]"
+                    return description
+        
+        # Fallback: look for main content area
+        main_content = soup.find("main") or soup.find("div", class_=re.compile(r"main|content", re.I))
+        if main_content:
+            description = main_content.get_text("\n", strip=True)
+            # Remove navigation, headers, footers
+            description = re.sub(r'Apply Now.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+            description = re.sub(r'Share.*?$', '', description, flags=re.MULTILINE | re.DOTALL)
+            description = description.strip()
+            if description and len(description) > 100:
+                max_chars = 20000
+                if len(description) > max_chars:
+                    description = description[:max_chars] + " ...[truncated]"
+                return description
+    
     # For Lever, try to get the main content area first
     if source == "lever":
         # Look for the main job description area
@@ -734,8 +892,34 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
         html = await page.content()
         soup = BeautifulSoup(html, "html.parser")
 
-        title_tag = soup.find("title")
-        raw_title = title_tag.get_text(strip=True) if title_tag else None
+        # Extract title - Workday needs special handling
+        if source in ["workday", "workday_wd5"]:
+            # Workday often has the title in h1 or specific data-automation-id
+            title_selectors = [
+                soup.find("h1", {"data-automation-id": "jobPostingHeader"}),
+                soup.find("h1", class_=re.compile(r"jobPosting|job-title", re.I)),
+                soup.find("h1"),
+                soup.find("span", {"data-automation-id": "jobPostingHeader"}),
+            ]
+            raw_title = None
+            for selector in title_selectors:
+                if selector:
+                    raw_title = selector.get_text(strip=True)
+                    if raw_title and len(raw_title) < 200:  # Reasonable title length
+                        break
+            
+            # Fallback to title tag if nothing found
+            if not raw_title:
+                title_tag = soup.find("title")
+                raw_title = title_tag.get_text(strip=True) if title_tag else None
+                # Clean up Workday title format: "Job Title | Company Name | Workday"
+                if raw_title:
+                    # Remove company name and "Workday" from title
+                    raw_title = re.sub(r'\s*\|\s*.*?$', '', raw_title)
+                    raw_title = raw_title.strip()
+        else:
+            title_tag = soup.find("title")
+            raw_title = title_tag.get_text(strip=True) if title_tag else None
 
         # Extract company name based on source
         company = None
@@ -764,6 +948,11 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
             department = fields.get("department") or find_field_value(soup, "Department")
         elif source == "lever":
             fields = extract_fields_lever(soup)
+            location = fields.get("location") or find_field_value(soup, "Location")
+            employment_type = fields.get("employment_type") or find_field_value(soup, "Employment Type")
+            department = fields.get("department") or find_field_value(soup, "Department")
+        elif source in ["workday", "workday_wd5"]:
+            fields = extract_fields_workday(soup)
             location = fields.get("location") or find_field_value(soup, "Location")
             employment_type = fields.get("employment_type") or find_field_value(soup, "Employment Type")
             department = fields.get("department") or find_field_value(soup, "Department")
