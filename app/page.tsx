@@ -332,14 +332,9 @@ export default function Home() {
           <div className="container-fluid">
             <div className="flex justify-between items-center h-16">
               <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-                <Image
-                  src="/cleard.png"
-                  alt="clearD"
-                  width={120}
-                  height={48}
-                  className="h-12 w-auto"
-                  priority
-                />
+                <span className="text-2xl font-extrabold tracking-tight text-gradient">
+                  clearD
+                </span>
               </Link>
 
               <div className="hidden md:flex items-center space-x-8">
@@ -376,25 +371,19 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative py-32 md:py-40">
           <div className="container-fluid text-center">
-            {/* Animated Logo */}
-            <div className={`flex justify-center mb-12 transition-all duration-1000 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-              <div className="relative">
-                <Image
-                  src="/cleard-mark.png"
-                  alt="clearD"
-                  width={350}
-                  height={140}
-                  className="h-44 w-auto drop-shadow-2xl animate-float"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-400/20 to-primary-600/20 blur-3xl animate-pulse" />
+            {/* Wordmark (no image background/border) */}
+            <div
+              className={`flex justify-center mb-10 transition-all duration-1000 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+            >
+              <div className="text-[clamp(4rem,12vw,12rem)] font-black tracking-tight text-gradient leading-none">
+                clearD
               </div>
             </div>
 
             {/* Hero Content */}
             <div className={`space-y-8 transition-all duration-1000 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <h1 className="text-fluid-5xl md:text-fluid-7xl font-bold text-balance leading-tight">
-                clearD — <span className="text-gradient">The Cleared Talent Network</span> for Mission-Ready Defense Work
+                <span className="text-gradient">The Cleared Talent Network</span> for Mission-Ready Defense Work
               </h1>
 
               <p className="text-fluid-xl text-content-secondary max-w-4xl mx-auto leading-relaxed text-balance">
