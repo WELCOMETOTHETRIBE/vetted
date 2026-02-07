@@ -131,8 +131,8 @@ export default async function ProfilePage({
           userId={user.id}
         />
 
-        {/* Experience Section */}
-        <ProfileSectionCard title="Experience">
+        {/* Mission & Program Experience Section */}
+        <ProfileSectionCard title="Mission & Program Experience">
           {user.experiences.length > 0 ? (
             <div className="space-y-6">
               {user.experiences.map((exp: any) => (
@@ -179,7 +179,7 @@ export default async function ProfilePage({
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>No experience added yet</p>
+              <p>No mission &amp; program experience added yet</p>
             </div>
           )}
         </ProfileSectionCard>
@@ -229,8 +229,8 @@ export default async function ProfilePage({
           )}
         </ProfileSectionCard>
 
-        {/* Skills Section */}
-        <ProfileSectionCard title="Skills & Endorsements">
+        {/* Validated Capabilities Section */}
+        <ProfileSectionCard title="Validated Capabilities">
           {user.skills.length > 0 ? (
             <div className="flex flex-wrap gap-3">
               {user.skills.map((userSkill: any) => (
@@ -244,7 +244,7 @@ export default async function ProfilePage({
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>No skills added yet</p>
+              <p>No validated capabilities added yet</p>
             </div>
           )}
         </ProfileSectionCard>

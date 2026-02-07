@@ -94,7 +94,7 @@ const ProfileHeader = ({
                 <>
                   <button className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors flex items-center gap-2">
                     <span>✓</span>
-                    <span>Connected</span>
+                    <span>Trusted Connection</span>
                   </button>
                   <Link
                     href={`/messages`}
@@ -122,14 +122,14 @@ const ProfileHeader = ({
                   title="Connection request pending"
                 >
                   <span>⏳</span>
-                  <span>Pending</span>
+                  <span>Request Pending</span>
                 </button>
               ) : (
                 <button
                   onClick={handleConnect}
                   className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
                 >
-                  + Connect
+                  + Add to Trusted Network
                 </button>
               )}
             </div>
@@ -141,7 +141,7 @@ const ProfileHeader = ({
                 className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm inline-flex items-center gap-2"
               >
                 <span>✏️</span>
-                <span>Edit Profile</span>
+                <span>Edit Mission Profile</span>
               </Link>
             </div>
           )}
@@ -171,7 +171,7 @@ const ProfileHeader = ({
           
           {profile.about && (
             <div className="pt-3 border-t border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">About</h3>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Mission Summary</h3>
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{profile.about}</p>
             </div>
           )}

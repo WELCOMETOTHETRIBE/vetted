@@ -42,14 +42,18 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
   const baseNavItems = [
     { href: "/feed", label: "Feed", icon: "📰", iconOnly: false },
     { href: "/jobs", label: "Jobs", icon: "💼", iconOnly: false },
-    { href: "/candidates", label: "Candidates", icon: "🎯", iconOnly: false },
-    { href: "/network", label: "Network", icon: "👥", iconOnly: false },
+    { href: "/network", label: "Trusted Network", icon: "👥", iconOnly: false },
     { href: "/messages", label: "Messages", icon: "💬", iconOnly: true },
     { href: "/notifications", label: "Notifications", icon: "🔔", iconOnly: true },
   ]
 
   // Add Admin tab for admins
-  const adminNavItems = isAdmin ? [{ href: "/admin", label: "Admin", icon: "⚙️", iconOnly: true }] : []
+  const adminNavItems = isAdmin
+    ? [
+        { href: "/candidates", label: "Talent Pools", icon: "🎯", iconOnly: false },
+        { href: "/admin", label: "Console", icon: "⚙️", iconOnly: true },
+      ]
+    : []
   const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
@@ -60,8 +64,8 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
           <div className="flex items-center">
             <Link href="/feed" className="flex items-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg p-1">
               <img
-                src="/vetted_2.png"
-                alt="Vetted"
+                src="/cleard-mark.png"
+                alt="clearD"
                 className="h-20 w-auto"
                 onError={(e) => {
                   // Fallback to text if image fails to load
@@ -71,7 +75,7 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
                   if (parent && !parent.querySelector(".fallback-logo")) {
                     const fallback = document.createElement("span")
                     fallback.className = "fallback-logo text-2xl font-bold text-primary-600"
-                    fallback.textContent = "Vetted"
+                    fallback.textContent = "clearD"
                     parent.appendChild(fallback)
                   }
                 }}
@@ -175,7 +179,7 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
                       onClick={() => setDropdownOpen(false)}
                       className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
                     >
-                      View My Profile
+                  View Mission Profile
                     </Link>
                   )}
                   <Link
@@ -183,7 +187,7 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
                     onClick={() => setDropdownOpen(false)}
                     className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 transition-colors"
                   >
-                    Settings
+                Profile & Settings
                   </Link>
                   <div className="border-t border-neutral-200 my-1"></div>
                   <button

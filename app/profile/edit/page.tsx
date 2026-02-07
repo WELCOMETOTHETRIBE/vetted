@@ -53,7 +53,7 @@ export default async function ProfileEditPage() {
     <div className="min-h-screen bg-gray-50">
       <NavbarAdvanced />
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Cleared Mission Profile</h1>
         <div className="mb-6">
           <ResumeProfileUpload />
         </div>

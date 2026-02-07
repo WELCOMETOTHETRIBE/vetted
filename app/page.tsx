@@ -333,8 +333,8 @@ export default function Home() {
             <div className="flex justify-between items-center h-16">
               <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
                 <Image
-                  src="/vetted.png"
-                  alt="Vetted"
+                  src="/cleard.png"
+                  alt="clearD"
                   width={120}
                   height={48}
                   className="h-12 w-auto"
@@ -344,10 +344,13 @@ export default function Home() {
 
               <div className="hidden md:flex items-center space-x-8">
                 <Link href="#features" className="text-content-secondary hover:text-content-primary transition-colors">
-                  Features
+                  Systems
                 </Link>
                 <Link href="#stats" className="text-content-secondary hover:text-content-primary transition-colors">
-                  Stats
+                  Audiences
+                </Link>
+                <Link href="/csp" className="text-content-secondary hover:text-content-primary transition-colors">
+                  CSP
                 </Link>
                 <Link href="#about" className="text-content-secondary hover:text-content-primary transition-colors">
                   About
@@ -377,8 +380,8 @@ export default function Home() {
             <div className={`flex justify-center mb-12 transition-all duration-1000 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
               <div className="relative">
                 <Image
-                  src="/vetted_2.png"
-                  alt="Vetted"
+                  src="/cleard-mark.png"
+                  alt="clearD"
                   width={350}
                   height={140}
                   className="h-44 w-auto drop-shadow-2xl animate-float"
@@ -391,17 +394,20 @@ export default function Home() {
             {/* Hero Content */}
             <div className={`space-y-8 transition-all duration-1000 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <h1 className="text-fluid-5xl md:text-fluid-7xl font-bold text-balance leading-tight">
-                Connect. <span className="text-gradient">Grow.</span> Get Hired.
+                clearD — <span className="text-gradient">The Cleared Talent Network</span> for Mission-Ready Defense Work
               </h1>
 
               <p className="text-fluid-xl text-content-secondary max-w-4xl mx-auto leading-relaxed text-balance">
-                Experience the future of professional networking with AI-powered insights,
-                immersive connections, and opportunities that match your potential.
+                clearD is the first clearance-native professional network built for transitioning service members, defense contractors, and government programs.
+              </p>
+
+              <p className="text-base text-content-tertiary max-w-4xl mx-auto leading-relaxed text-balance">
+                Built as a clearance-first professional identity system and mission-ready sourcing platform. AI features provide decision support only—human review required.
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center gap-6 pt-8">
                 <MagneticButton href="/auth/signup">
-                  <span>Join Vetted</span>
+                  <span>Create your mission profile</span>
                   <span className="text-xl animate-bounce">🚀</span>
                 </MagneticButton>
 
@@ -425,34 +431,37 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Stats Section */}
+        {/* Audiences Section */}
         <section id="stats" className="py-24 bg-surface-secondary/50 backdrop-blur-sm">
           <div className="container-fluid">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              <div className="animate-on-scroll">
-                <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={50000} suffix="+" />
-                </div>
-                <div className="text-content-secondary">Professionals</div>
-              </div>
-              <div className="animate-on-scroll" style={{ animationDelay: '0.2s' }}>
-                <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={10000} suffix="+" />
-                </div>
-                <div className="text-content-secondary">Companies</div>
-              </div>
-              <div className="animate-on-scroll" style={{ animationDelay: '0.4s' }}>
-                <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={250000} suffix="+" />
-                </div>
-                <div className="text-content-secondary">Connections</div>
-              </div>
-              <div className="animate-on-scroll" style={{ animationDelay: '0.6s' }}>
-                <div className="text-fluid-4xl font-bold mb-2">
-                  <AnimatedCounter end={95} suffix="%" />
-                </div>
-                <div className="text-content-secondary">Success Rate</div>
-              </div>
+            <div className="text-center mb-12">
+              <h2 className="text-fluid-3xl md:text-fluid-4xl font-bold mb-4 text-gradient">
+                Designed for three audiences
+              </h2>
+              <p className="text-fluid-lg text-content-secondary max-w-3xl mx-auto">
+                Each audience sees different language and emphasis—without changing the underlying platform capabilities.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <FeatureCard3D
+                icon="🧭"
+                title="Cleared Professionals"
+                description="Build a Cleared Mission Profile that preserves clearance continuity and mission readiness—especially during transition."
+                delay={0.1}
+              />
+              <FeatureCard3D
+                icon="🛡️"
+                title="Defense Contractors / GovCon Teams"
+                description="Invitation-only sourcing and mission-fit evaluation for cleared roles with audit-friendly workflows."
+                delay={0.3}
+              />
+              <FeatureCard3D
+                icon="⚙️"
+                title="Admin / Operator (MacTech Solutions)"
+                description="Operated and supported by MacTech Solutions to onboard contractors, run CSP pilots, and ensure compliance awareness."
+                delay={0.5}
+              />
             </div>
           </div>
         </section>
@@ -462,32 +471,49 @@ export default function Home() {
           <div className="container-fluid">
             <div className="text-center mb-20">
               <h2 className="text-fluid-4xl md:text-fluid-5xl font-bold mb-6 text-gradient">
-                Revolutionize Your Career Journey
+                Three integrated systems
               </h2>
               <p className="text-fluid-xl text-content-secondary max-w-3xl mx-auto">
-                Cutting-edge features powered by advanced AI and human-centered design
+                clearD is framed as a cleared talent network, a contractor console, and AI-assisted decision support—without automating decisions.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <FeatureCard3D
-                icon="🎯"
-                title="AI-Powered Matching"
-                description="Advanced algorithms analyze your profile and preferences to find the perfect opportunities and connections."
+                icon="🪪"
+                title="System 1: Cleared Professional Network"
+                description="A clearance-first professional identity system centered on Cleared Mission Profiles, validated capabilities, and a trusted network."
                 delay={0.1}
               />
               <FeatureCard3D
-                icon="🚀"
-                title="Career Acceleration"
-                description="Get personalized insights, mentorship opportunities, and skill development recommendations."
+                icon="🗂️"
+                title="System 2: Contractor Sourcing & Console"
+                description="Private, invitation-only sourcing for cleared hiring teams: cleared talent pools, mission-fit evaluation, and operator workflows."
                 delay={0.3}
               />
               <FeatureCard3D
-                icon="🌟"
-                title="Immersive Networking"
-                description="Experience professional networking like never before with virtual events and AI-facilitated introductions."
+                icon="🧠"
+                title="System 3: Decision Support (Advisory)"
+                description="AI-assisted summaries, alignment indicators, and review flags to support human decisions. Advisory only; human review required."
                 delay={0.5}
               />
+            </div>
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section id="about" className="py-24 bg-surface-secondary/40 backdrop-blur-sm">
+          <div className="container-fluid">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-fluid-4xl font-bold mb-6 text-gradient text-center">
+                Defense-aligned, not DoD-endorsed
+              </h2>
+              <div className="card-modern p-8">
+                <p className="text-content-secondary leading-relaxed">
+                  clearD supports defense contractors, government programs, and Career Skills Program (CSP) participants with clearance-continuity workflows and mission-ready sourcing.
+                  clearD does not claim official DoD endorsement or certification. The platform is operated and supported by MacTech Solutions.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -497,20 +523,20 @@ export default function Home() {
           <div className="container-fluid text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-fluid-4xl md:text-fluid-5xl font-bold mb-6 text-balance">
-                Ready to Transform Your Professional Life?
+                Ready to start your cleared pathway?
               </h2>
               <p className="text-fluid-xl text-content-secondary mb-12 text-balance">
-                Join thousands of professionals who have accelerated their careers with Vetted
+                Build your Cleared Mission Profile or request access to the clearD Contractor Console.
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center gap-6">
                 <MagneticButton href="/auth/signup">
-                  <span>Start Your Journey</span>
+                  <span>Get started</span>
                   <span className="text-xl">✨</span>
                 </MagneticButton>
 
-                <MagneticButton href="/demo" variant="secondary">
-                  <span>Watch Demo</span>
+                <MagneticButton href="/csp" variant="secondary">
+                  <span>Learn about CSP</span>
                   <span className="text-xl">▶️</span>
                 </MagneticButton>
               </div>

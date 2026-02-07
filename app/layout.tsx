@@ -14,25 +14,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vetted - Professional Network",
-  description: "Connect, grow, and get hired on Vetted",
-  keywords: ["professional networking", "job search", "career development", "recruitment"],
-  authors: [{ name: "Vetted Team" }],
+  title: "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+  description:
+    "clearD is a clearance-first professional identity and sourcing platform for mission-ready defense work.",
+  keywords: [
+    "cleared talent network",
+    "security clearance",
+    "defense contractors",
+    "govcon",
+    "cleared roles",
+    "DoD career skills program",
+    "CSP",
+  ],
+  authors: [{ name: "clearD (operated by MacTech Solutions)" }],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Vetted - Professional Network",
-    description: "Connect, grow, and get hired on Vetted",
+    title: "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+    description:
+      "clearD is a clearance-first professional identity and sourcing platform for mission-ready defense work.",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vetted - Professional Network",
-    description: "Connect, grow, and get hired on Vetted",
+    title: "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+    description:
+      "clearD is a clearance-first professional identity and sourcing platform for mission-ready defense work.",
   },
 };
 

@@ -63,8 +63,8 @@ export default function SignUpPage() {
         <div>
           <div className="flex justify-center mb-8">
             <Image
-              src="/vetted_2.png"
-              alt="Vetted"
+              src="/cleard-mark.png"
+              alt="clearD"
               width={200}
               height={80}
               className="h-32 w-auto drop-shadow-md"
@@ -72,7 +72,7 @@ export default function SignUpPage() {
             />
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
-            Create your Vetted account
+            Create your clearD account
           </h2>
           <p className="mt-3 text-center text-sm text-neutral-800">
             Or{" "}

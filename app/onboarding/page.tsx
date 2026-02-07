@@ -48,10 +48,10 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">
-            Complete Your Profile
+            Complete Your Cleared Mission Profile
           </h1>
           <p className="text-gray-600 mb-8">
-            Help others get to know you better by completing your profile.
+            Capture clearance context, mission readiness, and professional continuity for defense work. Keep details professional and security-conscious.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -65,7 +65,7 @@ export default function OnboardingPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, headline: e.target.value })
                 }
-                placeholder="e.g., Software Engineer at Tech Company"
+                placeholder="e.g., Systems Engineer | Active Secret | Transitioning 2026"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
                   setFormData({ ...formData, about: e.target.value })
                 }
                 rows={6}
-                placeholder="Tell us about yourself..."
+                placeholder="Brief mission summary: what programs/mission areas you’ve supported, validated capabilities, and clearance status (avoid classified details)."
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
                 disabled={loading}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? "Saving..." : "Complete Profile"}
+                {loading ? "Saving..." : "Complete Mission Profile"}
               </button>
             </div>
           </form>

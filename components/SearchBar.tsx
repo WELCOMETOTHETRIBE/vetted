@@ -47,7 +47,7 @@ export default function SearchBar() {
           onChange={handleInputChange}
           onFocus={() => query && setShowResults(true)}
           onBlur={() => setTimeout(() => setShowResults(false), 200)}
-          placeholder="Search people, jobs, companies..."
+          placeholder="Search professionals, roles, organizations..."
           className="w-full px-4 py-2.5 pl-11 pr-12 text-sm border border-neutral-300 rounded-xl bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:bg-white transition-all placeholder:text-neutral-400"
           aria-label="Search"
         />

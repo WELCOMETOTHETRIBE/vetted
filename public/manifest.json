@@ -1,19 +1,19 @@
 {
-  "name": "Vetted - Professional Network",
-  "short_name": "Vetted",
-  "description": "Connect, grow, and get hired on Vetted",
+  "name": "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+  "short_name": "clearD",
+  "description": "clearD is the cleared talent network for mission-ready defense work.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/vetted_2.png",
+      "src": "/cleard-mark.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/vetted_2.png",
+      "src": "/cleard-mark.png",
       "sizes": "512x512",
       "type": "image/png"
     }

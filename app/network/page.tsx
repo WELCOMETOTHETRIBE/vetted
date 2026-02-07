@@ -104,7 +104,7 @@ export default async function NetworkPage() {
     <div className="min-h-screen bg-gray-50">
       <NavbarAdvanced />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">My Network</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Trusted Network</h1>
         <NetworkContent
           initialData={networkData}
           currentUserId={session.user.id}
