@@ -20,6 +20,7 @@ async function getAdminData() {
         name: true,
         email: true,
         role: true,
+        accountType: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },

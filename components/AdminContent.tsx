@@ -139,6 +139,7 @@ interface User {
   name: string | null
   email: string
   role: string
+  accountType?: string | null
   createdAt: Date
   isActive?: boolean
 }
@@ -182,6 +183,8 @@ export default function AdminContent({ initialData }: AdminContentProps) {
   const [usersPage, setUsersPage] = useState(1)
   const [usersLoading, setUsersLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [audienceUpdating, setAudienceUpdating] = useState(false)
+  const [audienceError, setAudienceError] = useState<string | null>(null)
   
   // Posts state
   const [posts, setPosts] = useState<Post[]>(initialData.posts)
@@ -208,17 +211,60 @@ export default function AdminContent({ initialData }: AdminContentProps) {
 
   const limit = 20
 
+  const getAudienceLabel = (u: User) => {
+    if (u.role === "ADMIN") return "ADMIN"
+    if ((u.accountType || "").toUpperCase() === "EMPLOYER") return "EMPLOYER/RECRUITER"
+    return "CANDIDATE"
+  }
+
   // Filter and paginate users
   const filteredUsers = users.filter((user) => {
     const searchLower = usersSearch.toLowerCase()
+    const audience = getAudienceLabel(user).toLowerCase()
     return (
       user.name?.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
-      user.role.toLowerCase().includes(searchLower)
+      user.role.toLowerCase().includes(searchLower) ||
+      audience.includes(searchLower)
     )
   })
   const usersTotalPages = Math.ceil(filteredUsers.length / limit)
   const paginatedUsers = filteredUsers.slice((usersPage - 1) * limit, usersPage * limit)
+
+  const getAudienceBadgeColor = (audience: string) => {
+    switch (audience) {
+      case "ADMIN":
+        return "bg-purple-50 text-purple-700 border-purple-200"
+      case "EMPLOYER/RECRUITER":
+        return "bg-indigo-50 text-indigo-700 border-indigo-200"
+      default:
+        return "bg-blue-50 text-blue-700 border-blue-200"
+    }
+  }
+
+  const handleUpdateUserAudience = async (userId: string, audience: "ADMIN" | "CANDIDATE" | "EMPLOYER") => {
+    setAudienceUpdating(true)
+    setAudienceError(null)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audience }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update user audience")
+      }
+
+      const updatedUser = data.user as User
+      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)))
+      setSelectedUser((prev) => (prev?.id === updatedUser.id ? { ...prev, ...updatedUser } : prev))
+    } catch (e: any) {
+      setAudienceError(e?.message || "Failed to update user audience")
+    } finally {
+      setAudienceUpdating(false)
+    }
+  }
 
   // Filter and paginate posts
   const filteredPosts = posts.filter((post) => {
@@ -600,7 +646,7 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                   setUsersSearch(e.target.value)
                   setUsersPage(1)
                 }}
-                placeholder="Search users by name, email, or role..."
+                placeholder="Search users by name, email, or audience..."
                 className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
             </div>
@@ -629,7 +675,7 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                           Email
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Role
+                          Audience
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Created
@@ -662,9 +708,14 @@ export default function AdminContent({ initialData }: AdminContentProps) {
                             <div className="text-sm text-gray-900">{user.email}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
-                              {user.role}
-                            </span>
+                            {(() => {
+                              const audience = getAudienceLabel(user)
+                              return (
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getAudienceBadgeColor(audience)}`}>
+                                  {audience}
+                                </span>
+                              )
+                            })()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {new Date(user.createdAt).toLocaleDateString()}
@@ -1260,11 +1311,48 @@ export default function AdminContent({ initialData }: AdminContentProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-500 mb-1">Role</div>
-                  <div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeColor(selectedUser.role)}`}>
-                      {selectedUser.role}
-                    </span>
+                  <div className="text-sm text-gray-500 mb-1">Audience</div>
+                  <div className="space-y-3">
+                    <div>
+                      {(() => {
+                        const audience = getAudienceLabel(selectedUser)
+                        return (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getAudienceBadgeColor(audience)}`}>
+                            {audience}
+                          </span>
+                        )
+                      })()}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Change audience
+                      </label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60"
+                        disabled={audienceUpdating}
+                        value={
+                          selectedUser.role === "ADMIN"
+                            ? "ADMIN"
+                            : (selectedUser.accountType || "CANDIDATE").toUpperCase() === "EMPLOYER"
+                            ? "EMPLOYER"
+                            : "CANDIDATE"
+                        }
+                        onChange={(e) => {
+                          const next = e.target.value as "ADMIN" | "CANDIDATE" | "EMPLOYER"
+                          handleUpdateUserAudience(selectedUser.id, next)
+                        }}
+                      >
+                        <option value="CANDIDATE">Candidate</option>
+                        <option value="EMPLOYER">Employer / Recruiter</option>
+                        <option value="ADMIN">Admin (MacTech)</option>
+                      </select>
+                      {audienceError && (
+                        <p className="text-xs text-red-600 mt-2">{audienceError}</p>
+                      )}
+                      {audienceUpdating && (
+                        <p className="text-xs text-gray-500 mt-2">Updating…</p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
