@@ -4,7 +4,6 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 
 export default function SignInPage() {
   const router = useRouter()
@@ -47,14 +46,14 @@ export default function SignInPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center mb-8">
-            <Image
-              src="/cleard-mark.png"
-              alt="clearD"
-              width={200}
-              height={80}
-              className="h-32 w-auto drop-shadow-md"
-              priority
-            />
+            <div className="inline-flex items-center justify-center bg-white/90 border-2 border-neutral-200 rounded-2xl px-6 py-4 shadow-sm">
+              <img
+                src="/cleard.png"
+                alt="clearD"
+                className="h-14 w-auto"
+                loading="eager"
+              />
+            </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
             Sign in to clearD
