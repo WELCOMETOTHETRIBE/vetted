@@ -45,11 +45,12 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
     }
   }, [dropdownOpen, mobileMenuOpen, mobileSearchOpen])
 
-  // Base navigation items - include candidates for all users
-  const baseNavItems = [
+  // Base navigation items
+  const basePrimaryNavItems = [
     { href: "/feed", label: "Feed", icon: "📰", iconOnly: false },
     { href: "/jobs", label: "Jobs", icon: "💼", iconOnly: false },
-    { href: "/network", label: "Trusted Network", icon: "👥", iconOnly: false },
+  ]
+  const baseIconNavItems = [
     { href: "/messages", label: "Messages", icon: "💬", iconOnly: true },
     { href: "/notifications", label: "Notifications", icon: "🔔", iconOnly: true },
   ]
@@ -57,14 +58,18 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
   // Add Admin tab for admins
   const adminNavItems = isAdmin
     ? [
-        { href: "/candidates", label: "Talent Pools", icon: "🎯", iconOnly: false },
+        { href: "/candidates", label: "Talent Pool", icon: "🎯", iconOnly: false },
         { href: "/admin", label: "Console", icon: "⚙️", iconOnly: true },
       ]
     : []
-  const navItems = [...baseNavItems, ...adminNavItems]
+  const adminPrimaryNavItems = adminNavItems.filter((i) => !i.iconOnly)
+  const adminIconNavItems = adminNavItems.filter((i) => i.iconOnly)
+
+  // Desktop order: primary links -> admin primary -> icon links (messages/bell) -> admin icon (console)
+  const navItems = [...basePrimaryNavItems, ...adminPrimaryNavItems, ...baseIconNavItems, ...adminIconNavItems]
   const mobileNavItems = [
-    ...baseNavItems.filter((i) => !i.iconOnly),
-    ...adminNavItems.filter((i) => !i.iconOnly),
+    ...basePrimaryNavItems,
+    ...adminPrimaryNavItems,
     { href: "/messages", label: "Messages", icon: "💬", iconOnly: false },
     { href: "/notifications", label: "Notifications", icon: "🔔", iconOnly: false },
     ...(isAdmin ? [{ href: "/admin", label: "Console", icon: "⚙️", iconOnly: false }] : []),
@@ -120,6 +125,21 @@ const NavbarClient = ({ user, userId, isAdmin = false }: NavbarClientProps) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
+
+              {isAdmin && (
+                <Link
+                  href="/candidates"
+                  className={`p-2.5 rounded-xl transition-all duration-200 ${
+                    pathname === "/candidates"
+                      ? "text-primary-700 bg-primary-50 shadow-sm"
+                      : "text-content-secondary hover:bg-surface-secondary hover:text-content-primary"
+                  } focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1`}
+                  aria-label="Talent Pool"
+                  title="Talent Pool"
+                >
+                  <span className="text-base" aria-hidden="true">🎯</span>
+                </Link>
+              )}
 
               <Link
                 href="/messages"
