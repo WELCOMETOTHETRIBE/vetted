@@ -3,6 +3,7 @@
 import { useState } from "react"
 import PostComposer from "./PostComposer"
 import PostCard from "./PostCard"
+import MissionUpdatesPanel from "./MissionUpdatesPanel"
 
 interface Post {
   id: string
@@ -165,7 +166,7 @@ export default function FeedContent({ initialPosts, userId }: FeedContentProps) 
               Mission Updates
             </h1>
             <p className="text-sm text-neutral-600 mt-1">
-              Professional, mission-oriented updates from your trusted network.
+              Role-tailored mission signals and professional network updates.
             </p>
           </div>
 
@@ -213,6 +214,14 @@ export default function FeedContent({ initialPosts, userId }: FeedContentProps) 
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <MissionUpdatesPanel />
+
+      <div className="px-1">
+        <div className="text-xs font-semibold text-neutral-600 tracking-wide uppercase">
+          Network updates
         </div>
       </div>
 

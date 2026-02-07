@@ -59,6 +59,7 @@ model User {
   image         String?
   password      String? // Hashed password for email/password auth
   role          UserRole  @default(USER)
+  accountType   AccountType @default(CANDIDATE)
   handle        String?   @unique // Custom handle for profile URLs
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
@@ -123,6 +124,11 @@ model User {
 enum UserRole {
   USER
   ADMIN
+}
+
+enum AccountType {
+  CANDIDATE
+  EMPLOYER
 }
 
 // User Profile (extended profile info)
@@ -552,6 +558,45 @@ enum NotificationType {
   JOB_APPLICATION_UPDATED
   GROUP_INVITATION
   MENTION
+}
+
+// Operator Ops tickets (bugs + feature requests)
+model OpsTicket {
+  id          String            @id @default(cuid())
+  type        OpsTicketType     @default(BUG)
+  status      OpsTicketStatus   @default(OPEN)
+  priority    OpsTicketPriority @default(MEDIUM)
+  title       String
+  description String?           @db.Text
+  createdById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([createdById])
+}
+
+enum OpsTicketType {
+  BUG
+  FEATURE
+}
+
+enum OpsTicketStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+enum OpsTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 // Candidates (scraped from LinkedIn via extension)

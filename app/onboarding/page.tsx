@@ -7,6 +7,7 @@ import NavbarAdvanced from "@/components/NavbarAdvanced"
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
+  const [accountType, setAccountType] = useState<"CANDIDATE" | "EMPLOYER">("CANDIDATE")
   const [formData, setFormData] = useState({
     headline: "",
     location: "",
@@ -19,6 +20,17 @@ export default function OnboardingPage() {
     setLoading(true)
 
     try {
+      // Persist audience selection first
+      const acctRes = await fetch("/api/account-type", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountType }),
+      })
+      if (!acctRes.ok) {
+        const acctErr = await acctRes.json().catch(() => ({}))
+        throw new Error(acctErr.error || "Failed to set account type")
+      }
+
       const response = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -55,6 +67,51 @@ export default function OnboardingPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+              <div className="text-sm font-semibold text-gray-900 mb-2">I’m using clearD as</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                  accountType === "CANDIDATE" ? "bg-white border-blue-300" : "bg-white/70 border-gray-200 hover:border-gray-300"
+                }`}>
+                  <input
+                    type="radio"
+                    name="accountType"
+                    value="CANDIDATE"
+                    checked={accountType === "CANDIDATE"}
+                    onChange={() => setAccountType("CANDIDATE")}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Cleared Professional</div>
+                    <div className="text-xs text-gray-600">
+                      Build a cleared mission profile and discover aligned roles.
+                    </div>
+                  </div>
+                </label>
+                <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                  accountType === "EMPLOYER" ? "bg-white border-blue-300" : "bg-white/70 border-gray-200 hover:border-gray-300"
+                }`}>
+                  <input
+                    type="radio"
+                    name="accountType"
+                    value="EMPLOYER"
+                    checked={accountType === "EMPLOYER"}
+                    onChange={() => setAccountType("EMPLOYER")}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Hiring Team</div>
+                    <div className="text-xs text-gray-600">
+                      Review cleared talent pools and engage mission-ready candidates.
+                    </div>
+                  </div>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">
+                Admin accounts can manage both experiences.
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Headline

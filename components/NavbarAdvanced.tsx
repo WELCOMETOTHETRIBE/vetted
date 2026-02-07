@@ -6,6 +6,7 @@ import NavbarClient from "./NavbarClient"
 const NavbarAdvanced = async () => {
   let session = null
   let isAdmin = false
+  let accountType: "CANDIDATE" | "EMPLOYER" | undefined = undefined
 
   try {
     session = await auth()
@@ -18,16 +19,24 @@ const NavbarAdvanced = async () => {
     try {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { role: true },
+        select: { role: true, accountType: true },
       })
       isAdmin = user?.role === "ADMIN"
+      accountType = user?.accountType
     } catch (error) {
       // Fallback if database is not available
       console.warn("Could not fetch user role:", error)
     }
   }
 
-  return <NavbarClient user={session?.user} userId={session?.user?.id} isAdmin={isAdmin} />
+  return (
+    <NavbarClient
+      user={session?.user}
+      userId={session?.user?.id}
+      isAdmin={isAdmin}
+      accountType={accountType}
+    />
+  )
 }
 
 export default NavbarAdvanced

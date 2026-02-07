@@ -139,10 +139,11 @@ export default async function CandidatesPage({
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { role: true, accountType: true },
     })
 
-    if (user?.role !== "ADMIN") {
+    const canAccess = user?.role === "ADMIN" || user?.accountType === "EMPLOYER"
+    if (!canAccess) {
       redirect("/feed")
     }
 

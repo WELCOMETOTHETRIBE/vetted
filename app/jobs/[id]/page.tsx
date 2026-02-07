@@ -82,11 +82,16 @@ export default async function JobDetailPage({
     redirect("/auth/signin")
   }
 
-  // Get user role
+  // Get user role + audience
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { role: true, accountType: true },
   })
+
+  const canAccessJobs = user?.role === "ADMIN" || user?.accountType !== "EMPLOYER"
+  if (!canAccessJobs) {
+    redirect("/feed")
+  }
 
   const { id } = await params
   const job = await getJob(id)

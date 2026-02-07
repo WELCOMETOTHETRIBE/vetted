@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { parseResumeText, extractTextFromResume } from "@/lib/ai/resume-parser"
 
+export const runtime = "nodejs"
+
 /**
  * POST /api/profile/complete-from-resume
  * Upload resume and auto-complete user profile

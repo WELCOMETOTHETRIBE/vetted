@@ -1,8 +1,26 @@
 import { Suspense } from "react"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { redirect } from "next/navigation"
 import NavbarAdvanced from "@/components/NavbarAdvanced"
 import JobApplyContent from "./JobApplyContent"
 
-export default function JobApplyPage() {
+export default async function JobApplyPage() {
+  const session = await auth()
+  if (!session?.user) {
+    redirect("/auth/signin")
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, accountType: true },
+  })
+
+  const canAccessJobs = user?.role === "ADMIN" || user?.accountType !== "EMPLOYER"
+  if (!canAccessJobs) {
+    redirect("/feed")
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavbarAdvanced />
