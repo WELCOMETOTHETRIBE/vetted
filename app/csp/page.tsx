@@ -15,10 +15,15 @@ export default function CspPage() {
           <div className="flex items-center justify-between h-16">
             <Link
               href="/"
-              className="text-xl font-bold text-gradient hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg px-2 py-1"
+              className="hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg px-2 py-1"
               aria-label="Go to homepage"
             >
-              clearD
+              <img
+                src="/cleard.png"
+                alt="clearD"
+                className="h-9 w-auto"
+                loading="eager"
+              />
             </Link>
             <nav className="flex items-center gap-4">
               <Link

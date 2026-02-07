@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
 import { useTheme } from "@/components/Providers"
 
@@ -332,9 +331,12 @@ export default function Home() {
           <div className="container-fluid">
             <div className="flex justify-between items-center h-16">
               <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-                <span className="text-2xl font-extrabold tracking-tight text-gradient">
-                  clearD
-                </span>
+                <img
+                  src="/cleard.png"
+                  alt="clearD"
+                  className="h-10 w-auto"
+                  loading="eager"
+                />
               </Link>
 
               <div className="hidden md:flex items-center space-x-8">
@@ -371,13 +373,14 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative py-32 md:py-40">
           <div className="container-fluid text-center">
-            {/* Wordmark (no image background/border) */}
-            <div
-              className={`flex justify-center mb-10 transition-all duration-1000 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
-            >
-              <div className="text-[clamp(4rem,12vw,12rem)] font-black tracking-tight text-gradient leading-none">
-                clearD
-              </div>
+            {/* Logo */}
+            <div className={`flex justify-center mb-10 transition-all duration-1000 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
+              <img
+                src="/cleard.png"
+                alt="clearD"
+                className="h-[clamp(6rem,18vw,18rem)] w-auto drop-shadow-2xl"
+                loading="eager"
+              />
             </div>
 
             {/* Hero Content */}
