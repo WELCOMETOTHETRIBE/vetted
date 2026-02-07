@@ -97,6 +97,7 @@ export default async function FeedPage() {
               </div>
             </div>
           </aside>
+        </div>
       </div>
     </div>
   )
