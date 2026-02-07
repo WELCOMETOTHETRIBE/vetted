@@ -77,15 +77,26 @@ export default async function FeedPage() {
     <div className="min-h-screen bg-gray-50">
       <NavbarAdvanced />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           <Sidebar className="hidden lg:block" />
-          <main className="flex-1 max-w-2xl">
+          <main className="flex-1 w-full max-w-2xl mx-auto lg:mx-0">
             <FeedContent initialPosts={posts} userId={session.user.id} />
           </main>
-          <aside className="hidden lg:block w-80 space-y-4">
-            <TechTrends />
+          <aside className="w-full lg:w-80 space-y-4">
+            <div className="lg:sticky lg:top-24">
+              <div className="hidden lg:block">
+                <TechTrends />
+              </div>
+              <div className="lg:hidden">
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <h2 className="text-sm font-semibold text-gray-900 mb-1">Mission brief</h2>
+                  <p className="text-sm text-gray-600">
+                    Keep updates professional and security-conscious. Avoid posting classified or sensitive details.
+                  </p>
+                </div>
+              </div>
+            </div>
           </aside>
-        </div>
       </div>
     </div>
   )

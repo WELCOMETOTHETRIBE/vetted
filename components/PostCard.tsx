@@ -105,17 +105,17 @@ export default function PostCard({
   }
 
   return (
-    <article className="bg-white rounded-xl border border-neutral-200 shadow-card p-6 mb-4 hover:shadow-card-hover transition-all duration-200">
+    <article className="bg-white rounded-2xl border border-neutral-200 shadow-card p-5 sm:p-6 mb-4 hover:shadow-card-hover transition-all duration-200">
       {/* Author Info */}
       <div className="flex items-start space-x-3 mb-4">
         <Link href={`/profile/${post.author.id}`} className="flex-shrink-0">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center overflow-hidden border-2 border-primary-200 shadow-sm">
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center overflow-hidden border-2 border-primary-200 shadow-sm">
             {post.author.image ? (
               <Image
                 src={post.author.image}
                 alt={post.author.name || "User"}
-                width={48}
-                height={48}
+                width={44}
+                height={44}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -132,14 +132,17 @@ export default function PostCard({
             </h3>
           </Link>
           <p className="text-sm text-neutral-500">
-            {post.author.handle && `@${post.author.handle}`} · {formatDate(post.createdAt)}
+            {post.author.handle ? `@${post.author.handle}` : "Member"}{" "}
+            <span aria-hidden="true">·</span> {formatDate(post.createdAt)}
           </p>
         </div>
       </div>
 
       {/* Post Content */}
       <div className="mb-4">
-        <p className="text-neutral-900 whitespace-pre-wrap leading-relaxed">{renderContent(post.content)}</p>
+        <p className="text-neutral-900 whitespace-pre-wrap leading-relaxed text-[15px] sm:text-base">
+          {renderContent(post.content)}
+        </p>
       </div>
 
       {/* Post Image */}
@@ -190,55 +193,58 @@ export default function PostCard({
       )}
 
       {/* Actions */}
-      <div className="flex items-center space-x-6 pt-4 border-t border-neutral-100">
+      <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
         <button
           onClick={() => onLike(post.id)}
-          className={`flex items-center space-x-2 text-sm font-medium transition-colors rounded-lg px-2 py-1 ${
+          className={`flex items-center gap-2 text-sm font-semibold transition-colors rounded-xl px-3 py-2 ${
             hasLiked 
-              ? "text-primary-600 bg-primary-50" 
-              : "text-neutral-600 hover:text-primary-600 hover:bg-neutral-50"
+              ? "text-primary-700 bg-primary-50" 
+              : "text-neutral-700 hover:text-primary-700 hover:bg-neutral-50"
           }`}
           aria-label={`${hasLiked ? 'Unlike' : 'Like'} post`}
         >
-          <span className="text-base">{hasLiked ? "❤️" : "🤍"}</span>
-          <span>{likeCount}</span>
+          <span className="text-base" aria-hidden="true">{hasLiked ? "❤️" : "🤍"}</span>
+          <span>{likeCount.toLocaleString()}</span>
+          <span className="hidden sm:inline text-neutral-500 font-medium">Acknowledge</span>
         </button>
 
         <button
           onClick={() => setShowComments(!showComments)}
-          className="flex items-center space-x-2 text-sm font-medium text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 rounded-lg px-2 py-1 transition-colors"
+          className="flex items-center gap-2 text-sm font-semibold text-neutral-700 hover:text-primary-700 hover:bg-neutral-50 rounded-xl px-3 py-2 transition-colors"
           aria-label="Toggle comments"
         >
-          <span className="text-base">💬</span>
-          <span>{commentCount}</span>
+          <span className="text-base" aria-hidden="true">💬</span>
+          <span>{commentCount.toLocaleString()}</span>
+          <span className="hidden sm:inline text-neutral-500 font-medium">Comment</span>
         </button>
 
         <button
           onClick={() => onRepost(post.id)}
-          className="flex items-center space-x-2 text-sm font-medium text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 rounded-lg px-2 py-1 transition-colors"
+          className="flex items-center gap-2 text-sm font-semibold text-neutral-700 hover:text-primary-700 hover:bg-neutral-50 rounded-xl px-3 py-2 transition-colors"
           aria-label="Repost"
         >
-          <span className="text-base">🔄</span>
-          <span>{repostCount}</span>
+          <span className="text-base" aria-hidden="true">🔄</span>
+          <span>{repostCount.toLocaleString()}</span>
+          <span className="hidden sm:inline text-neutral-500 font-medium">Reshare</span>
         </button>
       </div>
 
       {/* Comment Form */}
       {showComments && (
         <div className="mt-4 pt-4 border-t border-neutral-100 animate-slide-down">
-          <form onSubmit={handleCommentSubmit} className="flex space-x-2">
+          <form onSubmit={handleCommentSubmit} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
-              className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-neutral-50 focus:bg-white"
+              placeholder="Add a professional comment…"
+              className="flex-1 px-4 py-2.5 border-2 border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-neutral-50 focus:bg-white"
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             >
-              Comment
+              Send
             </button>
           </form>
         </div>
