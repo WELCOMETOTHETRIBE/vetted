@@ -34,8 +34,9 @@ function ParticleSystem() {
       color: string
     }> = []
 
-    // Create particles
-    for (let i = 0; i < 100; i++) {
+    // Create particles (reduce count on small screens for smoother mobile performance)
+    const particleCount = canvas.width < 640 ? 40 : 100
+    for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -76,15 +77,16 @@ function ParticleSystem() {
         ctx.fill()
         ctx.restore()
 
-        // Draw connections to nearby particles
+        // Draw connections to nearby particles (shorter distance on small screens)
+        const connectionDistance = canvas.width < 640 ? 70 : 100
         particles.slice(index + 1).forEach(otherParticle => {
           const dx = particle.x - otherParticle.x
           const dy = particle.y - otherParticle.y
           const distance = Math.sqrt(dx * dx + dy * dy)
 
-          if (distance < 100) {
+          if (distance < connectionDistance) {
             ctx.save()
-            ctx.globalAlpha = (1 - distance / 100) * 0.1
+            ctx.globalAlpha = (1 - distance / connectionDistance) * 0.1
             ctx.strokeStyle = particle.color
             ctx.lineWidth = 0.5
             ctx.beginPath()
@@ -314,10 +316,10 @@ export default function Home() {
       <ParticleSystem />
 
       {/* Theme Toggle */}
-      <div className="fixed top-6 right-6 z-50">
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50">
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="p-3 rounded-full glass hover:bg-surface-elevated transition-all duration-300"
+          className="p-2.5 sm:p-3 rounded-full glass hover:bg-surface-elevated transition-all duration-300"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? '☀️' : '🌙'}
@@ -371,14 +373,14 @@ export default function Home() {
         </nav>
 
         {/* Hero Section */}
-        <section className="relative py-32 md:py-40">
+        <section className="relative py-20 sm:py-24 md:py-40">
           <div className="container-fluid text-center">
             {/* Logo */}
             <div className={`flex justify-center mb-10 transition-all duration-1000 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
               <img
                 src="/cleard.png"
                 alt="clearD"
-                className="h-[clamp(6rem,18vw,18rem)] w-auto drop-shadow-2xl"
+                className="h-[clamp(4.5rem,22vw,16rem)] max-w-[92vw] w-auto drop-shadow-2xl object-contain"
                 loading="eager"
               />
             </div>
