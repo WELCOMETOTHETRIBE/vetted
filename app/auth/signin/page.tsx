@@ -45,7 +45,10 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <div className="flex justify-center mb-8">
+          <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
+            Sign in to
+          </h2>
+          <div className="flex justify-center mt-4 mb-4">
             <div className="inline-flex items-center justify-center bg-white/90 border-2 border-neutral-200 rounded-2xl px-6 py-4 shadow-sm">
               <img
                 src="/cleard.png"
@@ -55,9 +58,6 @@ export default function SignInPage() {
               />
             </div>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-neutral-900">
-            Sign in to clearD
-          </h2>
           <p className="mt-3 text-center text-sm text-neutral-800">
             Or{" "}
             <Link href="/auth/signup" className="font-semibold text-primary-700 hover:text-primary-800 transition-colors">
