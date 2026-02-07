@@ -83,11 +83,244 @@ SOURCE_CONFIG = {
         "default_query": "software engineer",
         "search_template": 'site:taleo.net inurl:careersection "{query}"',
     },
+    # clearD cleared-job strategy (multi-site): uses custom query generation below
+    "cleared": {
+        "site": "multi",
+        "default_query": "software engineer",
+        "search_template": "",
+    },
 }
 
 MAX_RESULTS = 100  # target number of URLs to collect
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 OUTPUT_FILE = os.getenv("ASHBY_OUTPUT_FILE", "ashby_jobs.json")
+
+# ---------- clearD CLEARED STRATEGY ----------
+
+CLEARED_PLATFORM_DOMAINS = [
+    "jobs.lever.co",
+    "boards.greenhouse.io",
+    "jobs.ashbyhq.com",
+]
+
+CLEARED_PLATFORM_QUERY = " OR ".join([f"site:{d}" for d in CLEARED_PLATFORM_DOMAINS])
+
+CLEARANCE_SIGNALS = [
+    "active clearance",
+    "ability to obtain a security clearance",
+    "ability to obtain a clearance",
+    "must be eligible for a clearance",
+    "must be eligible for a security clearance",
+    "Secret clearance",
+    "Top Secret",
+    "TS/SCI",
+    "DoD clearance",
+]
+
+DEFENSE_SIGNALS = [
+    "Department of Defense",
+    "DoD",
+    "IC community",
+    "federal contractor",
+    "government customer",
+    "national security",
+]
+
+# Clearance confidence scoring weights (clearD)
+CLEARANCE_SCORE_WEIGHTS = {
+    "active_clearance_required": 50,
+    "ts_sci": 40,
+    "ability_to_obtain": 25,
+    "defense_prime_employer": 20,
+    "dod_ic_language": 15,
+    "gov_customer_language": 10,
+}
+
+
+def compute_clearance_confidence(company: str | None, full_text: str) -> dict:
+    """
+    Production-grade cleared inference:
+    - Never rely on title alone.
+    - Score on clearance keywords, defense employer match, and defense/government language density.
+    """
+    txt = (full_text or "").lower()
+    comp = (company or "").lower()
+
+    score = 0
+    signals: list[str] = []
+
+    # Explicit active clearance required (high precision)
+    if re.search(r"\bactive (?:security )?clearance\b", txt) or re.search(r"\bactive (?:secret|top secret|ts\/sci|ts sci)\b", txt):
+        score += CLEARANCE_SCORE_WEIGHTS["active_clearance_required"]
+        signals.append("active_clearance_required")
+
+    # TS/SCI mentioned
+    if re.search(r"\bts\/sci\b|\bts sci\b|\btop secret\b|\bts clearance\b|\bsci\b", txt):
+        score += CLEARANCE_SCORE_WEIGHTS["ts_sci"]
+        signals.append("ts_sci")
+
+    # Ability/eligible to obtain clearance (transition-friendly)
+    if re.search(r"\bability to obtain (a )?(security )?clearance\b", txt) or re.search(r"\beligible for (a )?(security )?clearance\b", txt) or re.search(r"\bmust be eligible for (a )?(security )?clearance\b", txt):
+        score += CLEARANCE_SCORE_WEIGHTS["ability_to_obtain"]
+        signals.append("ability_to_obtain")
+
+    # Defense prime employer match (critical)
+    for prime in DEFENSE_PRIMES:
+        p = prime.lower()
+        if p and (p in comp or p in txt):
+            score += CLEARANCE_SCORE_WEIGHTS["defense_prime_employer"]
+            signals.append("defense_prime_employer")
+            break
+
+    # DoD / IC / national security language density
+    defense_hits = 0
+    for s in DEFENSE_SIGNALS:
+        if s.lower() in txt:
+            defense_hits += 1
+    if defense_hits > 0:
+        score += CLEARANCE_SCORE_WEIGHTS["dod_ic_language"]
+        signals.append("dod_ic_language")
+
+    # Government customer references
+    if re.search(r"\bgovernment customer\b|\bfederal customer\b|\bgovernment client\b|\bfederal client\b|\bgovernment agency\b|\bpublic sector\b", txt):
+        score += CLEARANCE_SCORE_WEIGHTS["gov_customer_language"]
+        signals.append("gov_customer_language")
+
+    category = "exclude"
+    if score >= 60:
+        category = "cleared_required"
+    elif score >= 30:
+        category = "clearance_eligible"
+
+    return {
+        "score": score,
+        "category": category,
+        "signals": signals,
+    }
+
+# Defense prime / high-signal employer allowlist
+DEFENSE_PRIMES = [
+    "Lockheed Martin",
+    "Northrop Grumman",
+    "Raytheon",
+    "Boeing Defense",
+    "L3Harris",
+    "BAE Systems",
+    "Leidos",
+    "SAIC",
+    "CACI",
+    "General Dynamics",
+    "MITRE",
+    "Aerospace Corporation",
+]
+
+ROLE_FAMILIES_DEFAULT = [
+    "software engineer",
+    "systems engineer",
+    "network engineer",
+]
+
+BROAD_ROLE_FAMILIES = [
+    "engineer",
+    "analyst",
+    "cyber",
+    "systems",
+    "developer",
+]
+
+INTEL_ROLE_FAMILIES = [
+    "engineer",
+    "developer",
+    "analyst",
+]
+
+AEROSPACE_SIGNALS = [
+    "aerospace",
+    "space systems",
+    "satellite",
+    "mission systems",
+]
+
+
+def _or_group(items: list[str]) -> str:
+    quoted = [f"\"{x}\"" for x in items]
+    return "(" + " OR ".join(quoted) + ")"
+
+
+def build_cleared_queries(role_query: str | None) -> list[str]:
+    """
+    Build gold-standard SERP queries for cleared jobs.
+    We intentionally search: platform job boards + clearance language + role + defense language.
+    """
+    role_query = (role_query or "").strip().lower()
+    roles = ROLE_FAMILIES_DEFAULT
+    if role_query:
+        # Accept comma-separated role families for power users
+        if "," in role_query:
+            roles = [r.strip() for r in role_query.split(",") if r.strip()]
+        else:
+            # Single role family override
+            roles = [role_query]
+
+    q1 = f"{CLEARED_PLATFORM_QUERY} {_or_group(CLEARANCE_SIGNALS)} {_or_group(roles)} {_or_group(['defense','DoD','government'])}"
+    q2 = f"site:boards.greenhouse.io {_or_group(DEFENSE_PRIMES)} ({_or_group(['clearance','security clearance','TS/SCI','Secret clearance'])})"
+    q3 = f"(site:jobs.lever.co OR site:ashbyhq.com) ({_or_group(['eligible for a security clearance','ability to obtain a clearance','ability to obtain a security clearance'])}) {_or_group(BROAD_ROLE_FAMILIES)}"
+    q4 = f"(site:boards.greenhouse.io OR site:jobs.lever.co) ({_or_group(['TS/SCI','polygraph','IC clearance'])}) {_or_group(INTEL_ROLE_FAMILIES)}"
+    q5 = f"(site:boards.greenhouse.io OR site:ashbyhq.com) {_or_group(AEROSPACE_SIGNALS)} ({_or_group(['clearance','DoD'])})"
+
+    return [q1, q2, q3, q4, q5]
+
+
+def _domain_allowed(link: str) -> bool:
+    for d in CLEARED_PLATFORM_DOMAINS:
+        if d in link:
+            return True
+    return False
+
+
+def fetch_job_urls_cleared(role_query: str | None = None) -> list[str]:
+    """Fetch job URLs using clearD's defense-first query grammar."""
+    if not SERPAPI_KEY:
+        raise RuntimeError("SERPAPI_KEY environment variable is not set.")
+
+    queries = build_cleared_queries(role_query)
+    print(f"[search] cleared-mode: running {len(queries)} SERP queries")
+
+    urls: list[str] = []
+    seen = set()
+
+    for idx, query in enumerate(queries, start=1):
+        print(f"[search] ({idx}/{len(queries)}) q={query!r}")
+        params = {
+            "engine": "google",
+            "q": query,
+            "api_key": SERPAPI_KEY,
+            "num": 100,
+            "hl": "en",
+            "gl": "us",
+        }
+        search = GoogleSearch(params)
+        results = search.get_dict()
+
+        for item in results.get("organic_results", []):
+            link = item.get("link")
+            if not link:
+                continue
+            if not _domain_allowed(link):
+                continue
+
+            base = link.split("?", 1)[0]
+            if base in seen:
+                continue
+            seen.add(base)
+            urls.append(base)
+
+            if len(urls) >= MAX_RESULTS:
+                print(f"[search] cleared-mode: reached MAX_RESULTS={MAX_RESULTS}")
+                return urls
+
+    print(f"[search] cleared-mode: Collected {len(urls)} URLs")
+    return urls
 
 # ---------- SEARCH PHASE (SerpAPI) ----------
 
@@ -96,6 +329,9 @@ def fetch_job_urls(search_query: str | None = None, source: str = "ashby") -> li
     """Fetch job URLs from Google search using SerpAPI."""
     if not SERPAPI_KEY:
         raise RuntimeError("SERPAPI_KEY environment variable is not set.")
+
+    if source == "cleared":
+        return fetch_job_urls_cleared(search_query)
 
     # Get source config
     if source not in SOURCE_CONFIG:
@@ -1038,6 +1274,18 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
 
         meta = derive_meta(description_text + "\n\n" + (dont_work_here_raw or ""))
 
+        # Clearance confidence scoring (post-scrape text-based inference)
+        scoring_text = "\n\n".join(
+            [
+                raw_title or "",
+                description_text or "",
+                what_we_require_raw or "",
+                role_raw or "",
+                compensation_raw or "",
+            ]
+        )
+        clearance = compute_clearance_confidence(company, scoring_text)
+
         # Map source to output format
         source_map = {
             "ashby": "ashbyhq",
@@ -1061,6 +1309,7 @@ async def scrape_job(page, url: str, source: str = "ashby") -> dict:
             "employment_type": employment_type,
             "department": department,
             "source": source_map.get(source, source),
+            "clearance": clearance,
             "overview": {
                 "headline": headline,
                 "summary": overview_summary,
@@ -1116,8 +1365,26 @@ async def scrape_jobs(urls: list[str], source: str = "ashby") -> list[dict]:
 
         for i, url in enumerate(urls, start=1):
             try:
-                job = await scrape_job(page, url, source)
-                jobs.append(job)
+                # Auto-detect ATS source when running cleared-mode (multi-domain list)
+                detected_source = source
+                if source == "cleared":
+                    if "boards.greenhouse.io" in url:
+                        detected_source = "greenhouse"
+                    elif "jobs.lever.co" in url or ".lever.co/" in url:
+                        detected_source = "lever"
+                    elif "jobs.ashbyhq.com" in url:
+                        detected_source = "ashby"
+
+                job = await scrape_job(page, url, detected_source)
+
+                # Apply default filtering: exclude low-confidence cleared jobs
+                clearance = job.get("clearance") or {}
+                score = clearance.get("score", 0)
+                category = clearance.get("category")
+                if category == "exclude" or score < 30:
+                    print(f"[score] Excluding (score={score}) {job.get('title')}")
+                else:
+                    jobs.append(job)
                 print(f"[scrape] Done {i}/{len(urls)}")
             except Exception as e:
                 print(f"[scrape] ERROR on {url}: {e}")
@@ -1150,7 +1417,7 @@ def main():
         parser = argparse.ArgumentParser(description="Scrape jobs from various job boards")
         parser.add_argument("query", nargs="?", help="Search query (e.g., 'software engineer', 'Product Designer')")
         parser.add_argument("--source", default="ashby", 
-                          choices=["ashby", "greenhouse", "lever", "workday", "workday_wd5", 
+                          choices=["cleared", "ashby", "greenhouse", "lever", "workday", "workday_wd5", 
                                   "smartrecruiters", "jobvite", "icims", "icims_careers", 
                                   "workable", "workable_jobs", "taleo"],
                           help="Job board source (default: ashby)")

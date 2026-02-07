@@ -3,6 +3,7 @@
 import { useState } from "react"
 
 type ATSSystem =
+  | "cleared"
   | "ashby"
   | "greenhouse"
   | "lever"
@@ -25,6 +26,13 @@ interface ATSConfig {
 }
 
 const ATS_CONFIG: Record<ATSSystem, ATSConfig> = {
+  cleared: {
+    label: "clearD Cleared (multi-board)",
+    site: "jobs.lever.co + boards.greenhouse.io + jobs.ashbyhq.com",
+    defaultQuery: "software engineer",
+    description: "Defense-first queries + clearance confidence scoring (recommended)",
+    category: "primary",
+  },
   ashby: {
     label: "Ashby",
     site: "jobs.ashbyhq.com",
@@ -131,6 +139,11 @@ function buildQuery(system: ATSSystem, query: string, location?: string): string
   const baseQuery = query.trim()
   let finalQuery = ""
 
+  if (system === "cleared") {
+    // In cleared-mode, the backend generates multiple gold-standard SERP queries.
+    // This preview is intentionally simple.
+    finalQuery = `cleared-mode: ${baseQuery || config.defaultQuery}`
+  } else
   // Handle special query patterns
   if (system === "icims") {
     finalQuery = `site:icims.com inurl:/jobs/ "${baseQuery}"`
@@ -149,7 +162,9 @@ function buildQuery(system: ATSSystem, query: string, location?: string): string
 
   // Add location if provided
   if (location && location.trim()) {
-    finalQuery = `${finalQuery} "${location.trim()}"`
+    if (system !== "cleared") {
+      finalQuery = `${finalQuery} "${location.trim()}"`
+    }
   }
 
   return finalQuery
@@ -322,7 +337,7 @@ export default function ATSJobScraper() {
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">ATS Job Scraper</h3>
       <p className="text-sm text-gray-600 mb-6">
-        Scrape job postings from various ATS platforms using Google search queries
+        Scrape job postings from ATS platforms via SerpAPI + Playwright. Use the clearD Cleared mode for defense-first queries and clearance scoring.
       </p>
 
       {/* Category Tabs */}
@@ -433,7 +448,7 @@ export default function ATSJobScraper() {
           disabled={loading}
         />
         <p className="mt-1 text-xs text-gray-500">
-          Keep queries simple (avoid Boolean operators like OR/AND)
+          For cleared-mode, enter a role family (e.g., \"software engineer\", \"systems engineer\", \"cyber analyst\"). The scraper generates the defense-first SERP queries automatically.
         </p>
       </div>
 

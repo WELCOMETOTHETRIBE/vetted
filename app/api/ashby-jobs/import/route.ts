@@ -101,6 +101,21 @@ export async function POST(req: Request) {
         const companyName = jobData.company || "Unknown Company"
         const jobTitle = jobData.title || "Untitled Position"
 
+        // Optional: clearance confidence metadata (computed during scrape)
+        const clearanceScore = jobData?.clearance?.score
+        const clearanceCategory = jobData?.clearance?.category
+        const clearanceSignals = Array.isArray(jobData?.clearance?.signals) ? jobData.clearance.signals : []
+
+        // Enforce minimum confidence threshold at import-time as a safety net
+        if (typeof clearanceScore === "number" && clearanceScore < 30) {
+          skipped.push({
+            job: jobTitle,
+            company: companyName,
+            reason: `Excluded by clearance confidence score (${clearanceScore})`,
+          })
+          continue
+        }
+
         // Check if company exists, create if not
         let company = await prisma.company.findFirst({
           where: {
@@ -234,6 +249,16 @@ export async function POST(req: Request) {
 
         // Build description from scraped data
         let description = ""
+        if (typeof clearanceScore === "number" && clearanceCategory) {
+          const label =
+            clearanceCategory === "cleared_required"
+              ? "Cleared Required"
+              : clearanceCategory === "clearance_eligible"
+              ? "Clearance Eligible"
+              : "Unscored"
+          const sigText = clearanceSignals.length > 0 ? ` Signals: ${clearanceSignals.join(", ")}.` : ""
+          description += `Clearance Confidence: ${label} (score ${clearanceScore}).${sigText}\n\n`
+        }
         if (jobData.overview?.summary) {
           description += jobData.overview.summary + "\n\n"
         }
