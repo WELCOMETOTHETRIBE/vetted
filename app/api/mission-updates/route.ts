@@ -81,7 +81,7 @@ export async function GET() {
       })
       return NextResponse.json({
         audience,
-        updates: tickets.map((t) => ({
+        updates: tickets.map((t: any) => ({
           type: "opsTicket",
           id: t.id,
           ticketType: t.type,
@@ -119,7 +119,7 @@ export async function GET() {
       ])
 
       const updates = [
-        ...recentCandidates.map((c) => ({
+        ...recentCandidates.map((c: any) => ({
           type: "candidate",
           id: c.id,
           fullName: c.fullName,
@@ -129,7 +129,7 @@ export async function GET() {
           status: c.status,
           createdAt: c.createdAt,
         })),
-        ...newUsers.map((u) => ({
+        ...newUsers.map((u: any) => ({
           type: "newUser",
           id: u.id,
           name: u.name,
@@ -155,8 +155,8 @@ export async function GET() {
     ])
 
     const skills = userSkills
-      .map((us) => us.skill?.name)
-      .filter((s): s is string => !!s)
+      .map((us: any) => us.skill?.name)
+      .filter((s: any): s is string => !!s && typeof s === "string")
 
     const keywordSource = [
       profile?.headline || "",
@@ -177,7 +177,7 @@ export async function GET() {
     })
 
     const scored = jobs
-      .map((j) => {
+      .map((j: any) => {
         const jobText = `${j.title}\n${j.description || ""}\n${j.requirements || ""}`
         const { score, matchedSkills, matchedKeywords } = scoreJob(jobText, skills, keywords)
         return {
@@ -187,13 +187,13 @@ export async function GET() {
           matchedKeywords,
         }
       })
-      .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .filter((x: any) => x.score > 0)
+      .sort((a: any, b: any) => b.score - a.score)
       .slice(0, 15)
 
     return NextResponse.json({
       audience,
-      updates: scored.map((s) => ({
+      updates: scored.map((s: any) => ({
         type: "job",
         id: s.job.id,
         title: s.job.title,
