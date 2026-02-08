@@ -89,9 +89,9 @@ const NavbarClient = ({ user, userId, isAdmin = false, accountType }: NavbarClie
           <div className="flex items-center">
             <Link href="/feed" className="flex items-center hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg p-1">
               <img
-                src="/cleard-mark.png"
+                src="/cleard.png"
                 alt="clearD"
-                className="h-10 sm:h-12 md:h-14 w-auto"
+                className="h-10 sm:h-11 md:h-12 w-auto"
                 onError={(e) => {
                   // Fallback to text if image fails to load
                   const target = e.target as HTMLImageElement
