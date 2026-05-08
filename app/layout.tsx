@@ -61,12 +61,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const clerkPublishableKey =
+    process.env.CLERK_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ClerkProvider
+          publishableKey={clerkPublishableKey}
           appearance={{
             variables: {
               colorPrimary: "#22d3ee",
