@@ -2,6 +2,11 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { RefreshCw, AlertTriangle, Inbox } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 type Audience = "CANDIDATE" | "EMPLOYER" | "ADMIN"
 
@@ -85,11 +90,12 @@ export default function MissionUpdatesPanel() {
         const res = await fetch("/api/mission-updates")
         const json = (await res.json()) as MissionUpdatesResponse | { error?: string }
         if (!res.ok) {
-          throw new Error((json as any)?.error || "Failed to load mission updates")
+          throw new Error((json as { error?: string })?.error || "Failed to load mission updates")
         }
         if (mounted) setData(json as MissionUpdatesResponse)
-      } catch (e: any) {
-        if (mounted) setError(e?.message || "Failed to load mission updates")
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to load mission updates"
+        if (mounted) setError(message)
       } finally {
         if (mounted) setLoading(false)
       }
@@ -109,38 +115,43 @@ export default function MissionUpdatesPanel() {
       : { title: "Role Signals", subtitle: "New roles aligned to your mission profile." }
 
   return (
-    <section className="bg-white rounded-2xl border border-neutral-200 shadow-card px-5 py-4">
-      <div className="flex items-start justify-between gap-4">
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900">{header.title}</h2>
-          <p className="text-xs text-neutral-600 mt-1">{header.subtitle}</p>
+          <CardTitle className="text-sm">{header.title}</CardTitle>
+          <CardDescription className="text-xs mt-1">{header.subtitle}</CardDescription>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => window.location.reload()}
-          className="text-xs font-semibold text-neutral-700 hover:text-neutral-900 px-3 py-2 rounded-xl hover:bg-neutral-50 transition-colors"
+          className="gap-1.5"
         >
+          <RefreshCw className="h-3.5 w-3.5" aria-hidden />
           Refresh
-        </button>
-      </div>
+        </Button>
+      </CardHeader>
 
-      <div className="mt-4">
+      <CardContent className="pt-0">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="border border-neutral-200 rounded-2xl p-4 animate-pulse">
-                <div className="h-4 w-2/3 bg-neutral-200 rounded mb-2" />
-                <div className="h-3 w-1/2 bg-neutral-200 rounded mb-3" />
-                <div className="h-3 w-5/6 bg-neutral-200 rounded" />
+              <div key={i} className="border border-border rounded-md p-4 animate-pulse">
+                <div className="h-4 w-2/3 bg-secondary rounded mb-2" />
+                <div className="h-3 w-1/2 bg-secondary rounded mb-3" />
+                <div className="h-3 w-5/6 bg-secondary rounded" />
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="border border-red-200 bg-red-50 rounded-2xl p-4 text-sm text-red-700">
-            {error}
-          </div>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" aria-hidden />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : !data || !data.updates || data.updates.length === 0 ? (
-          <div className="border border-neutral-200 bg-neutral-50 rounded-2xl p-4 text-sm text-neutral-700">
+          <div className="border border-border bg-secondary/40 rounded-md p-4 text-sm text-muted-foreground inline-flex items-center gap-2">
+            <Inbox className="h-4 w-4" aria-hidden />
             No mission updates yet.
           </div>
         ) : (
@@ -152,29 +163,30 @@ export default function MissionUpdatesPanel() {
                   <Link
                     key={`job-${u.id}`}
                     href={`/jobs/${u.id}`}
-                    className="group border border-neutral-200 rounded-2xl p-4 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
+                    className="group border border-border rounded-md p-4 hover:border-primary/40 hover:bg-secondary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-neutral-900 truncate group-hover:text-primary-700">
+                        <div className="text-sm font-semibold text-foreground truncate group-hover:text-primary">
                           {u.title}
                         </div>
-                        <div className="text-xs text-neutral-600 mt-1 truncate">
+                        <div className="text-xs text-muted-foreground mt-1 truncate">
                           {(u.company || "Company") + " • " + locationLabel(u)}
                         </div>
                       </div>
-                      <div className="text-[11px] text-neutral-500 whitespace-nowrap">{when}</div>
+                      <div className="text-[11px] text-muted-foreground whitespace-nowrap">{when}</div>
                     </div>
 
                     {u.matchedSkills?.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {u.matchedSkills.slice(0, 4).map((s) => (
-                          <span
+                          <Badge
                             key={s}
-                            className="text-[11px] px-2 py-1 rounded-full bg-primary-50 text-primary-700 border border-primary-200"
+                            variant="outline"
+                            className="text-[11px] text-primary border-primary/30"
                           >
                             {s}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     )}
@@ -188,21 +200,22 @@ export default function MissionUpdatesPanel() {
                   <Link
                     key={`cand-${u.id}`}
                     href={`/candidates?search=${encodeURIComponent(u.fullName)}`}
-                    className="group border border-neutral-200 rounded-2xl p-4 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
+                    className="group border border-border rounded-md p-4 hover:border-primary/40 hover:bg-secondary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-neutral-900 truncate group-hover:text-primary-700">
+                        <div className="text-sm font-semibold text-foreground truncate group-hover:text-primary">
                           {u.fullName}
                         </div>
-                        <div className="text-xs text-neutral-600 mt-1 truncate">
-                          {u.jobTitle || "Cleared professional"}{u.location ? ` • ${u.location}` : ""}
+                        <div className="text-xs text-muted-foreground mt-1 truncate">
+                          {u.jobTitle || "Cleared professional"}
+                          {u.location ? ` • ${u.location}` : ""}
                         </div>
                       </div>
-                      <div className="text-[11px] text-neutral-500 whitespace-nowrap">{when}</div>
+                      <div className="text-[11px] text-muted-foreground whitespace-nowrap">{when}</div>
                     </div>
-                    <div className="mt-3 text-[11px] text-neutral-500">
-                      Status: {u.status}
+                    <div className="mt-3 text-[11px] text-muted-foreground">
+                      Status: <span className="text-foreground">{u.status}</span>
                     </div>
                   </Link>
                 )
@@ -213,18 +226,18 @@ export default function MissionUpdatesPanel() {
                 return (
                   <div
                     key={`user-${u.id}`}
-                    className="border border-neutral-200 rounded-2xl p-4 bg-white"
+                    className="border border-border rounded-md p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-neutral-900 truncate">
+                        <div className="text-sm font-semibold text-foreground truncate">
                           New profile: {u.name || "Member"}
                         </div>
-                        <div className="text-xs text-neutral-600 mt-1 truncate">
+                        <div className="text-xs text-muted-foreground mt-1 truncate">
                           {u.handle ? `@${u.handle}` : "No handle yet"}
                         </div>
                       </div>
-                      <div className="text-[11px] text-neutral-500 whitespace-nowrap">{when}</div>
+                      <div className="text-[11px] text-muted-foreground whitespace-nowrap">{when}</div>
                     </div>
                   </div>
                 )
@@ -235,21 +248,21 @@ export default function MissionUpdatesPanel() {
               return (
                 <div
                   key={`ops-${u.id}`}
-                  className="border border-neutral-200 rounded-2xl p-4 bg-white"
+                  className="border border-border rounded-md p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-neutral-900 truncate">
+                      <div className="text-sm font-semibold text-foreground truncate">
                         {u.title}
                       </div>
-                      <div className="text-xs text-neutral-600 mt-1 truncate">
+                      <div className="text-xs text-muted-foreground mt-1 truncate">
                         {u.ticketType} • {u.status} • {u.priority}
                       </div>
                     </div>
-                    <div className="text-[11px] text-neutral-500 whitespace-nowrap">{when}</div>
+                    <div className="text-[11px] text-muted-foreground whitespace-nowrap">{when}</div>
                   </div>
                   {u.description && (
-                    <p className="text-xs text-neutral-700 mt-2 line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
                       {u.description}
                     </p>
                   )}
@@ -258,8 +271,7 @@ export default function MissionUpdatesPanel() {
             })}
           </div>
         )}
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }
-

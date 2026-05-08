@@ -2,7 +2,8 @@ import { Suspense } from "react"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { Loader2 } from "lucide-react"
+import { ClearDShell } from "@/components/layout/cleard-shell"
 import JobApplyContent from "./JobApplyContent"
 
 export default async function JobApplyPage() {
@@ -21,20 +22,27 @@ export default async function JobApplyPage() {
     redirect("/feed")
   }
 
+  const viewer = {
+    name: session.user.name,
+    email: session.user.email,
+    role: session.user.role,
+    accountType: session.user.accountType,
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <Suspense fallback={
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Loading...</span>
+    <Suspense
+      fallback={
+        <ClearDShell viewer={viewer}>
+          <div className="max-w-5xl mx-auto py-8">
+            <div className="flex items-center justify-center py-12 gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
+              <span className="text-muted-foreground">Loading…</span>
+            </div>
           </div>
-        </div>
-      }>
-        <JobApplyContent />
-      </Suspense>
-    </div>
+        </ClearDShell>
+      }
+    >
+      <JobApplyContent viewer={viewer} />
+    </Suspense>
   )
 }
-

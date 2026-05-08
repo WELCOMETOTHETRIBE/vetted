@@ -17,6 +17,7 @@ import {
   Settings2,
   Gift,
   ShieldCheck,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +69,13 @@ function buildNav({
   }
   operator.push({ href: "/referrals", label: "Referrals", icon: Gift });
 
+  // Resources — audience-agnostic links (formerly the in-page secondary
+  // Sidebar). Folded in here per brief LP #8 so /feed and other shell-wrapped
+  // pages no longer render a duplicate dual-sidebar layout. /tips moved here
+  // from Career; Help is the new entry that previously lived in the in-page
+  // Sidebar.tsx (now deleted).
+  const resources: NavItem[] = [{ href: "/help", label: "Help", icon: LifeBuoy }];
+
   const groups: NavGroup[] = [
     { group: "Network", items: network },
     { group: "Career", items: career },
@@ -75,6 +83,7 @@ function buildNav({
   if (operator.length > 0) {
     groups.push({ group: "Operator", items: operator });
   }
+  groups.push({ group: "Resources", items: resources });
   return groups;
 }
 

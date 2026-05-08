@@ -1,15 +1,20 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { Trophy } from "lucide-react"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
 import ReferralSystem from "@/components/ReferralSystem"
 import { getReferralLeaderboard } from "@/lib/referrals/referral-system"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 async function getLeaderboard() {
   try {
-    // Use the existing leaderboard function from the referral system library
     return await getReferralLeaderboard(20)
-  } catch (error: any) {
-    console.error("Error fetching leaderboard:", error.message || error)
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("Error fetching leaderboard:", msg)
     return []
   }
 }
@@ -23,87 +28,97 @@ export default async function ReferralsPage() {
   const leaderboard = await getLeaderboard()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Referral Network</h1>
-          <p className="text-gray-600 mt-2">
-            Refer candidates from your network and earn rewards for successful hires
-          </p>
-        </div>
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        accountType: session.user.accountType,
+      }}
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
+        <PageHeader
+          title="Referral Network"
+          description="Refer candidates from your network and earn rewards for successful hires."
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Referral System */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <ReferralSystem />
           </div>
 
-          {/* Leaderboard */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">🏆 Leaderboard</h2>
-              {leaderboard.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No referrals yet. Be the first!</p>
-              ) : (
-                <div className="space-y-3">
-                  {leaderboard.map((entry, index) => (
-                    <div
-                      key={entry.userId}
-                      className={`p-3 rounded-lg border ${
-                        index === 0
-                          ? "bg-yellow-50 border-yellow-200"
-                          : index === 1
-                            ? "bg-gray-50 border-gray-200"
-                            : index === 2
-                              ? "bg-orange-50 border-orange-200"
-                              : "bg-white border-gray-200"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0">
-                          {index < 3 && (
-                            <span className="text-2xl">
-                              {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
+            <Card className="lg:sticky lg:top-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="inline-flex items-center gap-2 text-base">
+                  <Trophy className="h-4 w-4 text-primary" aria-hidden />
+                  Leaderboard
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {leaderboard.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8 text-sm">
+                    No referrals yet. Be the first.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {leaderboard.map((entry, index) => (
+                      <div
+                        key={entry.userId}
+                        className={cn(
+                          "p-3 rounded-md border",
+                          index === 0
+                            ? "border-primary/40 bg-primary/5"
+                            : "border-border",
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 w-7 text-center">
+                            <span
+                              className={cn(
+                                "text-sm font-mono font-semibold",
+                                index === 0 && "text-primary",
+                                index === 1 && "text-foreground",
+                                index === 2 && "text-warning",
+                                index >= 3 && "text-muted-foreground",
+                              )}
+                            >
+                              #{index + 1}
                             </span>
-                          )}
-                          {index >= 3 && (
-                            <span className="text-lg font-bold text-gray-400">#{index + 1}</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {entry.userImage && (
-                              <img
-                                src={entry.userImage}
-                                alt={entry.userName}
-                                className="w-8 h-8 rounded-full"
-                              />
-                            )}
-                            <p className="font-semibold text-gray-900 truncate">
-                              {entry.userName}
-                            </p>
                           </div>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                            <span>{entry.hiredReferrals} hired</span>
-                            <span>{entry.totalReferrals} total</span>
-                            {entry.totalRewards > 0 && (
-                              <span className="text-green-600 font-semibold">
-                                ${entry.totalRewards.toFixed(0)}
-                              </span>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {entry.userImage && (
+                                <img
+                                  src={entry.userImage}
+                                  alt={entry.userName}
+                                  className="w-7 h-7 rounded-full border border-border"
+                                />
+                              )}
+                              <p className="font-medium text-foreground truncate text-sm">
+                                {entry.userName}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                              <span>{entry.hiredReferrals} hired</span>
+                              <span>{entry.totalReferrals} total</span>
+                              {entry.totalRewards > 0 && (
+                                <Badge variant="outline" className="text-success border-success/40">
+                                  ${entry.totalRewards.toFixed(0)}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </div>
+    </ClearDShell>
   )
 }
-

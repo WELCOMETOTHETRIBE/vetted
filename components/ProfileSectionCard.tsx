@@ -1,3 +1,6 @@
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+
 interface ProfileSectionCardProps {
   title: string
   children: React.ReactNode
@@ -7,13 +10,16 @@ interface ProfileSectionCardProps {
 export default function ProfileSectionCard({
   title,
   children,
-  className = "",
+  className,
 }: ProfileSectionCardProps) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-sm ${className}`}>
-      <h2 className="text-xl font-bold text-gray-900 mb-5 pb-3 border-b border-gray-100">{title}</h2>
-      {children}
-    </div>
+    <Card className={cn("mb-4", className)}>
+      <CardContent className="p-6">
+        <h2 className="text-base font-semibold text-foreground mb-5 pb-3 border-b border-border">
+          {title}
+        </h2>
+        {children}
+      </CardContent>
+    </Card>
   )
 }
-

@@ -1,9 +1,17 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
 import Link from "next/link"
 import Image from "next/image"
+import {
+  Briefcase,
+  MapPin,
+  Users,
+  Globe,
+  Building2,
+} from "lucide-react"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { Card, CardContent } from "@/components/ui/card"
 
 async function getCompany(slug: string) {
   const company = await prisma.company.findUnique({
@@ -11,26 +19,14 @@ async function getCompany(slug: string) {
     include: {
       jobs: {
         where: { isActive: true },
-        include: {
-          postedBy: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        include: { postedBy: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
         take: 10,
       },
       employees: {
         include: {
           user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              handle: true,
-            },
+            select: { id: true, name: true, image: true, handle: true },
           },
         },
         take: 20,
@@ -39,24 +35,13 @@ async function getCompany(slug: string) {
         where: { isActive: true },
         include: {
           author: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-              handle: true,
-            },
+            select: { id: true, name: true, image: true, handle: true },
           },
         },
         orderBy: { createdAt: "desc" },
         take: 10,
       },
-      _count: {
-        select: {
-          employees: true,
-          jobs: true,
-          posts: true,
-        },
-      },
+      _count: { select: { employees: true, jobs: true, posts: true } },
     },
   })
 
@@ -74,29 +59,36 @@ export default async function CompanyPage({
     redirect("/auth/signin")
   }
 
+  const viewer = {
+    name: session.user.name,
+    email: session.user.email,
+    role: session.user.role,
+    accountType: session.user.accountType,
+  }
+
   const company = await getCompany(slug)
 
   if (!company) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <NavbarAdvanced />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-600">Company not found</p>
-          </div>
+      <ClearDShell viewer={viewer}>
+        <div className="max-w-4xl mx-auto py-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Company not found.</p>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </ClearDShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <ClearDShell viewer={viewer}>
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Company Header */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
+        <Card className="overflow-hidden">
           {company.banner && (
-            <div className="h-48 bg-gray-200 relative">
+            <div className="h-40 bg-secondary relative">
               <Image
                 src={company.banner}
                 alt={company.name}
@@ -105,39 +97,43 @@ export default async function CompanyPage({
               />
             </div>
           )}
-          <div className="p-6">
-            <div className="flex items-start gap-6">
-              {company.logo && (
-                <div className="w-24 h-24 bg-white rounded-lg border border-gray-200 flex items-center justify-center relative">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-6 flex-wrap">
+              {company.logo ? (
+                <div className="w-20 h-20 bg-secondary rounded-md border border-border flex items-center justify-center relative p-1.5">
                   <Image
                     src={company.logo}
                     alt={company.name}
-                    width={96}
-                    height={96}
+                    width={80}
+                    height={80}
                     className="object-contain"
                   />
                 </div>
+              ) : (
+                <div className="w-20 h-20 rounded-md bg-primary/15 text-primary flex items-center justify-center text-2xl font-semibold border border-border">
+                  {company.name.charAt(0).toUpperCase()}
+                </div>
               )}
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-2">
                   {company.name}
                 </h1>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                   {company.industry && (
-                    <span className="flex items-center gap-1">
-                      <span>🏭</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5" aria-hidden />
                       {company.industry}
                     </span>
                   )}
                   {company.size && (
-                    <span className="flex items-center gap-1">
-                      <span>👥</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5" aria-hidden />
                       {company.size} employees
                     </span>
                   )}
                   {company.location && (
-                    <span className="flex items-center gap-1">
-                      <span>📍</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" aria-hidden />
                       {company.location}
                     </span>
                   )}
@@ -146,161 +142,214 @@ export default async function CompanyPage({
                       href={company.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-blue-600 hover:underline"
+                      className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                     >
-                      <span>🌐</span>
+                      <Globe className="h-3.5 w-3.5" aria-hidden />
                       Website
                     </a>
                   )}
                 </div>
                 {company.about && (
-                  <p className="text-gray-700 whitespace-pre-wrap">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                     {company.about}
                   </p>
                 )}
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-gray-900">
-              {company._count.employees}
-            </div>
-            <div className="text-sm text-gray-600">Employees</div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-gray-900">
-              {company._count.jobs}
-            </div>
-            <div className="text-sm text-gray-600">Open Jobs</div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-gray-900">
-              {company._count.posts}
-            </div>
-            <div className="text-sm text-gray-600">Posts</div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-semibold text-foreground">
+                {company._count.employees}
+              </div>
+              <div className="text-sm text-muted-foreground">Employees</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-semibold text-foreground">
+                {company._count.jobs}
+              </div>
+              <div className="text-sm text-muted-foreground">Open Jobs</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-semibold text-foreground">
+                {company._count.posts}
+              </div>
+              <div className="text-sm text-muted-foreground">Posts</div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Jobs */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Open Positions
-              </h2>
-              {company.jobs.length > 0 ? (
-                <div className="space-y-4">
-                  {company.jobs.map((job: { id: string; title: string; location: string | null; type: string | null }) => (
-                    <Link
-                      key={job.id}
-                      href={`/jobs/${job.id}`}
-                      className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all"
-                    >
-                      <h3 className="font-semibold text-gray-900 mb-1">
-                        {job.title}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                        {job.location && <span>📍 {job.location}</span>}
-                        {job.type && <span>• {job.type}</span>}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600">No open positions at the moment.</p>
-              )}
-            </div>
-
-            {/* Recent Posts */}
-            {company.posts.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Recent Posts
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-base font-semibold text-foreground mb-4 inline-flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-primary" aria-hidden />
+                  Open Positions
                 </h2>
-                <div className="space-y-4">
-                  {company.posts.map((post: { id: string; content: string; createdAt: Date; author: { id: string; name: string | null; image: string | null; handle: string | null } }) => (
-                    <Link
-                      key={post.id}
-                      href={`/feed`}
-                      className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 transition-all"
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        {post.author.image && (
-                          <Image
-                            src={post.author.image}
-                            alt={post.author.name || "User"}
-                            width={32}
-                            height={32}
-                            className="rounded-full"
-                          />
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {post.author.name}
+                {company.jobs.length > 0 ? (
+                  <div className="space-y-3">
+                    {company.jobs.map(
+                      (job: {
+                        id: string
+                        title: string
+                        location: string | null
+                        type: string | null
+                      }) => (
+                        <Link
+                          key={job.id}
+                          href={`/jobs/${job.id}`}
+                          className="block p-4 border border-border rounded-md hover:border-primary/40 hover:bg-secondary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <h3 className="font-semibold text-foreground mb-1">
+                            {job.title}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                            {job.location && (
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="h-3 w-3" aria-hidden />
+                                {job.location}
+                              </span>
+                            )}
+                            {job.type && <span>• {job.type}</span>}
+                          </div>
+                        </Link>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No open positions at the moment.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {company.posts.length > 0 && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-base font-semibold text-foreground mb-4">
+                    Recent Posts
+                  </h2>
+                  <div className="space-y-3">
+                    {company.posts.map(
+                      (post: {
+                        id: string
+                        content: string
+                        createdAt: Date
+                        author: {
+                          id: string
+                          name: string | null
+                          image: string | null
+                          handle: string | null
+                        }
+                      }) => (
+                        <Link
+                          key={post.id}
+                          href="/feed"
+                          className="block p-4 border border-border rounded-md hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            {post.author.image ? (
+                              <Image
+                                src={post.author.image}
+                                alt={post.author.name || "User"}
+                                width={32}
+                                height={32}
+                                className="rounded-full border border-border"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-border">
+                                {post.author.name?.charAt(0).toUpperCase() || "U"}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-foreground text-sm">
+                                {post.author.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(post.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                            {post.content}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(post.createdAt).toLocaleDateString()}
+                        </Link>
+                      ),
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-base font-semibold text-foreground mb-4 inline-flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" aria-hidden />
+                Employees ({company._count.employees})
+              </h2>
+              {company.employees.length > 0 ? (
+                <div className="space-y-2">
+                  {company.employees.map(
+                    (exp: {
+                      id: string
+                      title: string
+                      user: {
+                        id: string
+                        name: string | null
+                        image: string | null
+                        handle: string | null
+                      }
+                    }) => (
+                      <Link
+                        key={exp.id}
+                        href={`/profile/${exp.user.handle || exp.user.id}`}
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-secondary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {exp.user.image ? (
+                          <Image
+                            src={exp.user.image}
+                            alt={exp.user.name || "User"}
+                            width={36}
+                            height={36}
+                            className="rounded-full border border-border"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-primary/15 text-primary flex items-center justify-center font-semibold border border-border">
+                            {exp.user.name?.charAt(0).toUpperCase() || "U"}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate text-sm">
+                            {exp.user.name || "Anonymous"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {exp.title}
                           </p>
                         </div>
-                      </div>
-                      <p className="text-gray-700 line-clamp-2">
-                        {post.content}
-                      </p>
-                    </Link>
-                  ))}
+                      </Link>
+                    ),
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Employees Sidebar */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Employees ({company._count.employees})
-            </h2>
-            {company.employees.length > 0 ? (
-              <div className="space-y-3">
-                {company.employees.map((exp: { id: string; title: string; user: { id: string; name: string | null; image: string | null; handle: string | null } }) => (
-                  <Link
-                    key={exp.id}
-                    href={`/profile/${exp.user.handle || exp.user.id}`}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    {exp.user.image ? (
-                      <Image
-                        src={exp.user.image}
-                        alt={exp.user.name || "User"}
-                        width={40}
-                        height={40}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white">
-                        {exp.user.name?.charAt(0).toUpperCase() || "U"}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {exp.user.name || "Anonymous"}
-                      </p>
-                      <p className="text-sm text-gray-600 truncate">
-                        {exp.title}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600">No employees listed yet.</p>
-            )}
-          </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No employees listed yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </div>
+    </ClearDShell>
   )
 }
-

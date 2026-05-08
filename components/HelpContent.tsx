@@ -1,7 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface HelpArticle {
   id: string
@@ -17,7 +22,7 @@ const helpArticles: HelpArticle[] = [
     id: "getting-started",
     title: "Getting Started with Vetted",
     category: "Getting Started",
-    content: `# Welcome to Vetted! 🎉
+    content: `# Welcome to Vetted!
 
 Vetted is a professional networking platform that combines social networking with powerful career tools. Here's how to get started:
 
@@ -113,14 +118,14 @@ Vetted offers AI tools to improve your profile:
 
 ## Profile Best Practices
 
-✅ **Do:**
+**Do:**
 - Use professional photos
 - Keep information up-to-date
 - Use keywords relevant to your industry
 - Add a compelling professional summary
 - Include measurable achievements
 
-❌ **Don't:**
+**Don't:**
 - Leave sections blank
 - Use unprofessional language
 - Include outdated information
@@ -221,14 +226,14 @@ Set up job alerts to never miss opportunities:
 
 ## Tips for Success
 
-✅ **Do:**
+**Do:**
 - Apply to jobs within 48 hours of posting
 - Customize your resume for each application
 - Use AI tools to improve your application
 - Follow up appropriately
 - Keep your profile updated
 
-❌ **Don't:**
+**Don't:**
 - Apply to jobs you're not qualified for
 - Use generic cover letters
 - Ignore application instructions
@@ -573,14 +578,14 @@ Track candidates through the pipeline:
 
 ## Best Practices
 
-✅ **Do**:
+**Do**:
 - Keep candidate data updated
 - Use AI tools to save time
 - Track engagement consistently
 - Add notes after interactions
 - Use predictive scores to prioritize
 
-❌ **Don't**:
+**Don't**:
 - Ignore candidate updates
 - Skip engagement tracking
 - Forget to follow up
@@ -778,14 +783,14 @@ Help your network find opportunities and earn recognition through referrals.
 
 ## Referral Best Practices
 
-✅ **Do**:
+**Do**:
 - Only refer qualified candidates
 - Provide context about the candidate
 - Follow up on referrals
 - Build relationships with candidates
 - Be honest about fit
 
-❌ **Don't**:
+**Don't**:
 - Refer unqualified candidates
 - Spam referrals
 - Ignore referral status
@@ -923,14 +928,14 @@ Filter by:
 
 ## Search Tips
 
-✅ **Effective Searches**:
+**Effective Searches**:
 - Use specific keywords
 - Combine multiple filters
 - Try different search terms
 - Use quotes for exact phrases
 - Search by skills or technologies
 
-❌ **Avoid**:
+**Avoid**:
 - Overly broad searches
 - Too many filters at once
 - Misspelled keywords
@@ -1083,14 +1088,14 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
           currentList = []
         }
         elements.push(
-          <h2 key={index} className="text-2xl font-bold text-gray-900 mt-6 mb-4">
+          <h2 key={index} className="text-2xl font-semibold tracking-tight text-foreground mt-6 mb-4">
             {line.replace("# ", "")}
           </h2>
         )
@@ -1099,14 +1104,14 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
           currentList = []
         }
         elements.push(
-          <h3 key={index} className="text-xl font-semibold text-gray-900 mt-5 mb-3">
+          <h3 key={index} className="text-lg font-semibold text-foreground mt-5 mb-3">
             {line.replace("## ", "")}
           </h3>
         )
@@ -1115,14 +1120,14 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
           currentList = []
         }
         elements.push(
-          <h4 key={index} className="text-lg font-medium text-gray-900 mt-4 mb-2">
+          <h4 key={index} className="text-base font-semibold text-foreground mt-4 mb-2">
             {line.replace("### ", "")}
           </h4>
         )
@@ -1133,7 +1138,7 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
@@ -1141,7 +1146,7 @@ export default function HelpContent() {
         }
         const text = line.replace(/\*\*/g, "")
         elements.push(
-          <p key={index} className="font-semibold text-gray-900 mb-2">
+          <p key={index} className="font-semibold text-foreground mb-2">
             {text}
           </p>
         )
@@ -1150,7 +1155,7 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
@@ -1161,14 +1166,14 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
           currentList = []
         }
         elements.push(
-          <p key={index} className="text-gray-700 mb-2">
+          <p key={index} className="text-muted-foreground mb-2">
             {line}
           </p>
         )
@@ -1177,14 +1182,14 @@ export default function HelpContent() {
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside mb-4 space-y-1">
               {currentList.map((item, i) => (
-                <li key={i} className="text-gray-700">{item}</li>
+                <li key={i} className="text-muted-foreground">{item}</li>
               ))}
             </ul>
           )
           currentList = []
         }
         elements.push(
-          <p key={index} className="text-gray-700 mb-4 leading-relaxed">
+          <p key={index} className="text-muted-foreground mb-4 leading-relaxed">
             {line}
           </p>
         )
@@ -1195,7 +1200,7 @@ export default function HelpContent() {
       elements.push(
         <ul key="final-list" className="list-disc list-inside mb-4 space-y-1">
           {currentList.map((item, i) => (
-            <li key={i} className="text-gray-700">{item}</li>
+            <li key={i} className="text-muted-foreground">{item}</li>
           ))}
         </ul>
       )
@@ -1208,131 +1213,141 @@ export default function HelpContent() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Sidebar */}
       <div className="lg:col-span-1">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-4">
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Search help articles..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        <Card className="lg:sticky lg:top-4">
+          <CardContent className="p-4">
+            <Input
+              type="text"
+              placeholder="Search help articles…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mb-4"
+              aria-label="Search help articles"
+            />
 
-          {/* Categories */}
-          <div className="space-y-2 mb-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Categories
-            </h3>
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => {
-                  setSelectedCategory(category)
-                  setSelectedArticle(null)
-                }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedCategory === category
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-
-          {/* Articles List */}
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Articles ({filteredArticles.length})
-            </h3>
-            <div className="max-h-96 overflow-y-auto">
-              {filteredArticles.map((article) => (
+            <div className="space-y-1 mb-4">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Categories
+              </h3>
+              {categories.map((category) => (
                 <button
-                  key={article.id}
-                  onClick={() => setSelectedArticle(article)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors mb-1 ${
-                    selectedArticle?.id === article.id
-                      ? "bg-blue-50 text-blue-600 font-medium"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
+                  key={category}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(category)
+                    setSelectedArticle(null)
+                  }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    selectedCategory === category
+                      ? "bg-secondary text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                  )}
                 >
-                  {article.title}
+                  {category}
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+
+            <div className="space-y-1">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Articles ({filteredArticles.length})
+              </h3>
+              <div className="max-h-96 overflow-y-auto">
+                {filteredArticles.map((article) => (
+                  <button
+                    key={article.id}
+                    type="button"
+                    onClick={() => setSelectedArticle(article)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors mb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      selectedArticle?.id === article.id
+                        ? "bg-secondary text-foreground font-medium"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                  >
+                    {article.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Content */}
       <div className="lg:col-span-2">
         {selectedArticle ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="mb-4">
-              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mb-2">
-                {selectedArticle.category}
-              </span>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {selectedArticle.title}
-              </h2>
-            </div>
-            <div className="prose prose-sm max-w-none">
-              {renderContent(selectedArticle.content)}
-            </div>
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex flex-wrap gap-2">
-                {selectedArticle.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+          <Card>
+            <CardContent className="p-6">
+              <div className="mb-4 space-y-2">
+                <Badge variant="outline" className="text-primary border-primary/30">
+                  {selectedArticle.category}
+                </Badge>
+                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                  {selectedArticle.title}
+                </h2>
               </div>
-            </div>
-            <div className="mt-6">
-              <button
-                onClick={() => setSelectedArticle(null)}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                ← Back to articles
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Welcome to Vetted Help Center
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Select an article from the sidebar to get started, or use the search bar to find what you're looking for.
-            </p>
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                Quick Start Guides
-              </h3>
-              <div className="space-y-2">
-                {helpArticles
-                  .filter((a) => a.quickStart)
-                  .map((article) => (
-                    <button
-                      key={article.id}
-                      onClick={() => setSelectedArticle(article)}
-                      className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                    >
-                      <div className="font-medium text-gray-900">
-                        {article.title}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {article.category}
-                      </div>
-                    </button>
+              <div className="max-w-none">
+                {renderContent(selectedArticle.content)}
+              </div>
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex flex-wrap gap-2">
+                  {selectedArticle.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      #{tag}
+                    </Badge>
                   ))}
+                </div>
               </div>
-            </div>
-          </div>
+              <div className="mt-6">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedArticle(null)}
+                  className="gap-1.5"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                  Back to articles
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-2">
+                Welcome to the clearD Help Center
+              </h2>
+              <p className="text-muted-foreground mb-4">
+                Select an article from the sidebar to get started, or use the search
+                bar to find what you’re looking for.
+              </p>
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  Quick Start Guides
+                </h3>
+                <div className="space-y-2">
+                  {helpArticles
+                    .filter((a) => a.quickStart)
+                    .map((article) => (
+                      <button
+                        key={article.id}
+                        type="button"
+                        onClick={() => setSelectedArticle(article)}
+                        className="w-full text-left px-4 py-3 bg-secondary/40 border border-border hover:bg-secondary hover:border-primary/40 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <div className="font-medium text-foreground">
+                          {article.title}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {article.category}
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

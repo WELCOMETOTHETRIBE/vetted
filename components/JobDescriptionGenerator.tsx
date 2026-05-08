@@ -79,15 +79,15 @@ export default function JobDescriptionGenerator({ jobId, existingDescription, on
 
   if (mode === "enhance" && existingDescription) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-card rounded-lg border border-border p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <span>✨</span>
             <span>Enhance Job Description</span>
           </h3>
           <button
             onClick={() => setMode("generate")}
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             Switch to Generate
           </button>
@@ -95,7 +95,7 @@ export default function JobDescriptionGenerator({ jobId, existingDescription, on
         <button
           onClick={handleEnhance}
           disabled={loading}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -115,7 +115,7 @@ export default function JobDescriptionGenerator({ jobId, existingDescription, on
               value={generated}
               onChange={(e) => setGenerated(e.target.value)}
               rows={15}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
             />
             <button
               onClick={() => onGenerated?.(generated)}
@@ -130,16 +130,16 @@ export default function JobDescriptionGenerator({ jobId, existingDescription, on
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-card rounded-lg border border-border p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <span>✨</span>
           <span>Generate Job Description</span>
         </h3>
         {existingDescription && (
           <button
             onClick={() => setMode("enhance")}
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             Switch to Enhance
           </button>
@@ -147,59 +147,59 @@ export default function JobDescriptionGenerator({ jobId, existingDescription, on
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Job Title *</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Senior Software Engineer"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Company Name</label>
           <input
             type="text"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder="e.g., Tech Company Inc."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Location</label>
           <input
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g., San Francisco, CA or Remote"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Key Responsibilities (one per line)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Key Responsibilities (one per line)</label>
           <textarea
             value={responsibilities}
             onChange={(e) => setResponsibilities(e.target.value)}
             placeholder="Develop and maintain web applications&#10;Collaborate with cross-functional teams&#10;Write clean, maintainable code"
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Requirements (one per line)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Requirements (one per line)</label>
           <textarea
             value={requirements}
             onChange={(e) => setRequirements(e.target.value)}
             placeholder="5+ years of software development experience&#10;Proficiency in JavaScript and TypeScript&#10;Experience with React and Node.js"
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
           />
         </div>
         <button
           onClick={handleGenerate}
           disabled={loading || !title.trim()}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -215,12 +215,12 @@ export default function JobDescriptionGenerator({ jobId, existingDescription, on
         </button>
         {generated && (
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Generated Description</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Generated Description</label>
             <textarea
               value={generated}
               onChange={(e) => setGenerated(e.target.value)}
               rows={15}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
             />
             <button
               onClick={() => onGenerated?.(generated)}

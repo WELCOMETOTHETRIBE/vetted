@@ -2,6 +2,19 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface CreateGroupModalProps {
   isOpen: boolean
@@ -48,78 +61,69 @@ export default function CreateGroupModal({
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Group</h2>
+    <Dialog open={isOpen} onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Group</DialogTitle>
+          <DialogDescription>
+            Create a private or public group for your trusted network.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Group Name *
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="group-name">
+              Group Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="group-name"
               type="text"
               required
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Software Engineers in SF"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
+          <div className="space-y-1.5">
+            <Label htmlFor="group-description">Description</Label>
+            <Textarea
+              id="group-description"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="What is this group about?"
             />
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-2">
+            <Checkbox
               id="isPublic"
               checked={formData.isPublic}
-              onChange={(e) =>
-                setFormData({ ...formData, isPublic: e.target.checked })
+              onCheckedChange={(c) =>
+                setFormData({ ...formData, isPublic: c === true })
               }
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            <label htmlFor="isPublic" className="ml-2 text-sm text-gray-700">
+            <Label htmlFor="isPublic" className="font-normal cursor-pointer">
               Public group (anyone can find and join)
-            </label>
+            </Label>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            >
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading || !formData.name.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating..." : "Create Group"}
-            </button>
-          </div>
+              {loading ? "Creating…" : "Create Group"}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
-

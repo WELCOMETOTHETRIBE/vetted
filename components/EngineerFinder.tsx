@@ -152,14 +152,14 @@ export default function EngineerFinder() {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="flex border-b border-gray-200 bg-gray-50">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="flex border-b border-border bg-secondary/40">
           <button
             onClick={() => setActiveTab("search")}
             className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
               activeTab === "search"
-                ? "text-blue-600 bg-white"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                ? "text-primary bg-card"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -168,14 +168,14 @@ export default function EngineerFinder() {
               </svg>
               Search
             </div>
-            {activeTab === "search" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+            {activeTab === "search" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
           <button
             onClick={() => setActiveTab("history")}
             className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
               activeTab === "history"
-                ? "text-blue-600 bg-white"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                ? "text-primary bg-card"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -184,7 +184,7 @@ export default function EngineerFinder() {
               </svg>
               History
             </div>
-            {activeTab === "history" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+            {activeTab === "history" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
         </div>
       </div>
@@ -194,12 +194,12 @@ export default function EngineerFinder() {
           {/* Left Sidebar - Template & Variables */}
           <div className="lg:col-span-1 space-y-4">
             {/* Template Picker */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Query Template</label>
+            <div className="bg-card rounded-xl border border-border shadow-sm p-4">
+              <label className="block text-sm font-semibold text-foreground mb-2">Query Template</label>
               <select
                 value={selectedTemplate?.id || ""}
                 onChange={(e) => handleTemplateSelect(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">Select a template...</option>
                 {queryTemplates.map((template) => (
@@ -209,53 +209,53 @@ export default function EngineerFinder() {
                 ))}
               </select>
               {selectedTemplate && (
-                <p className="mt-2 text-xs text-gray-600">{selectedTemplate.description}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{selectedTemplate.description}</p>
               )}
             </div>
 
             {/* Variables Form */}
             {selectedTemplate && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">Search Variables</h3>
+              <div className="bg-card rounded-xl border border-border shadow-sm p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-4">Search Variables</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                    <label className="block text-xs font-medium text-foreground mb-1">Location</label>
                     <input
                       type="text"
                       value={queryVariables.location || ""}
                       onChange={(e) => setQueryVariables((prev) => ({ ...prev, location: e.target.value }))}
                       placeholder="San Francisco"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Company (optional)</label>
+                    <label className="block text-xs font-medium text-foreground mb-1">Company (optional)</label>
                     <input
                       type="text"
                       value={queryVariables.company || ""}
                       onChange={(e) => setQueryVariables((prev) => ({ ...prev, company: e.target.value }))}
                       placeholder="Google, Microsoft"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Role Keywords</label>
+                    <label className="block text-xs font-medium text-foreground mb-1">Role Keywords</label>
                     <input
                       type="text"
                       value={queryVariables.roleKeywords || ""}
                       onChange={(e) => setQueryVariables((prev) => ({ ...prev, roleKeywords: e.target.value }))}
                       placeholder="AI Engineer"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                   </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">Seniority (multi-select)</label>
+                    <label className="block text-xs font-medium text-foreground mb-2">Seniority (multi-select)</label>
                     <div className="grid grid-cols-2 gap-2">
                       {["Staff", "Principal", "Distinguished", "Tech Lead"].map((level) => (
                         <label key={level} className="flex items-center">
@@ -273,16 +273,16 @@ export default function EngineerFinder() {
                                 }))
                               }
                             }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-border text-primary focus:ring-blue-500"
                           />
-                          <span className="ml-2 text-xs text-gray-700">{level}</span>
+                          <span className="ml-2 text-xs text-foreground">{level}</span>
                         </label>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">Domain Focus (multi-select)</label>
+                    <label className="block text-xs font-medium text-foreground mb-2">Domain Focus (multi-select)</label>
                     <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
                       {[
                         "distributed systems",
@@ -307,9 +307,9 @@ export default function EngineerFinder() {
                                 }))
                               }
                             }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-border text-primary focus:ring-blue-500"
                           />
-                          <span className="ml-2 text-xs text-gray-700">{domain}</span>
+                          <span className="ml-2 text-xs text-foreground">{domain}</span>
                         </label>
                       ))}
                     </div>
@@ -318,17 +318,17 @@ export default function EngineerFinder() {
 
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Include Keywords</label>
+                    <label className="block text-xs font-medium text-foreground mb-1">Include Keywords</label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {queryVariables.includeKeywords?.map((keyword, idx) => (
                         <span
                           key={idx}
-                          className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                          className="inline-flex items-center px-2 py-1 bg-primary/15 text-primary rounded text-xs"
                         >
                           {keyword}
                           <button
                             onClick={() => handleRemoveKeyword("include", idx)}
-                            className="ml-1 text-blue-600 hover:text-blue-800"
+                            className="ml-1 text-primary hover:text-primary"
                           >
                             ×
                           </button>
@@ -345,17 +345,17 @@ export default function EngineerFinder() {
                             e.currentTarget.value = ""
                           }
                         }}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="flex-1 px-2 py-1 border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                     <div className="mt-2">
-                      <label className="block text-xs text-gray-600 mb-1">Quick Add Packs:</label>
+                      <label className="block text-xs text-muted-foreground mb-1">Quick Add Packs:</label>
                       <div className="flex flex-wrap gap-1">
                         {Object.keys(keywordPacks).map((packName) => (
                           <button
                             key={packName}
                             onClick={() => handleAddKeywordPack(packName as KeywordPackName)}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+                            className="px-2 py-1 bg-secondary text-foreground rounded text-xs hover:bg-secondary"
                           >
                             +{packName}
                           </button>
@@ -365,17 +365,17 @@ export default function EngineerFinder() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Exclude Keywords</label>
+                    <label className="block text-xs font-medium text-foreground mb-1">Exclude Keywords</label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {queryVariables.excludeKeywords?.map((keyword, idx) => (
                         <span
                           key={idx}
-                          className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 rounded text-xs"
+                          className="inline-flex items-center px-2 py-1 bg-destructive/15 text-red-800 rounded text-xs"
                         >
                           {keyword}
                           <button
                             onClick={() => handleRemoveKeyword("exclude", idx)}
-                            className="ml-1 text-red-600 hover:text-red-800"
+                            className="ml-1 text-destructive hover:text-red-800"
                           >
                             ×
                           </button>
@@ -391,7 +391,7 @@ export default function EngineerFinder() {
                           e.currentTarget.value = ""
                         }
                       }}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full px-2 py-1 border border-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -403,30 +403,30 @@ export default function EngineerFinder() {
           <div className="lg:col-span-2 space-y-4">
             {/* Query Preview */}
             {selectedTemplate && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div className="bg-card rounded-xl border border-border shadow-sm p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-gray-700">Query Preview</label>
+                  <label className="block text-sm font-semibold text-foreground">Query Preview</label>
                   <div className="flex gap-2">
                     <button
                       onClick={handleCopyQuery}
-                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs font-medium"
+                      className="px-3 py-1.5 bg-secondary text-foreground rounded-lg hover:bg-secondary text-xs font-medium"
                     >
                       Copy Query
                     </button>
                     <button
                       onClick={handleSearch}
                       disabled={searching || !finalQuery}
-                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                      className="px-4 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
                     >
                       {searching ? "Searching..." : "Run Search"}
                     </button>
                   </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <code className="text-xs text-gray-800 break-all">{finalQuery || "Select a template to see query..."}</code>
+                <div className="bg-secondary/40 rounded-lg p-3 border border-border">
+                  <code className="text-xs text-foreground break-all">{finalQuery || "Select a template to see query..."}</code>
                 </div>
                 {error && (
-                  <div className="mt-2 px-3 py-2 bg-red-100 text-red-800 rounded text-xs">{error}</div>
+                  <div className="mt-2 px-3 py-2 bg-destructive/15 text-red-800 rounded text-xs">{error}</div>
                 )}
               </div>
             )}
@@ -437,17 +437,17 @@ export default function EngineerFinder() {
             )}
 
             {searching && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+              <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Searching via SerpApi...</p>
+                <p className="text-muted-foreground">Searching via SerpApi...</p>
               </div>
             )}
 
             {!selectedTemplate && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+              <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
                 <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Template</h3>
-                <p className="text-gray-600">Choose a query template from the left to get started</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Select a Template</h3>
+                <p className="text-muted-foreground">Choose a query template from the left to get started</p>
               </div>
             )}
           </div>

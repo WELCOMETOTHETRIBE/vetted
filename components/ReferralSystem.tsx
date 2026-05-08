@@ -1,6 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Mail, Briefcase, CheckCircle2, DollarSign, Plus } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface Referral {
   id: string
@@ -15,16 +23,9 @@ interface Referral {
   job?: {
     id: string
     title: string
-    company: {
-      name: string
-      slug: string
-    }
+    company: { name: string; slug: string }
   }
-  candidate?: {
-    id: string
-    fullName: string
-    linkedinUrl: string
-  }
+  candidate?: { id: string; fullName: string; linkedinUrl: string }
 }
 
 interface ReferralStats {
@@ -37,6 +38,21 @@ interface ReferralStats {
   hireRate: number
   totalRewards: number
   pendingRewards: number
+}
+
+const statusBadge = (status: string) => {
+  switch (status) {
+    case "HIRED":
+      return "text-success border-success/40"
+    case "INTERVIEWING":
+      return "text-primary border-primary/40"
+    case "CONTACTED":
+      return "text-warning border-warning/40"
+    case "REJECTED":
+      return "text-destructive border-destructive/40"
+    default:
+      return "text-muted-foreground border-border"
+  }
 }
 
 export default function ReferralSystem() {
@@ -109,179 +125,174 @@ export default function ReferralSystem() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "HIRED":
-        return "bg-green-100 text-green-700"
-      case "INTERVIEWING":
-        return "bg-blue-100 text-blue-700"
-      case "CONTACTED":
-        return "bg-yellow-100 text-yellow-700"
-      case "REJECTED":
-        return "bg-red-100 text-red-700"
-      default:
-        return "bg-gray-100 text-gray-700"
-    }
-  }
-
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-4 bg-gray-200 rounded"></div>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-secondary rounded w-1/3" />
+            <div className="h-4 bg-secondary rounded" />
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Referral Network</h2>
-          <p className="text-gray-600 mt-1">Refer candidates from your network</p>
+          <CardTitle className="text-base">Referral Network</CardTitle>
+          <CardDescription className="text-xs mt-1">
+            Refer candidates from your network.
+          </CardDescription>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          {showForm ? "Cancel" : "+ Submit Referral"}
-        </button>
-      </div>
+        <Button onClick={() => setShowForm(!showForm)} size="sm" className="gap-1.5">
+          {showForm ? "Cancel" : (
+            <>
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              Submit Referral
+            </>
+          )}
+        </Button>
+      </CardHeader>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600">Total Referrals</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalReferrals}</div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600">Hired</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.hiredReferrals}</div>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600">Hire Rate</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.hireRate.toFixed(1)}%</div>
-          </div>
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600">Total Rewards</div>
-            <div className="text-2xl font-bold text-gray-900">${stats.totalRewards.toFixed(0)}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Submit Form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Candidate Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.candidateName}
-              onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email (optional)
-              </label>
-              <input
-                type="email"
-                value={formData.candidateEmail}
-                onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                LinkedIn URL (optional)
-              </label>
-              <input
-                type="url"
-                value={formData.candidateLinkedInUrl}
-                onChange={(e) => setFormData({ ...formData, candidateLinkedInUrl: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (optional)
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Submit Referral
-          </button>
-        </form>
-      )}
-
-      {/* Referrals List */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Your Referrals</h3>
-        {referrals.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No referrals yet. Submit your first referral above!</p>
-        ) : (
-          referrals.map((referral) => (
-            <div
-              key={referral.id}
-              className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-semibold text-gray-900">{referral.candidateName}</h4>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-lg ${getStatusColor(
-                        referral.status
-                      )}`}
-                    >
-                      {referral.status}
-                    </span>
-                  </div>
-                  {referral.candidateEmail && (
-                    <p className="text-sm text-gray-600 mb-1">📧 {referral.candidateEmail}</p>
-                  )}
-                  {referral.job && (
-                    <p className="text-sm text-gray-600 mb-1">
-                      💼 {referral.job.title} at {referral.job.company.name}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500">
-                    Submitted: {new Date(referral.submittedAt).toLocaleDateString()}
-                  </p>
-                  {referral.hiredAt && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✅ Hired: {new Date(referral.hiredAt).toLocaleDateString()}
-                    </p>
-                  )}
-                  {referral.rewardAmount && referral.rewardStatus === "PAID" && (
-                    <p className="text-xs text-green-600 mt-1">
-                      💰 Reward: ${referral.rewardAmount}
-                    </p>
-                  )}
-                </div>
+      <CardContent className="space-y-6">
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="rounded-md border border-border bg-secondary/40 p-3">
+              <div className="text-xs text-muted-foreground">Total Referrals</div>
+              <div className="text-xl font-semibold text-foreground mt-0.5">
+                {stats.totalReferrals}
               </div>
             </div>
-          ))
+            <div className="rounded-md border border-border bg-secondary/40 p-3">
+              <div className="text-xs text-muted-foreground">Hired</div>
+              <div className="text-xl font-semibold text-success mt-0.5">
+                {stats.hiredReferrals}
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-secondary/40 p-3">
+              <div className="text-xs text-muted-foreground">Hire Rate</div>
+              <div className="text-xl font-semibold text-foreground mt-0.5">
+                {stats.hireRate.toFixed(1)}%
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-secondary/40 p-3">
+              <div className="text-xs text-muted-foreground">Total Rewards</div>
+              <div className="text-xl font-semibold text-primary mt-0.5">
+                ${stats.totalRewards.toFixed(0)}
+              </div>
+            </div>
+          </div>
         )}
-      </div>
-    </div>
+
+        {showForm && (
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-md border border-border bg-secondary/30 p-4 space-y-4"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="ref-name">Candidate Name *</Label>
+              <Input
+                id="ref-name"
+                type="text"
+                required
+                value={formData.candidateName}
+                onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="ref-email">Email (optional)</Label>
+                <Input
+                  id="ref-email"
+                  type="email"
+                  value={formData.candidateEmail}
+                  onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ref-linkedin">LinkedIn URL (optional)</Label>
+                <Input
+                  id="ref-linkedin"
+                  type="url"
+                  value={formData.candidateLinkedInUrl}
+                  onChange={(e) => setFormData({ ...formData, candidateLinkedInUrl: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ref-notes">Notes (optional)</Label>
+              <Textarea
+                id="ref-notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Submit Referral
+            </Button>
+          </form>
+        )}
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Your Referrals
+          </h3>
+          {referrals.length === 0 ? (
+            <p className="text-muted-foreground text-center py-6 text-sm">
+              No referrals yet. Submit your first referral above!
+            </p>
+          ) : (
+            referrals.map((referral) => (
+              <div
+                key={referral.id}
+                className="rounded-md border border-border p-4 hover:border-primary/40 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <h4 className="font-semibold text-foreground">{referral.candidateName}</h4>
+                      <Badge variant="outline" className={cn(statusBadge(referral.status))}>
+                        {referral.status}
+                      </Badge>
+                    </div>
+                    {referral.candidateEmail && (
+                      <p className="text-sm text-muted-foreground mb-1 inline-flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5" aria-hidden />
+                        {referral.candidateEmail}
+                      </p>
+                    )}
+                    {referral.job && (
+                      <p className="text-sm text-muted-foreground mb-1 inline-flex items-center gap-1.5">
+                        <Briefcase className="h-3.5 w-3.5" aria-hidden />
+                        {referral.job.title} at {referral.job.company.name}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground/80">
+                      Submitted: {new Date(referral.submittedAt).toLocaleDateString()}
+                    </p>
+                    {referral.hiredAt && (
+                      <p className="text-xs text-success mt-1 inline-flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3" aria-hidden />
+                        Hired: {new Date(referral.hiredAt).toLocaleDateString()}
+                      </p>
+                    )}
+                    {referral.rewardAmount && referral.rewardStatus === "PAID" && (
+                      <p className="text-xs text-primary mt-1 inline-flex items-center gap-1.5">
+                        <DollarSign className="h-3 w-3" aria-hidden />
+                        Reward: ${referral.rewardAmount}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
-

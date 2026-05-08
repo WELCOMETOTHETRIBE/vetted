@@ -3,9 +3,25 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import ProfileOptimization from "./ProfileOptimization"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+
+interface ProfileEditFormUser {
+  id: string
+  name: string | null
+  email: string
+  profile?: {
+    headline?: string | null
+    location?: string | null
+    about?: string | null
+  } | null
+}
 
 interface ProfileEditFormProps {
-  user: any
+  user: ProfileEditFormUser
 }
 
 export default function ProfileEditForm({ user }: ProfileEditFormProps) {
@@ -33,9 +49,7 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
         body: JSON.stringify(data),
       })
 
-      if (response.ok) {
-        router.refresh()
-      }
+      if (response.ok) router.refresh()
     } catch (error) {
       console.error("Error updating profile:", error)
     } finally {
@@ -48,80 +62,76 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
       <ProfileOptimization
         onApplyHeadline={(h) => {
           setHeadline(h)
-          const input = document.querySelector('input[name="headline"]') as HTMLInputElement
+          const input = document.querySelector(
+            'input[name="headline"]',
+          ) as HTMLInputElement | null
           if (input) input.value = h
         }}
         onApplyAbout={(a) => {
           setAbout(a)
-          const textarea = document.querySelector('textarea[name="about"]') as HTMLTextAreaElement
+          const textarea = document.querySelector(
+            'textarea[name="about"]',
+          ) as HTMLTextAreaElement | null
           if (textarea) textarea.value = a
         }}
       />
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Full Name
-        </label>
-        <input
-          type="text"
-          name="name"
-          defaultValue={user.name || ""}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-name">Full Name</Label>
+              <Input
+                id="profile-name"
+                type="text"
+                name="name"
+                defaultValue={user.name || ""}
+              />
+            </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Mission Headline
-        </label>
-        <input
-          type="text"
-          name="headline"
-          value={headline}
-          onChange={(e) => setHeadline(e.target.value)}
-          placeholder="e.g., Cybersecurity Analyst | Active Secret | Transitioning"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-headline">Mission Headline</Label>
+              <Input
+                id="profile-headline"
+                type="text"
+                name="headline"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                placeholder="e.g., Cybersecurity Analyst | Active Secret | Transitioning"
+              />
+            </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Location
-        </label>
-        <input
-          type="text"
-          name="location"
-          defaultValue={user.profile?.location || ""}
-          placeholder="e.g., San Francisco, CA"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-location">Location</Label>
+              <Input
+                id="profile-location"
+                type="text"
+                name="location"
+                defaultValue={user.profile?.location || ""}
+                placeholder="e.g., San Francisco, CA"
+              />
+            </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Mission Summary
-        </label>
-        <textarea
-          name="about"
-          rows={6}
-          value={about}
-          onChange={(e) => setAbout(e.target.value)}
-          placeholder="Describe mission areas, program experience, and validated capabilities. Avoid classified details."
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        />
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-about">Mission Summary</Label>
+              <Textarea
+                id="profile-about"
+                name="about"
+                rows={6}
+                value={about}
+                onChange={(e) => setAbout(e.target.value)}
+                placeholder="Describe mission areas, program experience, and validated capabilities. Avoid classified details."
+                className="resize-none"
+              />
+            </div>
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Saving..." : "Save Changes"}
-        </button>
-      </div>
-    </form>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving…" : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-

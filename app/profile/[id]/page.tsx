@@ -1,7 +1,12 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import Link from "next/link"
+import { Briefcase, GraduationCap, MapPin, Heart, MessageCircle } from "lucide-react"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import ProfileHeader from "@/components/ProfileHeader"
 import ProfileSectionCard from "@/components/ProfileSectionCard"
 import CareerInsights from "@/components/CareerInsights"
@@ -9,21 +14,12 @@ import CareerInsights from "@/components/CareerInsights"
 async function getProfile(userIdOrHandle: string, currentUserId?: string) {
   try {
     const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ id: userIdOrHandle }, { handle: userIdOrHandle }],
-      },
+      where: { OR: [{ id: userIdOrHandle }, { handle: userIdOrHandle }] },
       include: {
         profile: true,
-        experiences: {
-          include: { company: true },
-          orderBy: { startDate: "desc" },
-        },
-        educations: {
-          orderBy: { startDate: "desc" },
-        },
-        skills: {
-          include: { skill: true },
-        },
+        experiences: { include: { company: true }, orderBy: { startDate: "desc" } },
+        educations: { orderBy: { startDate: "desc" } },
+        skills: { include: { skill: true } },
         posts: {
           where: { isActive: true, groupId: null },
           include: {
@@ -36,43 +32,38 @@ async function getProfile(userIdOrHandle: string, currentUserId?: string) {
       },
     })
 
-    if (!user) {
-      return null
-    }
+    if (!user) return null
 
-  let connectionStatus: "CONNECTED" | "PENDING" | "NONE" = "NONE"
-  if (currentUserId && currentUserId !== user.id) {
-    const connection = await prisma.connection.findFirst({
-      where: {
-        OR: [
-          { requesterId: currentUserId, receiverId: user.id },
-          { requesterId: user.id, receiverId: currentUserId },
-        ],
-      },
-      orderBy: { updatedAt: "desc" }, // Get the most recent connection if multiple exist
-    })
+    let connectionStatus: "CONNECTED" | "PENDING" | "NONE" = "NONE"
+    if (currentUserId && currentUserId !== user.id) {
+      const connection = await prisma.connection.findFirst({
+        where: {
+          OR: [
+            { requesterId: currentUserId, receiverId: user.id },
+            { requesterId: user.id, receiverId: currentUserId },
+          ],
+        },
+        orderBy: { updatedAt: "desc" },
+      })
 
-    if (connection) {
-      if (connection.status === "ACCEPTED") {
-        connectionStatus = "CONNECTED"
-      } else if (connection.status === "PENDING") {
-        // Check if current user is the requester (sent) or receiver (received)
-        const isRequester = connection.requesterId === currentUserId
-        connectionStatus = "PENDING" // Show pending for both sent and received
-      } else {
-        connectionStatus = "NONE"
+      if (connection) {
+        if (connection.status === "ACCEPTED") connectionStatus = "CONNECTED"
+        else if (connection.status === "PENDING") connectionStatus = "PENDING"
+        else connectionStatus = "NONE"
       }
     }
-  }
 
     return { user, connectionStatus }
-  } catch (error: any) {
-    console.error("Error fetching profile:", error)
-    // If it's a database schema error, throw it so we can show helpful message
-    if (error.message?.includes("column") || error.message?.includes("Unknown column") || error.code === "P2021") {
+  } catch (error) {
+    const e = error as { message?: string; code?: string }
+    console.error("Error fetching profile:", e)
+    if (
+      e.message?.includes("column") ||
+      e.message?.includes("Unknown column") ||
+      e.code === "P2021"
+    ) {
       throw error
     }
-    // For other errors, return null
     return null
   }
 }
@@ -89,240 +80,301 @@ export default async function ProfilePage({
       redirect("/auth/signin")
     }
 
+    const viewer = {
+      name: session.user.name,
+      email: session.user.email,
+      role: session.user.role,
+      accountType: session.user.accountType,
+    }
+
     const profileData = await getProfile(id, session.user.id)
 
     if (!profileData) {
       return (
-        <div className="min-h-screen bg-gray-50">
-          <NavbarAdvanced />
-          <div className="max-w-4xl mx-auto px-4 py-8">
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600">Profile not found</p>
-            </div>
+        <ClearDShell viewer={viewer}>
+          <div className="max-w-4xl mx-auto py-8">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Profile not found.</p>
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        </ClearDShell>
       )
     }
 
     const { user, connectionStatus } = profileData
     const isOwnProfile = user.id === session.user.id
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProfileHeader
-          profile={{
-            user: {
-              id: user.id,
-              name: user.name,
-              image: user.image,
-              handle: user.handle,
-              email: user.email,
-            },
-            headline: user.profile?.headline || null,
-            location: user.profile?.location || null,
-            about: user.profile?.about || null,
-            bannerImage: user.profile?.bannerImage || null,
-          }}
-          isOwnProfile={isOwnProfile}
-          connectionStatus={isOwnProfile ? undefined : connectionStatus}
-          onConnect={undefined}
-          userId={user.id}
-        />
-
-        {/* Mission & Program Experience Section */}
-        <ProfileSectionCard title="Mission & Program Experience">
-          {user.experiences.length > 0 ? (
-            <div className="space-y-6">
-              {user.experiences.map((exp: any) => (
-                <div key={exp.id} className="flex gap-4 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                      {exp.company?.name?.charAt(0) || exp.companyName?.charAt(0) || "💼"}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 text-lg mb-1">{exp.title}</h4>
-                    <p className="text-blue-600 font-medium mb-1">
-                      {exp.company?.name || exp.companyName}
-                    </p>
-                    <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
-                      <span>
-                        {new Date(exp.startDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
-                        -{" "}
-                        {exp.isCurrent
-                          ? "Present"
-                          : exp.endDate
-                          ? new Date(exp.endDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "Present"}
-                      </span>
-                      {exp.location && (
-                        <>
-                          <span>•</span>
-                          <span>📍 {exp.location}</span>
-                        </>
-                      )}
-                    </div>
-                    {exp.description && (
-                      <p className="text-sm text-gray-700 mt-2 leading-relaxed">{exp.description}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No mission &amp; program experience added yet</p>
-            </div>
-          )}
-        </ProfileSectionCard>
-
-        {/* Education Section */}
-        <ProfileSectionCard title="Education">
-          {user.educations.length > 0 ? (
-            <div className="space-y-6">
-              {user.educations.map((edu: any) => (
-                <div key={edu.id} className="flex gap-4 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                      🎓
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 text-lg mb-1">{edu.school}</h4>
-                    {edu.degree && (
-                      <p className="text-gray-700 font-medium mb-1">
-                        {edu.degree}
-                        {edu.fieldOfStudy && `, ${edu.fieldOfStudy}`}
-                      </p>
-                    )}
-                    {edu.startDate && (
-                      <p className="text-sm text-gray-600">
-                        {new Date(edu.startDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
-                        -{" "}
-                        {edu.endDate
-                          ? new Date(edu.endDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "Present"}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No education added yet</p>
-            </div>
-          )}
-        </ProfileSectionCard>
-
-        {/* Validated Capabilities Section */}
-        <ProfileSectionCard title="Validated Capabilities">
-          {user.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {user.skills.map((userSkill: any) => (
-                <span
-                  key={userSkill.id}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-200 hover:border-blue-300 transition-colors shadow-sm"
-                >
-                  {userSkill.skill.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No validated capabilities added yet</p>
-            </div>
-          )}
-        </ProfileSectionCard>
-
-        {/* Career Insights - Only for own profile */}
-        {isOwnProfile && (
-          <div className="mb-6">
-            <CareerInsights />
-          </div>
-        )}
-
-        {/* Recent Activity */}
-        <ProfileSectionCard title="Recent Activity">
-          {user.posts.length > 0 ? (
-            <div className="space-y-5">
-              {user.posts.map((post: any) => (
-                <div key={post.id} className="pb-5 border-b border-gray-100 last:border-0">
-                  <p className="text-gray-700 leading-relaxed mb-3">{post.content}</p>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <span>👍</span>
-                      <span>{post.reactions.length} {post.reactions.length === 1 ? 'like' : 'likes'}</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span>💬</span>
-                      <span>{post.comments.length} {post.comments.length === 1 ? 'comment' : 'comments'}</span>
-                    </span>
-                    <span className="text-gray-400">
-                      {new Date(post.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: new Date(post.createdAt).getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
-                      })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No recent activity</p>
-            </div>
-          )}
-        </ProfileSectionCard>
-      </div>
-    </div>
-    )
-  } catch (error: any) {
-    console.error("Profile page error:", error)
     return (
-      <div className="min-h-screen bg-gray-50">
-        <NavbarAdvanced />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-yellow-900 mb-2">Error Loading Profile</h2>
-            <p className="text-yellow-800 mb-4">
-              {error.message?.includes("column") || error.message?.includes("Unknown column") || error.code === "P2021"
-                ? "Database schema needs to be updated. Please run the migration."
-                : "An error occurred while loading the profile. Please try again."}
-            </p>
-            {error.message?.includes("column") && (
-              <div className="bg-white rounded p-4 mb-4">
-                <p className="text-sm text-gray-700 mb-2">Run this command or use the admin migration button:</p>
-                <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                  npx prisma db push
-                </code>
+      <ClearDShell viewer={viewer}>
+        <div className="max-w-5xl mx-auto">
+          <ProfileHeader
+            profile={{
+              user: {
+                id: user.id,
+                name: user.name,
+                image: user.image,
+                handle: user.handle,
+                email: user.email,
+              },
+              headline: user.profile?.headline || null,
+              location: user.profile?.location || null,
+              about: user.profile?.about || null,
+              bannerImage: user.profile?.bannerImage || null,
+            }}
+            isOwnProfile={isOwnProfile}
+            connectionStatus={isOwnProfile ? undefined : connectionStatus}
+            onConnect={undefined}
+            userId={user.id}
+          />
+
+          <ProfileSectionCard title="Mission & Program Experience">
+            {user.experiences.length > 0 ? (
+              <div className="space-y-6">
+                {user.experiences.map(
+                  (exp: {
+                    id: string
+                    title: string
+                    companyName?: string | null
+                    description?: string | null
+                    location?: string | null
+                    startDate: Date | string
+                    endDate?: Date | string | null
+                    isCurrent?: boolean
+                    company?: { name?: string | null } | null
+                  }) => (
+                    <div
+                      key={exp.id}
+                      className="flex gap-4 pb-6 border-b border-border last:border-0 last:pb-0"
+                    >
+                      <div className="flex-shrink-0 w-11 h-11 rounded-md bg-primary/15 text-primary flex items-center justify-center font-semibold border border-border">
+                        {exp.company?.name?.charAt(0) ||
+                          exp.companyName?.charAt(0) || (
+                            <Briefcase className="h-5 w-5" aria-hidden />
+                          )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-foreground mb-1">
+                          {exp.title}
+                        </h4>
+                        <p className="text-primary text-sm font-medium mb-1">
+                          {exp.company?.name || exp.companyName}
+                        </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 flex-wrap">
+                          <span>
+                            {new Date(exp.startDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            –{" "}
+                            {exp.isCurrent
+                              ? "Present"
+                              : exp.endDate
+                              ? new Date(exp.endDate).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Present"}
+                          </span>
+                          {exp.location && (
+                            <>
+                              <span>•</span>
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="h-3 w-3" aria-hidden />
+                                {exp.location}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {exp.description && (
+                          <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                            {exp.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No mission &amp; program experience added yet.
               </div>
             )}
-            <a
-              href="/feed"
-              className="text-blue-600 hover:underline"
-            >
-              ← Back to Feed
-            </a>
-          </div>
+          </ProfileSectionCard>
+
+          <ProfileSectionCard title="Education">
+            {user.educations.length > 0 ? (
+              <div className="space-y-6">
+                {user.educations.map(
+                  (edu: {
+                    id: string
+                    school: string
+                    degree?: string | null
+                    fieldOfStudy?: string | null
+                    startDate?: Date | string | null
+                    endDate?: Date | string | null
+                  }) => (
+                    <div
+                      key={edu.id}
+                      className="flex gap-4 pb-6 border-b border-border last:border-0 last:pb-0"
+                    >
+                      <div className="flex-shrink-0 w-11 h-11 rounded-md bg-secondary text-primary flex items-center justify-center border border-border">
+                        <GraduationCap className="h-5 w-5" aria-hidden />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-foreground mb-1">
+                          {edu.school}
+                        </h4>
+                        {edu.degree && (
+                          <p className="text-foreground/90 text-sm font-medium mb-1">
+                            {edu.degree}
+                            {edu.fieldOfStudy && `, ${edu.fieldOfStudy}`}
+                          </p>
+                        )}
+                        {edu.startDate && (
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(edu.startDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            –{" "}
+                            {edu.endDate
+                              ? new Date(edu.endDate).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Present"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No education added yet.
+              </div>
+            )}
+          </ProfileSectionCard>
+
+          <ProfileSectionCard title="Validated Capabilities">
+            {user.skills.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {user.skills.map(
+                  (userSkill: { id: string; skill: { name: string } }) => (
+                    <Badge
+                      key={userSkill.id}
+                      variant="outline"
+                      className="text-primary border-primary/30"
+                    >
+                      {userSkill.skill.name}
+                    </Badge>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No validated capabilities added yet.
+              </div>
+            )}
+          </ProfileSectionCard>
+
+          {isOwnProfile && (
+            <div className="mb-4">
+              <CareerInsights />
+            </div>
+          )}
+
+          <ProfileSectionCard title="Recent Activity">
+            {user.posts.length > 0 ? (
+              <div className="space-y-5">
+                {user.posts.map(
+                  (post: {
+                    id: string
+                    content: string
+                    createdAt: Date | string
+                    reactions: { id: string }[]
+                    comments: { id: string }[]
+                  }) => (
+                    <div
+                      key={post.id}
+                      className="pb-5 border-b border-border last:border-0"
+                    >
+                      <p className="text-sm text-foreground leading-relaxed mb-3">
+                        {post.content}
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Heart className="h-3 w-3" aria-hidden />
+                          {post.reactions.length}{" "}
+                          {post.reactions.length === 1 ? "like" : "likes"}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" aria-hidden />
+                          {post.comments.length}{" "}
+                          {post.comments.length === 1 ? "comment" : "comments"}
+                        </span>
+                        <span>
+                          {new Date(post.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year:
+                              new Date(post.createdAt).getFullYear() !==
+                              new Date().getFullYear()
+                                ? "numeric"
+                                : undefined,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No recent activity.
+              </div>
+            )}
+          </ProfileSectionCard>
         </div>
-      </div>
+      </ClearDShell>
+    )
+  } catch (error) {
+    const e = error as { message?: string; code?: string }
+    console.error("Profile page error:", e)
+    return (
+      <ClearDShell
+        viewer={{
+          name: null,
+          email: "",
+          role: "USER",
+          accountType: "CANDIDATE",
+        }}
+      >
+        <div className="max-w-4xl mx-auto py-8">
+          <Alert variant="warning">
+            <AlertTitle>Error Loading Profile</AlertTitle>
+            <AlertDescription className="space-y-3">
+              <p>
+                {e.message?.includes("column") ||
+                e.message?.includes("Unknown column") ||
+                e.code === "P2021"
+                  ? "Database schema needs to be updated. Please run the migration."
+                  : "An error occurred while loading the profile. Please try again."}
+              </p>
+              <Link
+                href="/feed"
+                className="inline-flex items-center gap-1 text-primary hover:text-primary/80 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                ← Back to Feed
+              </Link>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </ClearDShell>
     )
   }
 }
-

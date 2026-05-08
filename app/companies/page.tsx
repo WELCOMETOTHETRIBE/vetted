@@ -1,25 +1,19 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
 import CompaniesContent from "@/components/CompaniesContent"
 
 async function getCompanies() {
   const companies = await prisma.company.findMany({
     where: { isActive: true },
     include: {
-      _count: {
-        select: {
-          employees: true,
-          jobs: true,
-          posts: true,
-        },
-      },
+      _count: { select: { employees: true, jobs: true, posts: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 50,
   })
-
   return companies
 }
 
@@ -32,13 +26,21 @@ export default async function CompaniesPage() {
   const companies = await getCompanies()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Companies</h1>
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        accountType: session.user.accountType,
+      }}
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
+        <PageHeader
+          title="Companies"
+          description="Cleared employers and partner contractors hiring across the suite."
+        />
         <CompaniesContent initialCompanies={companies} />
       </div>
-    </div>
+    </ClearDShell>
   )
 }
-

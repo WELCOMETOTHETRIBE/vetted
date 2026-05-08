@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "clearD — Cleared Talent Network",
@@ -79,7 +78,7 @@ export default function RootLayout({
             so per-page copper styling wins deterministically across every
             Clerk subflow (verify-email, factor-2, magic link, OAuth bounce).
           */}
-          <Providers>{children}</Providers>
+          {children}
         </ClerkProvider>
       </body>
     </html>
