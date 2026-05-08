@@ -1,6 +1,6 @@
 # Nixpacks configuration for Railway
 [phases.setup]
-nixPkgs = ["nodejs-20_x", "python3", "pip"]
+nixPkgs = ["nodejs", "python3", "pip"]
 
 [phases.install]
 cmds = [
@@ -19,6 +19,6 @@ cmds = [
 ]
 
 [start]
-cmd = "node server.js"
+cmd = "next start -p ${PORT:-3000}"
 env = { PATH = "/opt/venv/bin:${PATH}" }
 
