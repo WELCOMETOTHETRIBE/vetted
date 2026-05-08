@@ -1,371 +1,446 @@
-"use client"
-
-import { useState, useEffect } from 'react'
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
-  ProgressRing,
-  InteractiveBarChart,
-  AnimatedCounter,
-  SparklineChart,
-  ActivityHeatmap,
-  GaugeChart,
-  MetricCard,
-  NetworkGraph
-} from '@/components/DataVisualization'
+  LayoutDashboard,
+  Newspaper,
+  UserCircle2,
+  Briefcase,
+  Users,
+  MessagesSquare,
+  Bell,
+  Target,
+  Building2,
+  Settings2,
+  Gift,
+  ShieldCheck,
+  AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { ClearDShell } from "@/components/layout/cleard-shell";
+import { PageHeader } from "@/components/layout/page-header";
 import {
-  HoverMorph,
-  LiquidButton,
-  MagneticElement,
-  ParallaxElement,
-  StaggerContainer,
-  MorphingFAB,
-  CursorFollower
-} from '@/components/AdvancedAnimations'
-import { useTheme } from '@/components/Providers'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-// Mock data for demonstration
-const mockActivityData = Array.from({ length: 365 }, (_, i) => ({
-  date: new Date(Date.now() - (364 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  value: Math.floor(Math.random() * 20)
-}))
+export const dynamic = "force-dynamic";
 
-const mockBarData = [
-  { label: 'Mon', value: 120 },
-  { label: 'Tue', value: 150 },
-  { label: 'Wed', value: 180 },
-  { label: 'Thu', value: 140 },
-  { label: 'Fri', value: 200 },
-  { label: 'Sat', value: 90 },
-  { label: 'Sun', value: 110 }
-]
-
-const mockSparklineData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 100) + 50)
-
-const mockNetworkData = {
-  nodes: [
-    { id: '1', label: 'You', x: 400, y: 300, size: 30 },
-    { id: '2', label: 'Alice', x: 200, y: 200, size: 20 },
-    { id: '3', label: 'Bob', x: 600, y: 200, size: 20 },
-    { id: '4', label: 'Charlie', x: 300, y: 100, size: 18 },
-    { id: '5', label: 'Diana', x: 500, y: 100, size: 18 },
-    { id: '6', label: 'Eve', x: 350, y: 450, size: 16 },
-    { id: '7', label: 'Frank', x: 550, y: 450, size: 16 }
-  ],
-  connections: [
-    { from: '1', to: '2' },
-    { from: '1', to: '3' },
-    { from: '1', to: '6' },
-    { from: '1', to: '7' },
-    { from: '2', to: '4' },
-    { from: '3', to: '5' },
-    { from: '4', to: '5' },
-    { from: '6', to: '7' }
-  ]
+interface PrimaryArea {
+  href: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
 }
 
-export default function Dashboard() {
-  const { theme } = useTheme()
-  const [activeTab, setActiveTab] = useState('overview')
-  const [isLoading, setIsLoading] = useState(true)
+/* ------------------------------------------------------------------ */
+/* Per-audience primary-area definitions. No mock data — every count   */
+/* on this page resolves to a live Prisma query in `loadDashboard`.    */
+/* ------------------------------------------------------------------ */
 
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 1500)
-    return () => clearTimeout(timer)
-  }, [])
+const CANDIDATE_AREAS: PrimaryArea[] = [
+  {
+    href: "/feed",
+    title: "Feed",
+    description: "Updates from your network and the cleared community.",
+    icon: Newspaper,
+  },
+  {
+    href: "/profile",
+    title: "Profile",
+    description: "Cleared mission profile, headline, and continuity record.",
+    icon: UserCircle2,
+  },
+  {
+    href: "/jobs",
+    title: "Jobs",
+    description: "Mission-fit cleared roles ranked for your profile.",
+    icon: Briefcase,
+  },
+  {
+    href: "/network",
+    title: "Network",
+    description: "Connections, pending invites, and suggested introductions.",
+    icon: Users,
+  },
+  {
+    href: "/messages",
+    title: "Messages",
+    description: "Direct conversations with peers and recruiters.",
+    icon: MessagesSquare,
+  },
+  {
+    href: "/notifications",
+    title: "Notifications",
+    description: "Connection requests, mentions, and platform updates.",
+    icon: Bell,
+  },
+];
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-content-secondary">Loading your dashboard...</p>
-        </div>
+const EMPLOYER_AREAS: PrimaryArea[] = [
+  {
+    href: "/candidates",
+    title: "Talent Pool",
+    description: "Cleared candidates filtered by clearance fit and mission area.",
+    icon: Target,
+  },
+  {
+    href: "/jobs",
+    title: "Jobs Posted",
+    description: "Manage your cleared roles and review applicants.",
+    icon: Briefcase,
+  },
+  {
+    href: "/messages",
+    title: "Messages",
+    description: "Outreach threads with cleared candidates and your team.",
+    icon: MessagesSquare,
+  },
+  {
+    href: "/companies",
+    title: "Companies",
+    description: "Defense contractor profiles and program affiliations.",
+    icon: Building2,
+  },
+  {
+    href: "/notifications",
+    title: "Notifications",
+    description: "Application activity and engagement alerts.",
+    icon: Bell,
+  },
+];
+
+const ADMIN_AREAS: PrimaryArea[] = [
+  {
+    href: "/admin",
+    title: "Operator Console",
+    description: "Platform health, candidate moderation, and ATS scrapers.",
+    icon: Settings2,
+  },
+  {
+    href: "/admin?tab=ops-tickets",
+    title: "Ops Tickets",
+    description: "Bug reports, feature requests, and triage queue.",
+    icon: AlertTriangle,
+  },
+  {
+    href: "/candidates",
+    title: "Talent Pool",
+    description: "Imported and scraped cleared candidate records.",
+    icon: Target,
+  },
+  {
+    href: "/feed",
+    title: "Feed",
+    description: "Platform-wide candidate posts and content.",
+    icon: Newspaper,
+  },
+  {
+    href: "/referrals",
+    title: "Referrals",
+    description: "Referral program activity and payouts.",
+    icon: Gift,
+  },
+];
+
+interface DashboardCounts {
+  acceptedConnections: number;
+  pendingConnections: number;
+  unreadNotifications: number;
+  conversationCount: number;
+  jobsPosted: number;
+  candidateCount: number;
+  openOpsTickets: number;
+}
+
+async function loadDashboard(userId: string): Promise<DashboardCounts> {
+  /* Run the small set of counts in parallel. Each query is bounded — none of
+   * these are unbounded scans. The dashboard doesn't fetch row data, only
+   * aggregate counts, so the result set is constant-sized regardless of
+   * platform scale. */
+  const [
+    acceptedConnections,
+    pendingConnections,
+    unreadNotifications,
+    conversationCount,
+    jobsPosted,
+    candidateCount,
+    openOpsTickets,
+  ] = await Promise.all([
+    prisma.connection.count({
+      where: {
+        OR: [
+          { requesterId: userId, status: "ACCEPTED" },
+          { receiverId: userId, status: "ACCEPTED" },
+        ],
+      },
+    }),
+    prisma.connection.count({
+      where: { receiverId: userId, status: "PENDING" },
+    }),
+    prisma.notification.count({
+      where: { userId, isRead: false },
+    }),
+    prisma.messageThread
+      .count({ where: { OR: [{ user1Id: userId }, { user2Id: userId }] } })
+      .catch(() => 0),
+    prisma.job.count({ where: { postedById: userId } }).catch(() => 0),
+    prisma.candidate.count().catch(() => 0),
+    prisma.opsTicket
+      .count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] } } })
+      .catch(() => 0),
+  ]);
+
+  return {
+    acceptedConnections,
+    pendingConnections,
+    unreadNotifications,
+    conversationCount,
+    jobsPosted,
+    candidateCount,
+    openOpsTickets,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+
+interface MetricSpec {
+  label: string;
+  value: number;
+  hint: string;
+}
+
+function candidateMetrics(c: DashboardCounts): MetricSpec[] {
+  return [
+    {
+      label: "Connections",
+      value: c.acceptedConnections,
+      hint: "Accepted in your cleared network.",
+    },
+    {
+      label: "Pending invites",
+      value: c.pendingConnections,
+      hint: "Connection requests awaiting your response.",
+    },
+    {
+      label: "Conversations",
+      value: c.conversationCount,
+      hint: "Active threads in Messages.",
+    },
+    {
+      label: "Unread alerts",
+      value: c.unreadNotifications,
+      hint: "Mentions, replies, and platform notices.",
+    },
+  ];
+}
+
+function employerMetrics(c: DashboardCounts): MetricSpec[] {
+  return [
+    {
+      label: "Jobs posted",
+      value: c.jobsPosted,
+      hint: "Cleared roles you have published.",
+    },
+    {
+      label: "Talent pool",
+      value: c.candidateCount,
+      hint: "Cleared candidates available to source from.",
+    },
+    {
+      label: "Conversations",
+      value: c.conversationCount,
+      hint: "Active outreach threads.",
+    },
+    {
+      label: "Unread alerts",
+      value: c.unreadNotifications,
+      hint: "Engagement events that need a response.",
+    },
+  ];
+}
+
+function adminMetrics(c: DashboardCounts): MetricSpec[] {
+  return [
+    {
+      label: "Open ops tickets",
+      value: c.openOpsTickets,
+      hint: "Bug reports and feature requests in the queue.",
+    },
+    {
+      label: "Talent pool",
+      value: c.candidateCount,
+      hint: "Total cleared candidate records.",
+    },
+    {
+      label: "Connections",
+      value: c.acceptedConnections,
+      hint: "Your own accepted connections.",
+    },
+    {
+      label: "Unread alerts",
+      value: c.unreadNotifications,
+      hint: "Notifications routed to your account.",
+    },
+  ];
+}
+
+/* ------------------------------------------------------------------ */
+
+function MetricCard({ spec }: { spec: MetricSpec }) {
+  return (
+    <Card className="bg-card/60">
+      <CardHeader className="pb-3">
+        <CardDescription className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {spec.label}
+        </CardDescription>
+        <CardTitle className="text-3xl font-semibold tabular-nums">
+          {spec.value.toLocaleString()}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="text-xs text-muted-foreground">{spec.hint}</CardContent>
+    </Card>
+  );
+}
+
+function PrimaryAreaCard({ area }: { area: PrimaryArea }) {
+  const Icon = area.icon;
+  return (
+    <Link
+      href={area.href}
+      className={cn(
+        "group flex gap-3 rounded-lg border border-border p-4 transition-colors",
+        "hover:border-primary/40 hover:bg-card/80",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      )}
+    >
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-foreground">
+        <Icon className="h-4 w-4" aria-hidden />
       </div>
-    )
+      <div className="min-w-0">
+        <div className="text-sm font-medium group-hover:text-primary">
+          {area.title}
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">{area.description}</p>
+      </div>
+    </Link>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin?redirect_url=%2Fdashboard");
+  }
+
+  const counts = await loadDashboard(session.user.id);
+  const role = session.user.role;
+  const accountType = session.user.accountType;
+  const isAdmin = role === "ADMIN";
+  const isEmployer = accountType === "EMPLOYER";
+
+  let areas: PrimaryArea[];
+  let metrics: MetricSpec[];
+  let audienceLine: string;
+  let audienceTitle: string;
+
+  if (isAdmin) {
+    areas = ADMIN_AREAS;
+    metrics = adminMetrics(counts);
+    audienceTitle = "Operator dashboard";
+    audienceLine =
+      "Platform health, candidate moderation, and the operator console. Open ops tickets and talent pool size are live.";
+  } else if (isEmployer) {
+    areas = EMPLOYER_AREAS;
+    metrics = employerMetrics(counts);
+    audienceTitle = "Employer dashboard";
+    audienceLine =
+      "Source cleared talent, manage your roles, and triage outreach. All counts pull from your account in real time.";
+  } else {
+    areas = CANDIDATE_AREAS;
+    metrics = candidateMetrics(counts);
+    audienceTitle = "Candidate dashboard";
+    audienceLine =
+      "Your network at a glance. Jump straight back into the feed, your profile, or mission-fit jobs.";
   }
 
   return (
-    <CursorFollower>
-      <div className="min-h-screen bg-gradient-to-br from-surface-primary via-surface-secondary to-surface-primary">
-        {/* Header */}
-        <header className="glass-elevated sticky top-0 z-40 border-b border-surface-tertiary/50">
-          <div className="container-fluid">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-6">
-                <h1 className="text-2xl font-bold text-gradient">Dashboard</h1>
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role,
+        accountType,
+      }}
+    >
+      <div className="space-y-8">
+        <PageHeader title={audienceTitle} description={audienceLine} />
 
-                {/* Navigation Tabs */}
-                <nav className="hidden md:flex items-center space-x-1">
-                  {[
-                    { id: 'overview', label: 'Overview', icon: '📊' },
-                    { id: 'analytics', label: 'Analytics', icon: '📈' },
-                    { id: 'network', label: 'Network', icon: '👥' },
-                    { id: 'activity', label: 'Activity', icon: '⚡' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        activeTab === tab.id
-                          ? 'bg-primary-500/10 text-primary-600 border border-primary-500/20'
-                          : 'text-content-secondary hover:bg-surface-secondary hover:text-content-primary'
-                      }`}
-                    >
-                      <span className="mr-2">{tab.icon}</span>
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <Card className="border-primary/20 bg-card/60 sm:col-span-2 xl:col-span-2">
+            <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/15 text-primary">
+                <LayoutDashboard className="h-5 w-5" aria-hidden />
               </div>
+              <div>
+                <CardTitle className="text-base">clearD by MacTech</CardTitle>
+                <CardDescription>
+                  Cleared talent network · {audienceTitle.toLowerCase()} ·
+                  signed in as{" "}
+                  <span className="font-mono text-xs">{session.user.email}</span>
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Use the left navigation for the full surface. Quick areas below.
+            </CardContent>
+          </Card>
 
-              {/* Quick Actions */}
-              <div className="flex items-center gap-3">
-                <button className="p-2 rounded-xl hover:bg-surface-secondary transition-colors">
-                  <svg className="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM15 7V4a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h2m0 4h10a2 2 0 002-2v-3a2 2 0 00-2-2H9a2 2 0 00-2 2v3a2 2 0 002 2z" />
-                  </svg>
-                </button>
-                <button className="p-2 rounded-xl hover:bg-surface-secondary transition-colors">
-                  <svg className="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                  </svg>
-                </button>
+          <Card className="bg-card/60">
+            <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/15 text-primary">
+                <ShieldCheck className="h-5 w-5" aria-hidden />
               </div>
-            </div>
+              <div>
+                <CardTitle className="text-base">Clearance hygiene</CardTitle>
+                <CardDescription>
+                  Keep posts, messages, and profile fields free of classified or
+                  CUI detail.
+                </CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-4">
+            At a glance
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {metrics.map((m) => (
+              <MetricCard key={m.label} spec={m} />
+            ))}
           </div>
-        </header>
+        </section>
 
-        {/* Main Content */}
-        <main className="container-fluid py-8">
-          {activeTab === 'overview' && (
-            <StaggerContainer className="space-y-8">
-              {/* Welcome Section */}
-              <div className="text-center py-12">
-                <ParallaxElement speed={0.2}>
-                  <h2 className="text-fluid-4xl font-bold mb-4 text-gradient">
-                    Welcome back, John! 👋
-                  </h2>
-                  <p className="text-fluid-xl text-content-secondary max-w-2xl mx-auto">
-                    Here's what's happening with your professional network today
-                  </p>
-                </ParallaxElement>
-              </div>
-
-              {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <HoverMorph>
-                  <MetricCard
-                    title="Profile Views"
-                    value={2847}
-                    previousValue={2650}
-                    icon="👁️"
-                  />
-                </HoverMorph>
-                <HoverMorph>
-                  <MetricCard
-                    title="Connections"
-                    value={156}
-                    previousValue={148}
-                    icon="🤝"
-                  />
-                </HoverMorph>
-                <HoverMorph>
-                  <MetricCard
-                    title="Messages"
-                    value={23}
-                    previousValue={18}
-                    icon="💬"
-                  />
-                </HoverMorph>
-                <HoverMorph>
-                  <MetricCard
-                    title="Opportunities"
-                    value={8}
-                    previousValue={12}
-                    icon="🎯"
-                  />
-                </HoverMorph>
-              </div>
-
-              {/* Charts Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Weekly Activity */}
-                <HoverMorph className="card-modern p-6">
-                  <h3 className="text-xl font-bold mb-6 text-content-primary">Weekly Activity</h3>
-                  <InteractiveBarChart data={mockBarData} height={200} />
-                </HoverMorph>
-
-                {/* Progress Rings */}
-                <HoverMorph className="card-modern p-6">
-                  <h3 className="text-xl font-bold mb-6 text-content-primary">Goals Progress</h3>
-                  <div className="grid grid-cols-2 gap-6">
-                    <ProgressRing progress={78} label="Profile Completion" />
-                    <ProgressRing progress={65} label="Network Growth" />
-                    <ProgressRing progress={92} label="Response Rate" />
-                    <ProgressRing progress={45} label="Skill Development" />
-                  </div>
-                </HoverMorph>
-              </div>
-
-              {/* Sparkline and Gauge */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <HoverMorph className="card-modern p-6 lg:col-span-2">
-                  <h3 className="text-xl font-bold mb-6 text-content-primary">Engagement Trend</h3>
-                  <SparklineChart data={mockSparklineData} width={600} height={120} />
-                </HoverMorph>
-
-                <HoverMorph className="card-modern p-6">
-                  <h3 className="text-xl font-bold mb-6 text-content-primary">Network Health</h3>
-                  <GaugeChart value={85} label="Connection Quality" />
-                </HoverMorph>
-              </div>
-            </StaggerContainer>
-          )}
-
-          {activeTab === 'analytics' && (
-            <div className="space-y-8">
-              <div className="text-center py-8">
-                <h2 className="text-fluid-4xl font-bold mb-4 text-gradient">
-                  Advanced Analytics 📊
-                </h2>
-                <p className="text-fluid-lg text-content-secondary">
-                  Deep insights into your professional performance
-                </p>
-              </div>
-
-              {/* Activity Heatmap */}
-              <HoverMorph className="card-modern p-8">
-                <h3 className="text-2xl font-bold mb-6 text-content-primary">Activity Heatmap</h3>
-                <ActivityHeatmap data={mockActivityData} />
-              </HoverMorph>
-
-              {/* Detailed Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-4xl font-bold text-primary-600 mb-2">
-                    <AnimatedCounter value={12750} />
-                  </div>
-                  <div className="text-content-secondary">Profile Impressions</div>
-                  <div className="text-sm text-success-600 mt-2">+12.5% from last month</div>
-                </HoverMorph>
-
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-4xl font-bold text-success-600 mb-2">
-                    <AnimatedCounter value={94} />%
-                  </div>
-                  <div className="text-content-secondary">Connection Acceptance</div>
-                  <div className="text-sm text-success-600 mt-2">Above average</div>
-                </HoverMorph>
-
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-4xl font-bold text-warning-600 mb-2">
-                    <AnimatedCounter value={4.2} />
-                  </div>
-                  <div className="text-content-secondary">Avg Response Time</div>
-                  <div className="text-sm text-content-tertiary mt-2">Hours</div>
-                </HoverMorph>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'network' && (
-            <div className="space-y-8">
-              <div className="text-center py-8">
-                <h2 className="text-fluid-4xl font-bold mb-4 text-gradient">
-                  Your Network 👥
-                </h2>
-                <p className="text-fluid-lg text-content-secondary">
-                  Visualize and manage your professional connections
-                </p>
-              </div>
-
-              {/* Network Graph */}
-              <HoverMorph className="card-modern p-8">
-                <h3 className="text-2xl font-bold mb-6 text-content-primary">Connection Network</h3>
-                <NetworkGraph nodes={mockNetworkData.nodes} connections={mockNetworkData.connections} />
-              </HoverMorph>
-
-              {/* Network Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-3xl font-bold text-primary-600 mb-2">156</div>
-                  <div className="text-content-secondary">1st Connections</div>
-                </HoverMorph>
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-3xl font-bold text-secondary-600 mb-2">2,847</div>
-                  <div className="text-content-secondary">2nd Connections</div>
-                </HoverMorph>
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-3xl font-bold text-success-600 mb-2">89</div>
-                  <div className="text-content-secondary">Mutual Groups</div>
-                </HoverMorph>
-                <HoverMorph className="card-modern p-6 text-center">
-                  <div className="text-3xl font-bold text-warning-600 mb-2">23</div>
-                  <div className="text-content-secondary">Pending Invites</div>
-                </HoverMorph>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'activity' && (
-            <div className="space-y-8">
-              <div className="text-center py-8">
-                <h2 className="text-fluid-4xl font-bold mb-4 text-gradient">
-                  Recent Activity ⚡
-                </h2>
-                <p className="text-fluid-lg text-content-secondary">
-                  Your latest professional interactions and updates
-                </p>
-              </div>
-
-              {/* Activity Feed */}
-              <div className="space-y-4">
-                {[
-                  { type: 'connection', message: 'You connected with Sarah Johnson', time: '2 hours ago', icon: '🤝' },
-                  { type: 'view', message: 'TechCorp viewed your profile', time: '4 hours ago', icon: '👁️' },
-                  { type: 'message', message: 'New message from Mike Chen', time: '6 hours ago', icon: '💬' },
-                  { type: 'like', message: 'Alice Cooper liked your post', time: '8 hours ago', icon: '👍' },
-                  { type: 'comment', message: 'Bob Wilson commented on your update', time: '1 day ago', icon: '💭' },
-                  { type: 'share', message: 'Diana Prince shared your article', time: '1 day ago', icon: '🔗' }
-                ].map((activity, index) => (
-                  <HoverMorph key={index} className="card-modern p-6 animate-on-scroll">
-                    <div className="flex items-center gap-4">
-                      <div className="text-2xl">{activity.icon}</div>
-                      <div className="flex-1">
-                        <p className="text-content-primary font-medium">{activity.message}</p>
-                        <p className="text-sm text-content-secondary">{activity.time}</p>
-                      </div>
-                      <MagneticElement>
-                        <button className="p-2 rounded-lg hover:bg-surface-secondary transition-colors">
-                          <svg className="w-4 h-4 text-content-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </MagneticElement>
-                    </div>
-                  </HoverMorph>
-                ))}
-              </div>
-            </div>
-          )}
-        </main>
-
-        {/* Floating Action Button */}
-        <MorphingFAB
-          icon={<span className="text-xl">+</span>}
-          onClick={() => console.log('FAB clicked')}
-        />
-
-        {/* Theme Toggle FAB */}
-        <div className="fixed bottom-6 left-6 z-50">
-          <LiquidButton
-            onClick={() => console.log('Theme toggle')}
-            className="w-12 h-12 rounded-full bg-surface-elevated shadow-lg"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </LiquidButton>
-        </div>
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-4">
+            Primary areas
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {areas.map((area) => (
+              <PrimaryAreaCard key={area.href} area={area} />
+            ))}
+          </div>
+        </section>
       </div>
-    </CursorFollower>
-  )
+    </ClearDShell>
+  );
 }
