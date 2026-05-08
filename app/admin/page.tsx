@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { ClearDShell } from "@/components/layout/cleard-shell"
 import OperatorConsole from "@/components/admin/OperatorConsole"
 
 async function getAdminData() {
@@ -95,10 +95,22 @@ export default async function AdminPage() {
   const adminData = await getAdminData()
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <NavbarAdvanced />
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        accountType: session.user.accountType,
+      }}
+    >
+      {/*
+       * Per the brief: do NOT redesign Operator Console internals. We only
+       * swap the outer chrome (NavbarAdvanced → ClearDShell). The console
+       * picks up the new copper tokens through the bg-card / text-foreground
+       * cascade automatically.
+       */}
       <OperatorConsole initialData={adminData as any} />
-    </div>
+    </ClearDShell>
   )
 }
 

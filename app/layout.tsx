@@ -1,29 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "MacTech Identity Command Center",
+  title: "clearD — Cleared Talent Network",
   description:
-    "Central identity, organization access, and audit-aware sign-in for the MacTech suite.",
+    "clearD by MacTech — the clearance-first professional network for transitioning service members, defense contractors, and federal program staff.",
   keywords: [
-    "mactech identity",
-    "command center",
-    "organization access",
-    "rbac",
-    "suite authentication",
+    "cleard",
+    "cleared talent network",
+    "defense contracting",
+    "security clearance",
+    "veteran careers",
+    "mactech solutions",
   ],
   authors: [{ name: "MacTech Solutions" }],
   manifest: "/manifest.json",
@@ -32,17 +22,17 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "MacTech Identity Command Center",
+    title: "clearD by MacTech — Cleared Talent Network",
     description:
-      "Central identity, organization access, and audit-aware sign-in for the MacTech suite.",
+      "Cleared Mission Profiles, mission-fit sourcing, and audit-aware AI decision support for defense and federal contracting.",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MacTech Identity Command Center",
+    title: "clearD by MacTech — Cleared Talent Network",
     description:
-      "Central identity, organization access, and audit-aware sign-in for the MacTech suite.",
+      "Cleared Mission Profiles, mission-fit sourcing, and audit-aware AI decision support for defense and federal contracting.",
   },
 };
 
@@ -51,8 +41,8 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#0a0807" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0807" },
   ],
 };
 
@@ -61,73 +51,35 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  /**
+   * Defensive Clerk publishable key resolution: Railway has historically been
+   * inconsistent about exposing NEXT_PUBLIC_* at build time vs runtime. Read
+   * from both env names so the build never produces an unstyled widget. See
+   * commit 1c20f6b for the production incident this exists to prevent.
+   */
   const clerkPublishableKey =
-    process.env.CLERK_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
+    process.env.CLERK_PUBLISHABLE_KEY;
 
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
+      <body className="antialiased">
         <ClerkProvider
           publishableKey={clerkPublishableKey}
-          appearance={{
-            variables: {
-              colorPrimary: "#22d3ee",
-              colorBackground: "#0b1220",
-              colorText: "#f1f5f9",
-              colorTextSecondary: "#cbd5e1",
-              colorInputBackground: "#1e293b",
-              colorInputText: "#f1f5f9",
-              colorNeutral: "#cbd5e1",
-              colorTextOnPrimaryBackground: "#0b1220",
-              borderRadius: "0.75rem",
-              fontFamily:
-                "ui-sans-serif, system-ui, -apple-system, Segoe UI, Inter, sans-serif",
-            },
-            elements: {
-              card: {
-                backgroundColor: "#111827",
-                border: "1px solid #334155",
-                boxShadow:
-                  "0 20px 45px rgba(2, 6, 23, 0.55), 0 0 0 1px rgba(51, 65, 85, 0.35)",
-              },
-              headerTitle: { display: "none" },
-              headerSubtitle: { display: "none" },
-              socialButtonsBlockButton: {
-                backgroundColor: "#1e293b",
-                borderColor: "#475569",
-                color: "#f1f5f9",
-                "&:hover": { backgroundColor: "#334155" },
-              },
-              socialButtonsBlockButtonText: { color: "#f1f5f9" },
-              socialButtonsProviderIcon: { filter: "brightness(1.6) contrast(1.1)" },
-              formFieldLabel: { color: "#e2e8f0" },
-              formFieldHintText: { color: "#94a3b8" },
-              formFieldInput: {
-                backgroundColor: "#0f172a",
-                borderColor: "#334155",
-                color: "#f1f5f9",
-              },
-              dividerLine: { backgroundColor: "#334155" },
-              dividerText: { color: "#94a3b8" },
-              footerActionText: { color: "#cbd5e1" },
-              footerActionLink: {
-                color: "#22d3ee",
-                "&:hover": { color: "#67e8f9" },
-              },
-              identityPreviewText: { color: "#f1f5f9" },
-              identityPreviewEditButton: { color: "#22d3ee" },
-            },
-          }}
           signInUrl="/auth/signin"
           signUpUrl="/auth/signup"
+          signInFallbackRedirectUrl="/feed"
+          signUpFallbackRedirectUrl="/onboarding"
           afterSignOutUrl="/"
         >
-          <Providers>
-            {children}
-          </Providers>
+          {/*
+            Note: per-page Clerk <SignIn> / <SignUp> appearance overrides
+            (in app/auth/[signin|signup]/[[...rest]]/page.tsx) own all
+            theming. We deliberately do NOT pass an `appearance` prop here
+            so per-page copper styling wins deterministically across every
+            Clerk subflow (verify-email, factor-2, magic link, OAuth bounce).
+          */}
+          <Providers>{children}</Providers>
         </ClerkProvider>
       </body>
     </html>
