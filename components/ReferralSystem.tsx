@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
 
 interface Referral {
   id: string
@@ -41,7 +40,6 @@ interface ReferralStats {
 }
 
 export default function ReferralSystem() {
-  const { data: session } = useSession()
   const [referrals, setReferrals] = useState<Referral[]>([])
   const [stats, setStats] = useState<ReferralStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,11 +53,9 @@ export default function ReferralSystem() {
   })
 
   useEffect(() => {
-    if (session?.user) {
-      loadReferrals()
-      loadStats()
-    }
-  }, [session])
+    loadReferrals()
+    loadStats()
+  }, [])
 
   const loadReferrals = async () => {
     try {

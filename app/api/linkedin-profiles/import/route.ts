@@ -295,7 +295,7 @@ export async function POST(req: Request) {
 
         // Send to candidate upload endpoint (internal call)
         // We need to construct the full URL properly
-        const baseUrl = process.env.NEXTAUTH_URL || 
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
           (req.headers.get("x-forwarded-proto") 
             ? `${req.headers.get("x-forwarded-proto")}://${req.headers.get("host")}`
             : `http://${req.headers.get("host") || "localhost:3000"}`)

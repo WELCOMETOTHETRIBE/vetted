@@ -1,6 +1,6 @@
-# Vetted
+# clearD by MacTech Solutions
 
-A production-ready professional networking platform inspired by LinkedIn, built with Next.js 14, TypeScript, Prisma, and PostgreSQL.
+A production-ready, clearance-first professional networking platform for mission-ready defense work, built with Next.js, TypeScript, Prisma, and PostgreSQL.
 
 ## Features
 
@@ -23,7 +23,7 @@ A production-ready professional networking platform inspired by LinkedIn, built 
 - **Styling**: Tailwind CSS
 - **Database**: PostgreSQL
 - **ORM**: Prisma
-- **Authentication**: NextAuth.js (email/password + Google OAuth)
+- **Authentication**: Clerk (hosted auth, sessions, and OAuth)
 - **Testing**: Vitest, Playwright
 
 ## Getting Started
@@ -54,8 +54,9 @@ cp .env.example .env
 
 Edit `.env` and fill in your configuration:
 - `DATABASE_URL`: Your PostgreSQL connection string
-- `AUTH_SECRET` or `NEXTAUTH_SECRET`: Generate a random secret (e.g., `openssl rand -base64 32`)
-- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: For Google OAuth (optional, but required if you want Google sign-in)
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk frontend key
+- `CLERK_SECRET_KEY`: Clerk backend key
+- `NEXT_PUBLIC_APP_URL`: Canonical app URL (for internal callbacks and API URL generation)
 - `VETTED_API_KEY`: API key for browser extension (optional, for admin users)
 
 4. Set up the database:
@@ -112,7 +113,7 @@ vetted/
 │   └── ...
 ├── components/            # React components
 ├── lib/                    # Utility functions
-│   ├── auth.ts            # NextAuth configuration
+│   ├── auth.ts            # Clerk-backed session bridge
 │   └── prisma.ts          # Prisma client
 ├── prisma/
 │   ├── schema.prisma      # Database schema
@@ -201,13 +202,21 @@ The project includes Docker configuration:
 docker-compose up -d
 
 # Build and run the app
-docker build -t vetted .
-docker run -p 3000:3000 --env-file .env vetted
+docker build -t cleard .
+docker run -p 3000:3000 --env-file .env cleard
 ```
 
 ## Environment Variables
 
 See `.env.example` for all required environment variables.
+
+For production on Railway, the minimum auth set is:
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_APP_URL`
+
+Production deployment and rollback steps live in `PRODUCTION_RUNBOOK.md`.
 
 ## Features Implementation Notes
 
@@ -230,7 +239,7 @@ This project is private and proprietary.
 
 ## Extension Integration
 
-Vetted supports importing candidate profiles from LinkedIn via browser extension. See `EXTENSION_INTEGRATION.md` for details.
+clearD supports importing candidate profiles from LinkedIn via browser extension. See `EXTENSION_INTEGRATION.md` for details.
 
 **Key Features**:
 - Admin-only candidate pool

@@ -1,5 +1,21 @@
-import { handlers } from "@/lib/auth"
+import { NextResponse } from "next/server";
 
-export const { GET, POST } = handlers
+function disabled() {
+  return NextResponse.json(
+    {
+      error:
+        "NextAuth endpoints are disabled. Use Clerk at /auth/signin and /auth/signup.",
+    },
+    { status: 410 },
+  );
+}
+
+export async function GET() {
+  return disabled();
+}
+
+export async function POST() {
+  return disabled();
+}
 
 

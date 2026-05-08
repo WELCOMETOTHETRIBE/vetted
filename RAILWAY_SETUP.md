@@ -1,6 +1,6 @@
 # Railway Setup Guide
 
-This guide will help you set up PostgreSQL and configure your Vetted application on Railway.
+This guide will help you set up PostgreSQL and configure your clearD application on Railway.
 
 ## Step 1: Add PostgreSQL Database
 
@@ -11,9 +11,9 @@ This guide will help you set up PostgreSQL and configure your Vetted application
 
 ## Step 2: Connect Database to Your App
 
-Railway automatically creates a `DATABASE_URL` environment variable when you add a PostgreSQL service. However, you need to link it to your `vetted` service:
+Railway automatically creates a `DATABASE_URL` environment variable when you add a PostgreSQL service. However, you need to link it to your clearD service:
 
-1. Click on your **`vetted`** service (the Next.js app)
+1. Click on your clearD app service (the Next.js app)
 2. Go to the **"Variables"** tab
 3. Railway should automatically show `DATABASE_URL` from the PostgreSQL service
    - If not, click **"Reference Variable"** and select `DATABASE_URL` from your PostgreSQL service
@@ -21,21 +21,20 @@ Railway automatically creates a `DATABASE_URL` environment variable when you add
 
 ## Step 3: Set Required Environment Variables
 
-In your `vetted` service, add these environment variables in the **"Variables"** tab:
+In your clearD service, add these environment variables in the **"Variables"** tab:
 
 ### Required Variables:
 
-1. **`AUTH_SECRET`** (or `NEXTAUTH_SECRET`)
-   - Generate with: `openssl rand -base64 32`
-   - Or use: `5dMeJJwjI71E/56Kf91SRwscJQc7vall7VRZWhfmj9g=`
-   - This is required for NextAuth authentication
+1. **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`**
+   - Clerk publishable key from your production Clerk instance
 
-2. **`AUTH_URL`** (or `NEXTAUTH_URL`)
-   - Set this to your Railway domain: `https://vetted-production.up.railway.app`
-   - This tells NextAuth what domain to trust
-   - **Required** to fix "UntrustedHost" errors
+2. **`CLERK_SECRET_KEY`**
+   - Clerk secret key from your production Clerk instance
 
-2. **`DATABASE_URL`** 
+3. **`NEXT_PUBLIC_APP_URL`**
+   - Set this to your Railway domain, for example: `https://cleard-production.up.railway.app`
+
+4. **`DATABASE_URL`** 
    - Should be automatically set from the PostgreSQL service
    - Format: `postgresql://postgres:password@hostname:port/railway`
 
@@ -119,7 +118,7 @@ After setting up, check your Railway logs to ensure:
 
 The application uses Prisma with PostgreSQL. The schema includes:
 
-- **User accounts** (authentication via NextAuth)
+- **User accounts** (authentication via Clerk + local Prisma user records)
 - **User profiles** (experience, education, skills)
 - **Connections/Network** (user connections)
 - **Posts** (social feed with reactions and comments)
@@ -148,10 +147,10 @@ If migrations fail:
 
 ### Authentication Errors
 
-If you see 500 errors on `/api/auth/*:
-1. Ensure `AUTH_SECRET` is set
-2. Check that the database tables were created (Account, Session, User, etc.)
-3. Verify NextAuth configuration in `lib/auth.ts`
+If authentication fails:
+1. Ensure Clerk keys are set (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`)
+2. Confirm Clerk redirect URLs include `/auth/signin` and `/auth/signup`
+3. Verify `NEXT_PUBLIC_APP_URL` matches your live Railway domain
 
 ## Next Steps
 

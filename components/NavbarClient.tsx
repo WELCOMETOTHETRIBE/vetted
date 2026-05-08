@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut } from "next-auth/react"
+import { useClerk } from "@clerk/nextjs"
 import { useState, useEffect, useRef } from "react"
 import SearchBar from "./SearchBar"
 
@@ -18,6 +18,7 @@ interface NavbarClientProps {
 }
 
 const NavbarClient = ({ user, userId, isAdmin = false, accountType }: NavbarClientProps) => {
+  const { signOut } = useClerk()
   const pathname = usePathname()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -294,7 +295,7 @@ const NavbarClient = ({ user, userId, isAdmin = false, accountType }: NavbarClie
                     <button
                       onClick={() => {
                         setDropdownOpen(false)
-                        signOut({ callbackUrl: "/" })
+                        signOut({ redirectUrl: "/" })
                       }}
                       className="block w-full text-left px-4 py-2.5 text-sm text-error-600 hover:bg-error-50 transition-colors"
                     >
@@ -389,7 +390,7 @@ const NavbarClient = ({ user, userId, isAdmin = false, accountType }: NavbarClie
 
                   <button
                     type="button"
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                    onClick={() => signOut({ redirectUrl: "/" })}
                     className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-error-700 hover:bg-error-50 transition-colors"
                   >
                     <span className="text-base" aria-hidden="true">⎋</span>

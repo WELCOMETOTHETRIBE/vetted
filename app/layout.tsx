@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
@@ -67,9 +68,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
-          {children}
-        </Providers>
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorPrimary: "#1d4ed8",
+              colorBackground: "#ffffff",
+              colorText: "#0f172a",
+            },
+          }}
+          signInUrl="/auth/signin"
+          signUpUrl="/auth/signup"
+          afterSignOutUrl="/"
+        >
+          <Providers>
+            {children}
+          </Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

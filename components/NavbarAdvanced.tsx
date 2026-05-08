@@ -1,42 +1,55 @@
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import NavbarClient from "./NavbarClient"
+"use client";
 
-// Server component wrapper to fetch user data
-const NavbarAdvanced = async () => {
-  let session = null
-  let isAdmin = false
-  let accountType: "CANDIDATE" | "EMPLOYER" | undefined = undefined
+import { useUser } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
+import NavbarClient from "./NavbarClient";
 
-  try {
-    session = await auth()
-  } catch (error) {
-    // Fallback if auth is not available
-    console.warn("Could not get session:", error)
-  }
+const NavbarAdvanced = () => {
+  const { user, isLoaded } = useUser();
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [accountType, setAccountType] = useState<"CANDIDATE" | "EMPLOYER" | undefined>(undefined);
 
-  if (session?.user) {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { role: true, accountType: true },
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+
+    let active = true;
+    fetch("/api/account-type", { method: "GET" })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return res.json();
       })
-      isAdmin = user?.role === "ADMIN"
-      accountType = user?.accountType
-    } catch (error) {
-      // Fallback if database is not available
-      console.warn("Could not fetch user role:", error)
-    }
-  }
+      .then((data) => {
+        if (!active || !data) return;
+        setUserId(data.userId);
+        setIsAdmin(data.role === "ADMIN");
+        setAccountType(data.accountType);
+      })
+      .catch(() => {
+        // Non-blocking: navbar still renders from Clerk identity.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isLoaded, user]);
 
   return (
     <NavbarClient
-      user={session?.user}
-      userId={session?.user?.id}
+      user={
+        user
+          ? {
+              name: user.fullName || user.username || null,
+              email: user.primaryEmailAddress?.emailAddress || null,
+              image: user.imageUrl || null,
+            }
+          : null
+      }
+      userId={userId}
       isAdmin={isAdmin}
       accountType={accountType}
     />
-  )
-}
+  );
+};
 
-export default NavbarAdvanced
+export default NavbarAdvanced;

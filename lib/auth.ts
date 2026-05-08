@@ -1,91 +1,86 @@
-import NextAuth from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "./prisma"
-import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
-import bcrypt from "bcryptjs"
+import { auth as clerkAuth, currentUser } from "@clerk/nextjs/server";
+import { prisma } from "./prisma";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  adapter: PrismaAdapter(prisma),
-  trustHost: true, // Trust Railway's proxy
-  providers: [
-    // Only add Google provider if credentials are provided
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+type AuthSession = {
+  user: {
+    id: string;
+    clerkUserId: string;
+    email: string;
+    name: string | null;
+    image: string | null;
+    role: string;
+    accountType: string;
+    handle: string | null;
+  };
+};
+
+function buildHandle(email: string) {
+  const local = email.split("@")[0] || "cleard-user";
+  const slug = local.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${slug}-${suffix}`;
+}
+
+export async function auth(): Promise<AuthSession | null> {
+  const { userId } = await clerkAuth();
+  if (!userId) return null;
+
+  const clerkUser = await currentUser();
+  if (!clerkUser) return null;
+
+  const primary =
+    clerkUser.emailAddresses.find((entry) => entry.id === clerkUser.primaryEmailAddressId) ||
+    clerkUser.emailAddresses[0];
+  const email = primary?.emailAddress?.toLowerCase();
+  if (!email) return null;
+
+  const displayName =
+    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() ||
+    clerkUser.username ||
+    email;
+
+  let dbUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ clerkUserId: userId }, { email }],
+    },
+  });
+
+  if (!dbUser) {
+    dbUser = await prisma.user.create({
+      data: {
+        clerkUserId: userId,
+        email,
+        name: displayName,
+        image: clerkUser.imageUrl,
+        handle: buildHandle(email),
+        profile: {
+          create: {},
+        },
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+    });
+  } else {
+    dbUser = await prisma.user.update({
+      where: { id: dbUser.id },
+      data: {
+        clerkUserId: dbUser.clerkUserId ?? userId,
+        email,
+        name: displayName,
+        image: clerkUser.imageUrl,
+      },
+    });
+  }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string }
-        })
-
-        if (!user || !user.password) {
-          return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        )
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        }
-      }
-    })
-  ],
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { role: true, handle: true, accountType: true }
-        })
-        token.role = dbUser?.role
-        token.handle = dbUser?.handle
-        token.accountType = dbUser?.accountType
-      }
-      return token
+  return {
+    user: {
+      id: dbUser.id,
+      clerkUserId: userId,
+      email: dbUser.email,
+      name: dbUser.name,
+      image: dbUser.image,
+      role: dbUser.role,
+      accountType: dbUser.accountType,
+      handle: dbUser.handle,
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.handle = token.handle as string
-        session.user.accountType = token.accountType as string
-      }
-      return session
-    },
-  },
-})
+  };
+}
 

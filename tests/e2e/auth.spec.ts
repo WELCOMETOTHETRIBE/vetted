@@ -3,12 +3,12 @@ import { test, expect } from '@playwright/test'
 test.describe('Authentication', () => {
   test('should display sign in page', async ({ page }) => {
     await page.goto('/auth/signin')
-    await expect(page.locator('h2')).toContainText('Sign in to Vetted')
+    await expect(page.getByText('Sign in')).toBeVisible()
   })
 
   test('should navigate to sign up page', async ({ page }) => {
     await page.goto('/auth/signin')
-    await page.click('text=create a new account')
+    await page.getByText('Sign up').first().click()
     await expect(page).toHaveURL(/.*auth\/signup/)
   })
 })

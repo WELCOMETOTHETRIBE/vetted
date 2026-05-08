@@ -1,7 +1,6 @@
 "use client"
 
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react'
-import { SessionProvider } from 'next-auth/react'
 
 // Advanced Theme System - Enterprise Grade
 type Theme = 'light' | 'dark' | 'high-contrast' | 'auto'
@@ -66,8 +65,8 @@ function ThemeProvider({
 
   // Load saved preferences
   useEffect(() => {
-    const savedTheme = localStorage.getItem('vetted-theme') as Theme
-    const savedMotion = localStorage.getItem('vetted-motion') as MotionPreference
+    const savedTheme = localStorage.getItem('cleard-theme') as Theme
+    const savedMotion = localStorage.getItem('cleard-motion') as MotionPreference
 
     if (savedTheme && ['light', 'dark', 'high-contrast', 'auto'].includes(savedTheme)) {
       setThemeState(savedTheme)
@@ -94,8 +93,8 @@ function ThemeProvider({
     }
 
     // Save to localStorage
-    localStorage.setItem('vetted-theme', theme)
-    localStorage.setItem('vetted-motion', motionPreference)
+    localStorage.setItem('cleard-theme', theme)
+    localStorage.setItem('cleard-motion', motionPreference)
 
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]')
@@ -167,15 +166,13 @@ interface ProvidersProps {
 
 export default function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
-      <ThemeProvider>
-        <ScrollObserverProvider>
-          <PerformanceProvider>
-            {children}
-          </PerformanceProvider>
-        </ScrollObserverProvider>
-      </ThemeProvider>
-    </SessionProvider>
+    <ThemeProvider>
+      <ScrollObserverProvider>
+        <PerformanceProvider>
+          {children}
+        </PerformanceProvider>
+      </ScrollObserverProvider>
+    </ThemeProvider>
   )
 }
 
