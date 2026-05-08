@@ -15,36 +15,34 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+  title: "MacTech Identity Command Center",
   description:
-    "clearD is a clearance-first professional identity and sourcing platform for mission-ready defense work.",
+    "Central identity, organization access, and audit-aware sign-in for the MacTech suite.",
   keywords: [
-    "cleared talent network",
-    "security clearance",
-    "defense contractors",
-    "govcon",
-    "cleared roles",
-    "DoD career skills program",
-    "CSP",
+    "mactech identity",
+    "command center",
+    "organization access",
+    "rbac",
+    "suite authentication",
   ],
-  authors: [{ name: "clearD (operated by MacTech Solutions)" }],
+  authors: [{ name: "MacTech Solutions" }],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+    title: "MacTech Identity Command Center",
     description:
-      "clearD is a clearance-first professional identity and sourcing platform for mission-ready defense work.",
+      "Central identity, organization access, and audit-aware sign-in for the MacTech suite.",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "clearD — The Cleared Talent Network for Mission-Ready Defense Work",
+    title: "MacTech Identity Command Center",
     description:
-      "clearD is a clearance-first professional identity and sourcing platform for mission-ready defense work.",
+      "Central identity, organization access, and audit-aware sign-in for the MacTech suite.",
   },
 };
 

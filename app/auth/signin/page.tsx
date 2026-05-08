@@ -9,41 +9,41 @@ export default function SignInPage() {
       <div className="relative z-10 grid w-full max-w-7xl items-center gap-10 lg:grid-cols-2">
         <section className="space-y-6 rounded-2xl border border-slate-700/70 bg-slate-900/55 p-6 backdrop-blur md:p-8">
           <div className="text-sm font-semibold tracking-wide text-cyan-300">
-            clearD by MacTech Solutions
+            MacTech Solutions
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-100 sm:text-4xl">
-            Cleared talent sourcing,
+            Identity command,
             <br />
             mission-ready by design.
           </h1>
           <p className="text-base leading-relaxed text-slate-300">
-            A clearance-first network for defense contractors to identify qualified talent,
-            manage readiness context, and move faster on critical programs.
+            Access MacTech suite workflows through a unified identity surface with
+            organization-aware access controls and centralized auditing.
           </p>
 
           <div className="space-y-4 pt-2">
             <div>
               <div className="text-sm font-semibold text-slate-100">
-                Clearance-first profile intelligence
+                Unified suite sign-in
               </div>
               <div className="mt-1 text-sm text-slate-400">
-                Organize mission history, readiness signals, and technical depth in one profile.
+                One account across Capture, Compliance, Governance, Training, and Quality.
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-slate-100">
-                Sourcing workflows aligned to delivery
+                Organization-aware access
               </div>
               <div className="mt-1 text-sm text-slate-400">
-                Track candidates from discovery to placement with auditable workflow context.
+                Route users to the right tenant context with policy-backed permissions.
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-slate-100">
-                Identity integrated across MacTech
+                Centralized audit trail
               </div>
               <div className="mt-1 text-sm text-slate-400">
-                Uses the same trusted MacTech account and organization access model as the suite.
+                Security and admin actions are captured in immutable command-center logs.
               </div>
             </div>
           </div>
@@ -56,9 +56,9 @@ export default function SignInPage() {
         <section className="flex justify-center lg:justify-end">
           <div className="w-full max-w-md rounded-2xl border border-slate-700/70 bg-slate-900/55 p-4 backdrop-blur md:p-6">
             <div className="mb-4">
-              <div className="text-lg font-semibold text-slate-100">MacTech clearD</div>
+              <div className="text-lg font-semibold text-slate-100">MacTech Identity</div>
               <div className="mt-1 text-sm text-slate-400">
-                Use your MacTech account to access clearD workflows.
+                Use your MacTech account to continue.
               </div>
             </div>
             <SignIn

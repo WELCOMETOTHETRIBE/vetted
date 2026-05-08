@@ -9,41 +9,41 @@ export default function SignUpPage() {
       <div className="relative z-10 grid w-full max-w-7xl items-center gap-10 lg:grid-cols-2">
         <section className="space-y-6 rounded-2xl border border-slate-700/70 bg-slate-900/55 p-6 backdrop-blur md:p-8">
           <div className="text-sm font-semibold tracking-wide text-cyan-300">
-            clearD by MacTech Solutions
+            MacTech Solutions
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-100 sm:text-4xl">
-            Build your mission profile,
+            Provision your suite access,
             <br />
-            connect with cleared opportunities.
+            start in the right org context.
           </h1>
           <p className="text-base leading-relaxed text-slate-300">
-            Create your account to participate in MacTech’s clearance-first talent network
-            and collaborate in a secure, organization-aware workflow.
+            Create your account to use MacTech suite products through the shared
+            identity command center and organization-aware access controls.
           </p>
 
           <div className="space-y-4 pt-2">
             <div>
               <div className="text-sm font-semibold text-slate-100">
-                Readiness-focused identity
+                Shared suite identity
               </div>
               <div className="mt-1 text-sm text-slate-400">
-                Capture relevant clearance and delivery context once, use it everywhere.
+                Sign in once and access all approved MacTech applications.
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-slate-100">
-                Faster candidate-to-mission matching
+                Role and entitlement aware
               </div>
               <div className="mt-1 text-sm text-slate-400">
-                Improve fit and reduce cycle time for defense-critical roles.
+                Grants are scoped to your organization and platform permissions.
               </div>
             </div>
             <div>
               <div className="text-sm font-semibold text-slate-100">
-                Integrated MacTech access model
+                Audit-ready by default
               </div>
               <div className="mt-1 text-sm text-slate-400">
-                Uses shared sign-in and org context with the rest of the suite.
+                Access events and admin operations are captured centrally.
               </div>
             </div>
           </div>
@@ -56,9 +56,9 @@ export default function SignUpPage() {
         <section className="flex justify-center lg:justify-end">
           <div className="w-full max-w-md rounded-2xl border border-slate-700/70 bg-slate-900/55 p-4 backdrop-blur md:p-6">
             <div className="mb-4">
-              <div className="text-lg font-semibold text-slate-100">Create your clearD account</div>
+              <div className="text-lg font-semibold text-slate-100">Create your MacTech account</div>
               <div className="mt-1 text-sm text-slate-400">
-                Use your MacTech identity to enroll and continue to onboarding.
+                Join the suite identity plane and continue onboarding.
               </div>
             </div>
             <SignUp
