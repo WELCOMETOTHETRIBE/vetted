@@ -1,12 +1,12 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
 import NetworkContent from "@/components/NetworkContent"
 
 async function getNetworkData(userId: string) {
   const [connections, pendingReceived, pendingSent] = await Promise.all([
-    // Accepted connections
     prisma.connection.findMany({
       where: {
         OR: [
@@ -21,11 +21,7 @@ async function getNetworkData(userId: string) {
             name: true,
             image: true,
             handle: true,
-            profile: {
-              select: {
-                headline: true,
-              },
-            },
+            profile: { select: { headline: true } },
           },
         },
         receiver: {
@@ -34,21 +30,13 @@ async function getNetworkData(userId: string) {
             name: true,
             image: true,
             handle: true,
-            profile: {
-              select: {
-                headline: true,
-              },
-            },
+            profile: { select: { headline: true } },
           },
         },
       },
     }),
-    // Pending requests received
     prisma.connection.findMany({
-      where: {
-        receiverId: userId,
-        status: "PENDING",
-      },
+      where: { receiverId: userId, status: "PENDING" },
       include: {
         requester: {
           select: {
@@ -56,21 +44,13 @@ async function getNetworkData(userId: string) {
             name: true,
             image: true,
             handle: true,
-            profile: {
-              select: {
-                headline: true,
-              },
-            },
+            profile: { select: { headline: true } },
           },
         },
       },
     }),
-    // Pending requests sent
     prisma.connection.findMany({
-      where: {
-        requesterId: userId,
-        status: "PENDING",
-      },
+      where: { requesterId: userId, status: "PENDING" },
       include: {
         receiver: {
           select: {
@@ -78,11 +58,7 @@ async function getNetworkData(userId: string) {
             name: true,
             image: true,
             handle: true,
-            profile: {
-              select: {
-                headline: true,
-              },
-            },
+            profile: { select: { headline: true } },
           },
         },
       },
@@ -101,17 +77,24 @@ export default async function NetworkPage() {
   const networkData = await getNetworkData(session.user.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Trusted Network</h1>
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        accountType: session.user.accountType,
+      }}
+    >
+      <div className="max-w-5xl mx-auto space-y-6">
+        <PageHeader
+          title="Trusted Network"
+          description="Mission-aligned connections, pending requests, and AI-assisted suggestions."
+        />
         <NetworkContent
-          initialData={networkData}
+          initialData={networkData as any}
           currentUserId={session.user.id}
         />
       </div>
-    </div>
+    </ClearDShell>
   )
 }
-
-

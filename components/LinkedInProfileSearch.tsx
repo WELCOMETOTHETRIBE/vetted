@@ -98,15 +98,15 @@ export default function LinkedInProfileSearch() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">LinkedIn Profile Search</h3>
-      <p className="text-sm text-gray-600 mb-4">
+    <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-foreground mb-4">LinkedIn Profile Search</h3>
+      <p className="text-sm text-muted-foreground mb-4">
         Searches LinkedIn profiles via SerpApi and saves URLs to database for future reference
       </p>
 
       <div className="space-y-4">
         <div>
-          <label htmlFor="search-query" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="search-query" className="block text-sm font-medium text-foreground mb-2">
             Search Query *
           </label>
           <input
@@ -116,13 +116,13 @@ export default function LinkedInProfileSearch() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="e.g., software engineer, machine learning engineer"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
         </div>
 
         <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="location" className="block text-sm font-medium text-foreground mb-2">
             Location (optional)
           </label>
           <input
@@ -131,13 +131,13 @@ export default function LinkedInProfileSearch() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g., San Francisco, New York"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
         </div>
 
         <div>
-          <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="company" className="block text-sm font-medium text-foreground mb-2">
             Company (optional)
           </label>
           <input
@@ -146,13 +146,13 @@ export default function LinkedInProfileSearch() {
             value={company}
             onChange={(e) => setCompany(e.target.value)}
             placeholder="e.g., Google, Microsoft"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
         </div>
 
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
             Job Title (optional)
           </label>
           <input
@@ -161,7 +161,7 @@ export default function LinkedInProfileSearch() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Senior Engineer, Product Manager"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
         </div>
@@ -169,7 +169,7 @@ export default function LinkedInProfileSearch() {
         <button
           onClick={handleSearch}
           disabled={loading || !searchQuery.trim()}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? "Searching..." : "Search & Save LinkedIn URLs"}
         </button>
@@ -178,8 +178,8 @@ export default function LinkedInProfileSearch() {
           <div
             className={`px-4 py-3 rounded-lg text-sm ${
               message.includes("Success") || message.includes("saved")
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                ? "bg-success/15 text-success"
+                : "bg-destructive/15 text-red-800"
             }`}
           >
             {message}
@@ -189,7 +189,7 @@ export default function LinkedInProfileSearch() {
                 {results.skipped > 0 && <div>Skipped (already exists): {results.skipped}</div>}
                 <div>Total found: {results.total}</div>
                 {results.cached && results.age_hours && (
-                  <div className="text-gray-600 mt-1">(Cached data, {results.age_hours}h old)</div>
+                  <div className="text-muted-foreground mt-1">(Cached data, {results.age_hours}h old)</div>
                 )}
               </div>
             )}
@@ -197,7 +197,7 @@ export default function LinkedInProfileSearch() {
         )}
 
         {loading && (
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
               <span>This may take a few minutes...</span>

@@ -102,16 +102,16 @@ export default function LinkedInScraperButton() {
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
         >
           🔍 Search & Save LinkedIn URLs
         </button>
       ) : (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-gray-200 rounded-lg p-4 shadow-lg min-w-[500px]">
+        <div className="absolute top-full left-0 mt-2 z-50 bg-card border border-border rounded-lg p-4 shadow-lg min-w-[500px]">
           <div className="mb-4">
             <label
               htmlFor="search-query"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-foreground mb-2"
             >
               Search Query *
             </label>
@@ -122,12 +122,12 @@ export default function LinkedInScraperButton() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="e.g., software engineer, machine learning engineer"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
               disabled={loading}
             />
             <label
               htmlFor="location"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-foreground mb-2"
             >
               Location (optional)
             </label>
@@ -137,12 +137,12 @@ export default function LinkedInScraperButton() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g., San Francisco, New York"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
               disabled={loading}
             />
             <label
               htmlFor="company"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-foreground mb-2"
             >
               Company (optional)
             </label>
@@ -152,12 +152,12 @@ export default function LinkedInScraperButton() {
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="e.g., Google, Microsoft"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
               disabled={loading}
             />
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-foreground mb-2"
             >
               Job Title (optional)
             </label>
@@ -167,10 +167,10 @@ export default function LinkedInScraperButton() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Senior Engineer, Product Manager"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={loading}
             />
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-muted-foreground">
               Searches LinkedIn profiles and saves URLs to database for future reference
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function LinkedInScraperButton() {
             <button
               onClick={handleSearch}
               disabled={loading || !searchQuery.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Searching..." : "Search Profiles"}
             </button>
@@ -190,7 +190,7 @@ export default function LinkedInScraperButton() {
                 setResults(null)
               }}
               disabled={loading}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              className="px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-gray-300 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -200,8 +200,8 @@ export default function LinkedInScraperButton() {
             <div
               className={`mt-3 px-3 py-2 rounded-lg text-sm ${
                 message.includes("Success") || message.includes("saved")
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
+                  ? "bg-success/15 text-success"
+                  : "bg-destructive/15 text-red-800"
               }`}
             >
               {message}
@@ -213,7 +213,7 @@ export default function LinkedInScraperButton() {
                   )}
                   <div>Total found: {results.total}</div>
                   {results.cached && results.age_hours && (
-                    <div className="text-gray-600 mt-1">(Cached data, {results.age_hours}h old)</div>
+                    <div className="text-muted-foreground mt-1">(Cached data, {results.age_hours}h old)</div>
                   )}
                 </div>
               )}
@@ -221,7 +221,7 @@ export default function LinkedInScraperButton() {
           )}
 
           {loading && (
-            <div className="mt-3 text-sm text-gray-600">
+            <div className="mt-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 <span>This may take a few minutes...</span>

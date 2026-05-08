@@ -96,9 +96,9 @@ export default function CandidateResumeUpload() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+    <div className="bg-card rounded-lg border border-border p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Add Candidate from Resume</h3>
+        <h3 className="text-lg font-semibold text-foreground">Add Candidate from Resume</h3>
         <button
           onClick={() => {
             setShowForm(false)
@@ -107,7 +107,7 @@ export default function CandidateResumeUpload() {
             setLinkedinUrl("")
             setError(null)
           }}
-          className="text-gray-400 hover:text-gray-600"
+          className="text-muted-foreground hover:text-muted-foreground"
         >
           ✕
         </button>
@@ -115,7 +115,7 @@ export default function CandidateResumeUpload() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             LinkedIn URL (optional)
           </label>
           <input
@@ -123,21 +123,21 @@ export default function CandidateResumeUpload() {
             value={linkedinUrl}
             onChange={(e) => setLinkedinUrl(e.target.value)}
             placeholder="https://linkedin.com/in/..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Upload Resume (PDF/DOCX/TXT)
           </label>
           <input
             type="file"
             accept=".pdf,.docx,.doc,.txt"
             onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/15"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc'))
               ? "✅ PDF/DOCX file selected - text will be extracted automatically"
               : "Upload PDF, DOCX, or TXT file. Text will be extracted automatically, or paste text below."}
@@ -145,33 +145,33 @@ export default function CandidateResumeUpload() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Resume Text {resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc')) ? "(optional - will be extracted from file)" : "*"}
           </label>
           <textarea
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
             rows={12}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
             placeholder={resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc'))
               ? "Text will be extracted from file automatically. You can also paste additional text here if needed."
               : "Paste resume text here, or upload a PDF/DOCX file above"}
             required={!resumeFile || (!resumeFile.name.toLowerCase().endsWith('.pdf') && !resumeFile.name.toLowerCase().endsWith('.docx') && !resumeFile.name.toLowerCase().endsWith('.doc'))}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {resumeText.length} characters
           </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-600">
+          <div className="p-3 bg-success/10 border border-success/40 rounded-lg">
+            <p className="text-sm text-success">
               ✅ Candidate created successfully! AI is analyzing the resume...
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function CandidateResumeUpload() {
               setLinkedinUrl("")
               setError(null)
             }}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-secondary/40 transition-colors"
           >
             Cancel
           </button>

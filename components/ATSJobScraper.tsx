@@ -334,51 +334,51 @@ export default function ATSJobScraper() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">ATS Job Scraper</h3>
-      <p className="text-sm text-gray-600 mb-6">
+    <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-foreground mb-4">ATS Job Scraper</h3>
+      <p className="text-sm text-muted-foreground mb-6">
         Scrape job postings from ATS platforms via SerpAPI + Playwright. Use the clearD Cleared mode for defense-first queries and clearance scoring.
       </p>
 
       {/* Category Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className="flex border-b border-border mb-4">
         <button
           onClick={() => setActiveTab("primary")}
           className={`px-4 py-2 font-medium text-sm transition-colors relative ${
             activeTab === "primary"
-              ? "text-blue-600"
-              : "text-gray-600 hover:text-gray-900"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Primary
           {activeTab === "primary" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
           )}
         </button>
         <button
           onClick={() => setActiveTab("enterprise")}
           className={`px-4 py-2 font-medium text-sm transition-colors relative ${
             activeTab === "enterprise"
-              ? "text-blue-600"
-              : "text-gray-600 hover:text-gray-900"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Enterprise
           {activeTab === "enterprise" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
           )}
         </button>
         <button
           onClick={() => setActiveTab("modern")}
           className={`px-4 py-2 font-medium text-sm transition-colors relative ${
             activeTab === "modern"
-              ? "text-blue-600"
-              : "text-gray-600 hover:text-gray-900"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Modern
           {activeTab === "modern" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
           )}
         </button>
       </div>
@@ -394,37 +394,37 @@ export default function ATSJobScraper() {
               onClick={() => handleSystemChange(system)}
               className={`p-3 rounded-lg border-2 text-left transition-all ${
                 isSelected
-                  ? "border-blue-600 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
+                  ? "border-blue-600 bg-primary/10"
+                  : "border-border hover:border-border bg-card"
               }`}
             >
-              <div className="font-medium text-sm text-gray-900">{config.label}</div>
-              <div className="text-xs text-gray-500 mt-1">{config.description}</div>
-              <div className="text-xs text-gray-400 mt-1 truncate">{config.site}</div>
+              <div className="font-medium text-sm text-foreground">{config.label}</div>
+              <div className="text-xs text-muted-foreground mt-1">{config.description}</div>
+              <div className="text-xs text-muted-foreground mt-1 truncate">{config.site}</div>
             </button>
           )
         })}
       </div>
 
       {/* Selected System Info */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+      <div className="bg-secondary/40 rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className="font-medium text-gray-900">{ATS_CONFIG[selectedSystem].label}</div>
-            <div className="text-sm text-gray-600">{ATS_CONFIG[selectedSystem].site}</div>
+            <div className="font-medium text-foreground">{ATS_CONFIG[selectedSystem].label}</div>
+            <div className="text-sm text-muted-foreground">{ATS_CONFIG[selectedSystem].site}</div>
           </div>
         </div>
       </div>
 
       {/* Role Presets */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Quick Role Presets</label>
+        <label className="block text-sm font-medium text-foreground mb-2">Quick Role Presets</label>
         <div className="flex flex-wrap gap-2">
           {ROLE_PRESETS.map((preset) => (
             <button
               key={preset}
               onClick={() => handlePresetClick(preset)}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm transition-colors"
+              className="px-3 py-1.5 bg-secondary text-foreground rounded-lg hover:bg-secondary text-sm transition-colors"
             >
               {preset}
             </button>
@@ -434,7 +434,7 @@ export default function ATSJobScraper() {
 
       {/* Search Query Input */}
       <div className="mb-4">
-        <label htmlFor="search-query" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="search-query" className="block text-sm font-medium text-foreground mb-2">
           Search Query
         </label>
         <input
@@ -444,17 +444,17 @@ export default function ATSJobScraper() {
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="e.g., software engineer, machine learning"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={loading}
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           For cleared-mode, enter a role family (e.g., \"software engineer\", \"systems engineer\", \"cyber analyst\"). The scraper generates the defense-first SERP queries automatically.
         </p>
       </div>
 
       {/* Location Input */}
       <div className="mb-4">
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="location" className="block text-sm font-medium text-foreground mb-2">
           Location (optional)
         </label>
         <input
@@ -464,19 +464,19 @@ export default function ATSJobScraper() {
           onChange={(e) => setLocation(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="e.g., San Francisco, New York, Remote"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={loading}
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Add location to narrow down results (e.g., "San Francisco", "Remote")
         </p>
       </div>
 
       {/* Query Preview */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Query Preview</label>
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <code className="text-xs text-gray-800 break-all">{finalQuery}</code>
+        <label className="block text-sm font-medium text-foreground mb-2">Query Preview</label>
+        <div className="bg-secondary/40 rounded-lg p-3 border border-border">
+          <code className="text-xs text-foreground break-all">{finalQuery}</code>
         </div>
       </div>
 
@@ -485,7 +485,7 @@ export default function ATSJobScraper() {
         <button
           onClick={handleScrape}
           disabled={loading || !searchQuery.trim()}
-          className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? "Scraping..." : "Start Scraping"}
         </button>
@@ -494,7 +494,7 @@ export default function ATSJobScraper() {
             navigator.clipboard.writeText(finalQuery)
             // Could add toast notification here
           }}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+          className="px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-gray-300 font-medium"
         >
           Copy Query
         </button>
@@ -505,8 +505,8 @@ export default function ATSJobScraper() {
         <div
           className={`px-4 py-3 rounded-lg text-sm mb-4 ${
             message.includes("Success")
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+              ? "bg-success/15 text-success"
+              : "bg-destructive/15 text-red-800"
           }`}
         >
           {message}
@@ -522,7 +522,7 @@ export default function ATSJobScraper() {
               <div>Created: {importResults.created}</div>
               {importResults.skipped > 0 && <div>Skipped: {importResults.skipped}</div>}
               {importResults.errors > 0 && (
-                <div className="text-red-600">Errors: {importResults.errors}</div>
+                <div className="text-destructive">Errors: {importResults.errors}</div>
               )}
             </div>
           )}
@@ -534,18 +534,18 @@ export default function ATSJobScraper() {
           <button
             onClick={handleImport}
             disabled={importing || loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {importing ? "Importing Jobs..." : `Import ${results.count} Jobs to Database`}
           </button>
-          <p className="mt-1 text-xs text-gray-500 text-center">
+          <p className="mt-1 text-xs text-muted-foreground text-center">
             This will add the scraped jobs to the Jobs tab
           </p>
         </div>
       )}
 
       {loading && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
             <span>This may take a few minutes...</span>

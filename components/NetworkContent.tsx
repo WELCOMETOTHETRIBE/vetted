@@ -3,25 +3,59 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { Sparkles, UserPlus } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+
+interface NetworkUser {
+  id: string
+  name: string | null
+  image: string | null
+  handle: string | null
+  profile?: { headline?: string | null } | null
+}
+
+interface ConnectionEntity {
+  id: string
+  requesterId: string
+  receiverId: string
+  requester?: NetworkUser
+  receiver?: NetworkUser
+}
+
+interface Recommendation {
+  userId: string
+  name: string | null
+  handle: string | null
+  image: string | null
+  headline?: string | null
+  relevanceScore: number
+  communalities?: string[]
+  reasoning?: string
+}
 
 interface NetworkContentProps {
   initialData: {
-    connections: any[]
-    pendingReceived: any[]
-    pendingSent: any[]
+    connections: ConnectionEntity[]
+    pendingReceived: ConnectionEntity[]
+    pendingSent: ConnectionEntity[]
   }
   currentUserId: string
 }
+
+type Tab = "connections" | "pending" | "sent" | "recommendations"
 
 export default function NetworkContent({
   initialData,
   currentUserId,
 }: NetworkContentProps) {
-  const [activeTab, setActiveTab] = useState<"connections" | "pending" | "sent" | "recommendations">("connections")
+  const [activeTab, setActiveTab] = useState<Tab>("connections")
   const [connections, setConnections] = useState(initialData.connections)
   const [pendingReceived, setPendingReceived] = useState(initialData.pendingReceived)
-  const [pendingSent, setPendingSent] = useState(initialData.pendingSent)
-  const [recommendations, setRecommendations] = useState<any[]>([])
+  const [pendingSent] = useState(initialData.pendingSent)
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loadingRecommendations, setLoadingRecommendations] = useState(false)
 
   const handleAccept = async (connectionId: string) => {
@@ -34,25 +68,21 @@ export default function NetworkContent({
 
       if (response.ok) {
         const updated = await response.json()
-        // Remove from pending received
+        const original = pendingReceived.find((c) => c.id === connectionId)
         setPendingReceived(pendingReceived.filter((c) => c.id !== connectionId))
-        // Add to connections with full user data
-        const connectionWithUsers = {
+        const next: ConnectionEntity = {
           ...updated,
-          requester: pendingReceived.find(c => c.id === connectionId)?.requester,
-          receiver: pendingReceived.find(c => c.id === connectionId)?.receiver || {
+          requester: original?.requester,
+          receiver: original?.receiver || {
             id: updated.receiverId,
             name: null,
             image: null,
             handle: null,
-            profile: null
-          }
+            profile: null,
+          },
         }
-        setConnections([...connections, connectionWithUsers])
-        // Refresh the page after a short delay to ensure UI updates
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
+        setConnections([...connections, next])
+        setTimeout(() => window.location.reload(), 500)
       } else {
         const error = await response.json()
         alert(error.error || "Failed to accept connection")
@@ -87,7 +117,6 @@ export default function NetworkContent({
       })
 
       if (response.ok) {
-        // Remove from recommendations and add to pending sent
         setRecommendations(recommendations.filter((r) => r.userId !== userId))
         alert("Connection request sent!")
       } else {
@@ -110,10 +139,7 @@ export default function NetworkContent({
 
       if (response.ok) {
         setPendingReceived(pendingReceived.filter((c) => c.id !== connectionId))
-        // Refresh after a short delay
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
+        setTimeout(() => window.location.reload(), 500)
       } else {
         const error = await response.json()
         alert(error.error || "Failed to reject connection")
@@ -124,10 +150,13 @@ export default function NetworkContent({
     }
   }
 
-  const renderUser = (user: any) => (
-    <div key={user.id} className="flex items-center space-x-4 p-4 bg-white rounded-lg border border-gray-200">
-      <Link href={`/profile/${user.handle || user.id}`}>
-        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white">
+  const renderUser = (user: NetworkUser) => (
+    <div key={user.id} className="flex items-center gap-3 p-4">
+      <Link
+        href={`/profile/${user.handle || user.id}`}
+        className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <div className="w-12 h-12 rounded-full bg-primary/15 text-primary flex items-center justify-center overflow-hidden border border-border">
           {user.image ? (
             <Image
               src={user.image}
@@ -137,216 +166,221 @@ export default function NetworkContent({
               className="rounded-full"
             />
           ) : (
-            user.name?.charAt(0).toUpperCase() || "U"
+            <span className="font-semibold">
+              {user.name?.charAt(0).toUpperCase() || "U"}
+            </span>
           )}
         </div>
       </Link>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <Link
           href={`/profile/${user.handle || user.id}`}
-          className="font-semibold text-gray-900 hover:text-blue-600"
+          className="font-semibold text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
         >
           {user.name || "Anonymous"}
         </Link>
         {user.profile?.headline && (
-          <p className="text-sm text-gray-600">{user.profile.headline}</p>
+          <p className="text-sm text-muted-foreground truncate">{user.profile.headline}</p>
         )}
       </div>
     </div>
   )
 
+  const TabButton = ({
+    value,
+    children,
+    onClick,
+  }: {
+    value: Tab
+    children: React.ReactNode
+    onClick?: () => void
+  }) => (
+    <button
+      type="button"
+      onClick={onClick || (() => setActiveTab(value))}
+      className={cn(
+        "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t",
+        activeTab === value
+          ? "text-primary border-primary"
+          : "text-muted-foreground border-transparent hover:text-foreground",
+      )}
+      role="tab"
+      aria-selected={activeTab === value}
+    >
+      {children}
+    </button>
+  )
+
   return (
     <div>
-      <div className="flex space-x-4 mb-6 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab("connections")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "connections"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Connections ({connections.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("pending")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "pending"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Received ({pendingReceived.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("sent")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "sent"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Sent ({pendingSent.length})
-        </button>
-        <button
+      <div role="tablist" className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+        <TabButton value="connections">Connections ({connections.length})</TabButton>
+        <TabButton value="pending">Received ({pendingReceived.length})</TabButton>
+        <TabButton value="sent">Sent ({pendingSent.length})</TabButton>
+        <TabButton
+          value="recommendations"
           onClick={() => {
             setActiveTab("recommendations")
             if (recommendations.length === 0) {
               loadRecommendations()
             }
           }}
-          className={`px-4 py-2 font-medium flex items-center gap-2 ${
-            activeTab === "recommendations"
-              ? "text-purple-600 border-b-2 border-purple-600"
-              : "text-gray-600"
-          }`}
         >
-          <span>🤖</span>
-          <span>AI Recommendations</span>
-        </button>
+          <span className="inline-flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            AI Recommendations
+          </span>
+        </TabButton>
       </div>
 
       {activeTab === "connections" ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {connections.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600">No connections yet. Start connecting!</p>
-            </div>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">
+                  No connections yet. Start connecting!
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             connections.map((conn) => {
               const otherUser =
                 conn.requesterId === currentUserId ? conn.receiver : conn.requester
-              return renderUser(otherUser)
+              if (!otherUser) return null
+              return (
+                <Card key={conn.id}>{renderUser(otherUser)}</Card>
+              )
             })
           )}
         </div>
       ) : activeTab === "pending" ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {pendingReceived.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600">No pending requests received</p>
-            </div>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">No pending requests received</p>
+              </CardContent>
+            </Card>
           ) : (
             pendingReceived.map((conn) => {
               const requester = conn.requester
+              if (!requester) return null
               return (
-                <div
-                  key={conn.id}
-                  className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
-                >
-                  {renderUser(requester)}
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleAccept(conn.id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleReject(conn.id)}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
-                    >
-                      Reject
-                    </button>
+                <Card key={conn.id}>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    {renderUser(requester)}
+                    <div className="flex gap-2 px-4 pb-4 sm:pb-0">
+                      <Button size="sm" onClick={() => handleAccept(conn.id)}>
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => handleReject(conn.id)}>
+                        Reject
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </Card>
               )
             })
           )}
         </div>
       ) : activeTab === "recommendations" ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {loadingRecommendations ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600">Loading AI recommendations...</p>
-            </div>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Loading AI recommendations…</p>
+              </CardContent>
+            </Card>
           ) : recommendations.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600 mb-4">No recommendations available</p>
-              <button
-                onClick={loadRecommendations}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-              >
-                Load Recommendations
-              </button>
-            </div>
+            <Card>
+              <CardContent className="p-8 text-center space-y-3">
+                <p className="text-muted-foreground">No recommendations available</p>
+                <Button onClick={loadRecommendations}>
+                  <Sparkles className="h-4 w-4" aria-hidden /> Load Recommendations
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
-            recommendations.map((rec: any) => (
-              <div
-                key={rec.userId}
-                className="flex items-center justify-between p-4 bg-white rounded-lg border border-purple-200 shadow-sm"
-              >
-                <div className="flex items-center space-x-4 flex-1">
-                  <Link href={`/profile/${rec.handle || rec.userId}`}>
-                    <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white">
-                      {rec.image ? (
-                        <Image
-                          src={rec.image}
-                          alt={rec.name || "User"}
-                          width={48}
-                          height={48}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        rec.name?.charAt(0).toUpperCase() || "U"
-                      )}
-                    </div>
-                  </Link>
-                  <div className="flex-1">
+            recommendations.map((rec) => (
+              <Card key={rec.userId}>
+                <div className="flex items-center justify-between gap-3 flex-wrap p-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Link
                       href={`/profile/${rec.handle || rec.userId}`}
-                      className="font-semibold text-gray-900 hover:text-purple-600"
+                      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
-                      {rec.name || "Anonymous"}
+                      <div className="w-12 h-12 rounded-full bg-primary/15 text-primary flex items-center justify-center overflow-hidden border border-border">
+                        {rec.image ? (
+                          <Image
+                            src={rec.image}
+                            alt={rec.name || "User"}
+                            width={48}
+                            height={48}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <span className="font-semibold">
+                            {rec.name?.charAt(0).toUpperCase() || "U"}
+                          </span>
+                        )}
+                      </div>
                     </Link>
-                    {rec.headline && (
-                      <p className="text-sm text-gray-600">{rec.headline}</p>
-                    )}
-                    <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full border border-purple-200">
-                        {rec.relevanceScore}% match
-                      </span>
-                      {rec.communalities && rec.communalities.length > 0 && (
-                        <span className="text-xs text-gray-500">
-                          {rec.communalities.slice(0, 2).join(", ")}
-                          {rec.communalities.length > 2 && ` +${rec.communalities.length - 2}`}
-                        </span>
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/profile/${rec.handle || rec.userId}`}
+                        className="font-semibold text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                      >
+                        {rec.name || "Anonymous"}
+                      </Link>
+                      {rec.headline && (
+                        <p className="text-sm text-muted-foreground truncate">{rec.headline}</p>
+                      )}
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-primary border-primary/30">
+                          {rec.relevanceScore}% match
+                        </Badge>
+                        {rec.communalities && rec.communalities.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {rec.communalities.slice(0, 2).join(", ")}
+                            {rec.communalities.length > 2 && ` +${rec.communalities.length - 2}`}
+                          </span>
+                        )}
+                      </div>
+                      {rec.reasoning && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">{rec.reasoning}</p>
                       )}
                     </div>
-                    {rec.reasoning && (
-                      <p className="text-xs text-gray-500 mt-1 italic">{rec.reasoning}</p>
-                    )}
                   </div>
+                  <Button size="sm" onClick={() => handleConnect(rec.userId)}>
+                    <UserPlus className="h-4 w-4" aria-hidden /> Connect
+                  </Button>
                 </div>
-                <button
-                  onClick={() => handleConnect(rec.userId)}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                >
-                  Connect
-                </button>
-              </div>
+              </Card>
             ))
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {pendingSent.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-600">No pending requests sent</p>
-            </div>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">No pending requests sent</p>
+              </CardContent>
+            </Card>
           ) : (
             pendingSent.map((conn) => {
               const receiver = conn.receiver
+              if (!receiver) return null
               return (
-                <div
-                  key={conn.id}
-                  className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
-                >
-                  {renderUser(receiver)}
-                  <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">
-                    Pending
+                <Card key={conn.id}>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    {renderUser(receiver)}
+                    <Badge variant="outline" className="mr-4 mb-4 sm:mb-0">
+                      Pending
+                    </Badge>
                   </div>
-                </div>
+                </Card>
               )
             })
           )}
@@ -355,4 +389,3 @@ export default function NetworkContent({
     </div>
   )
 }
-

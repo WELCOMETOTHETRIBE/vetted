@@ -2,6 +2,16 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import {
+  Check,
+  Clock,
+  UserPlus,
+  Pencil,
+  MapPin,
+  AtSign,
+} from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 interface ProfileHeaderProps {
   profile: {
@@ -27,21 +37,17 @@ const ProfileHeader = ({
   profile,
   isOwnProfile = false,
   connectionStatus,
-  onConnect,
   userId,
 }: ProfileHeaderProps) => {
   const handleConnect = async () => {
     if (!userId) return
-    
     try {
       const response = await fetch("/api/connections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receiverId: userId }),
       })
-      
       if (response.ok) {
-        // Reload page to show updated connection status
         window.location.reload()
       } else {
         const error = await response.json()
@@ -52,134 +58,131 @@ const ProfileHeader = ({
       alert("Failed to send connection request")
     }
   }
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <Card className="overflow-hidden mb-4">
       {/* Banner */}
-      <div className="h-56 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 relative">
-        {profile.bannerImage ? (
+      <div className="h-40 cleard-hero-bg relative">
+        {profile.bannerImage && (
           <Image
             src={profile.bannerImage}
             alt="Banner"
             fill
             className="object-cover"
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600" />
         )}
       </div>
 
-      {/* Profile Info */}
-      <div className="px-6 pb-6">
-        <div className="flex items-start justify-between -mt-20 mb-4">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4 -mt-16 mb-4 flex-wrap">
           <div className="flex items-end space-x-4">
-            <div className="w-40 h-40 bg-white rounded-full border-4 border-white shadow-lg flex items-center justify-center relative">
+            <div className="w-32 h-32 rounded-full border-4 border-card bg-card shadow-lg flex items-center justify-center relative overflow-hidden">
               {profile.user.image ? (
                 <Image
                   src={profile.user.image}
                   alt={profile.user.name || "Profile"}
-                  width={160}
-                  height={160}
+                  width={128}
+                  height={128}
                   className="rounded-full"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-inner">
+                <div className="w-full h-full bg-primary/15 text-primary rounded-full flex items-center justify-center text-3xl font-semibold">
                   {profile.user.name?.charAt(0).toUpperCase() || "U"}
                 </div>
               )}
             </div>
           </div>
           {!isOwnProfile && (
-            <div className="mt-24 flex items-center gap-3">
+            <div className="mt-20 flex items-center gap-3 flex-wrap">
               {connectionStatus === "CONNECTED" ? (
                 <>
-                  <button className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors flex items-center gap-2">
-                    <span>✓</span>
-                    <span>Trusted Connection</span>
-                  </button>
-                  <Link
-                    href={`/messages`}
-                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
-                    onClick={async (e) => {
-                      e.preventDefault()
-                      try {
-                        const response = await fetch("/api/messages/threads", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ userId }),
-                        })
-                        window.location.href = "/messages"
-                      } catch (error) {
-                        window.location.href = "/messages"
-                      }
-                    }}
-                  >
-                    Message
-                  </Link>
+                  <Button variant="secondary" className="gap-2">
+                    <Check className="h-4 w-4" aria-hidden />
+                    Trusted Connection
+                  </Button>
+                  <Button asChild>
+                    <Link
+                      href="/messages"
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        try {
+                          await fetch("/api/messages/threads", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId }),
+                          })
+                        } finally {
+                          window.location.href = "/messages"
+                        }
+                      }}
+                    >
+                      Message
+                    </Link>
+                  </Button>
                 </>
               ) : connectionStatus === "PENDING" ? (
-                <button 
-                  className="px-5 py-2.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg cursor-default font-medium flex items-center gap-2"
-                  title="Connection request pending"
-                >
-                  <span>⏳</span>
-                  <span>Request Pending</span>
-                </button>
+                <Button variant="outline" disabled className="gap-2">
+                  <Clock className="h-4 w-4" aria-hidden />
+                  Request Pending
+                </Button>
               ) : (
-                <button
-                  onClick={handleConnect}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
-                >
-                  + Add to Trusted Network
-                </button>
+                <Button onClick={handleConnect} className="gap-2">
+                  <UserPlus className="h-4 w-4" aria-hidden />
+                  Add to Trusted Network
+                </Button>
               )}
             </div>
           )}
           {isOwnProfile && (
-            <div className="mt-24">
-              <Link
-                href="/profile/edit"
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm inline-flex items-center gap-2"
-              >
-                <span>✏️</span>
-                <span>Edit Mission Profile</span>
-              </Link>
+            <div className="mt-20">
+              <Button asChild className="gap-2">
+                <Link href="/profile/edit">
+                  <Pencil className="h-4 w-4" aria-hidden />
+                  Edit Mission Profile
+                </Link>
+              </Button>
             </div>
           )}
         </div>
 
         <div className="space-y-3">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-1">
               {profile.user.name || "Anonymous"}
             </h1>
             {profile.headline && (
-              <p className="text-lg text-gray-700 font-medium mb-2">{profile.headline}</p>
+              <p className="text-base text-foreground/90 font-medium mb-2">
+                {profile.headline}
+              </p>
             )}
             {profile.location && (
-              <div className="flex items-center gap-2 text-gray-600 mb-3">
-                <span>📍</span>
-                <span>{profile.location}</span>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
+                <MapPin className="h-3.5 w-3.5" aria-hidden />
+                {profile.location}
               </div>
             )}
             {profile.user.handle && (
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                <span>@</span>
-                <span>{profile.user.handle}</span>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                <AtSign className="h-3.5 w-3.5" aria-hidden />
+                {profile.user.handle}
               </div>
             )}
           </div>
-          
+
           {profile.about && (
-            <div className="pt-3 border-t border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Mission Summary</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{profile.about}</p>
+            <div className="pt-3 border-t border-border">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Mission Summary
+              </h3>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {profile.about}
+              </p>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
 export default ProfileHeader
-

@@ -1,12 +1,14 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
-import CandidatesContent from "@/components/CandidatesContent"
 import { Suspense } from "react"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import CandidatesContent from "@/components/CandidatesContent"
 
 // Force dynamic rendering to prevent caching
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 async function getCandidates(searchParams: { [key: string]: string | undefined }) {
@@ -36,13 +38,7 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
     prisma.candidate.findMany({
       where,
       include: {
-        addedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        addedBy: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
       skip,
@@ -50,76 +46,6 @@ async function getCandidates(searchParams: { [key: string]: string | undefined }
     }),
     prisma.candidate.count({ where }),
   ])
-
-  // Log comprehensive candidate data for debugging
-  const debugCandidates = await prisma.candidate.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 5, // Just the latest 5 for debugging
-  })
-
-  console.log(`\n========== [CANDIDATES PAGE] Loading candidates ==========`)
-  console.log(`[QUERY] Found ${candidates.length} candidates (showing ${skip + 1}-${skip + candidates.length} of ${total})`)
-  
-  if (debugCandidates.length > 0) {
-    console.log(`[DATABASE] Sample candidate data (latest ${debugCandidates.length}):`)
-    debugCandidates.forEach((candidate: typeof debugCandidates[0], idx: number) => {
-      console.log(`\n  Candidate ${idx + 1}: ${candidate.linkedinUrl}`)
-      console.log(`    - ID: ${candidate.id}`)
-      console.log(`    - Full Name: ${candidate.fullName || "NULL"}`)
-      console.log(`    - Job Title: ${candidate.jobTitle || "NULL"}`)
-      console.log(`    - Current Company: ${candidate.currentCompany || "NULL"}`)
-      console.log(`    - Location: ${candidate.location || "NULL"}`)
-      console.log(`    - Total Years Experience: ${candidate.totalYearsExperience || "NULL"}`)
-      console.log(`    - Companies: ${candidate.companies || "NULL"}`)
-      console.log(`    - Universities: ${candidate.universities || "NULL"}`)
-      console.log(`    - Fields of Study: ${candidate.fieldsOfStudy || "NULL"}`)
-      console.log(`    - Certifications: ${candidate.certifications ? candidate.certifications.substring(0, 100) + "..." : "NULL"}`)
-      console.log(`    - Languages: ${candidate.languages || "NULL"}`)
-      console.log(`    - Projects: ${candidate.projects ? candidate.projects.substring(0, 100) + "..." : "NULL"}`)
-      console.log(`    - Publications: ${candidate.publications ? candidate.publications.substring(0, 100) + "..." : "NULL"}`)
-      console.log(`    - Raw Data: ${candidate.rawData ? `${candidate.rawData.length} chars` : "NULL"}`)
-      console.log(`    - Skills Count: ${candidate.skillsCount || "NULL"}`)
-      console.log(`    - Experience Count: ${candidate.experienceCount || "NULL"}`)
-      console.log(`    - Education Count: ${candidate.educationCount || "NULL"}`)
-      
-      // Check if rawData contains comprehensive_data
-      if (candidate.rawData) {
-        try {
-          const rawDataParsed = JSON.parse(candidate.rawData)
-          console.log(`    - Raw Data structure:`, {
-            hasPersonalInfo: !!rawDataParsed.personal_info,
-            hasExperience: !!rawDataParsed.experience,
-            experienceCount: rawDataParsed.experience?.length || 0,
-            hasEducation: !!rawDataParsed.education,
-            educationCount: rawDataParsed.education?.length || 0,
-            hasSkills: !!rawDataParsed.skills,
-            skillsCount: rawDataParsed.skills?.length || 0,
-            hasComprehensiveData: !!rawDataParsed.comprehensive_data,
-            comprehensiveDataLength: rawDataParsed.comprehensive_data?.length || 0,
-          })
-        } catch (e) {
-          console.log(`    - Raw Data parse error:`, e)
-        }
-      }
-    })
-  }
-  console.log(`========== [CANDIDATES PAGE] Complete ==========\n`)
-
-  console.log("Candidates page - Found candidates:", {
-    total,
-    count: candidates.length,
-    candidateIds: candidates.map((c: { id: string; fullName: string }) => c.id),
-    candidateNames: candidates.map((c: { id: string; fullName: string }) => c.fullName),
-    whereClause: where,
-    sampleCandidates: debugCandidates.map((c: typeof debugCandidates[0]) => ({
-      id: c.id,
-      name: c.fullName,
-      url: c.linkedinUrl,
-      status: c.status,
-      createdAt: c.createdAt
-    }))
-  })
 
   return { candidates, total, page, limit }
 }
@@ -136,7 +62,6 @@ export default async function CandidatesPage({
       redirect("/auth/signin")
     }
 
-    // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true, accountType: true },
@@ -149,49 +74,77 @@ export default async function CandidatesPage({
 
     const data = await getCandidates(params)
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Suspense fallback={<div className="p-8 text-center text-gray-600">Loading...</div>}>
-          <CandidatesContent
-            initialCandidates={data.candidates}
-            initialTotal={data.total}
-            initialPage={data.page}
-            initialLimit={data.limit}
+    return (
+      <ClearDShell
+        viewer={{
+          name: session.user.name,
+          email: session.user.email,
+          role: session.user.role,
+          accountType: session.user.accountType,
+        }}
+      >
+        <div className="max-w-7xl mx-auto space-y-6">
+          <PageHeader
+            title="Talent Pool"
+            description="Cleared candidates surfaced from your sources, with mission-fit context."
           />
-        </Suspense>
-      </div>
-    </div>
+          <Suspense
+            fallback={
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Loading…
+              </div>
+            }
+          >
+            <CandidatesContent
+              initialCandidates={data.candidates}
+              initialTotal={data.total}
+              initialPage={data.page}
+              initialLimit={data.limit}
+            />
+          </Suspense>
+        </div>
+      </ClearDShell>
     )
-  } catch (error: any) {
-    console.error("Candidates page error:", error)
-    // If it's a database schema error, provide helpful message
-    if (error.message?.includes("Unknown column") || error.message?.includes("column") || error.code === "P2021") {
+  } catch (error) {
+    const e = error as { message?: string; code?: string }
+    console.error("Candidates page error:", e)
+    if (
+      e.message?.includes("Unknown column") ||
+      e.message?.includes("column") ||
+      e.code === "P2021"
+    ) {
       return (
-        <div className="min-h-screen bg-gray-50">
-          <NavbarAdvanced />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-yellow-900 mb-2">Database Migration Required</h2>
-              <p className="text-yellow-800 mb-4">
-                The database schema needs to be updated to include the new AI fields. Please run the migration:
-              </p>
-              <div className="bg-white rounded p-4 mb-4">
-                <code className="text-sm">
+        <ClearDShell
+          viewer={{
+            name: null,
+            email: "",
+            role: "USER",
+            accountType: "CANDIDATE",
+          }}
+        >
+          <div className="max-w-7xl mx-auto py-8">
+            <Alert variant="warning">
+              <AlertTitle>Database Migration Required</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p>
+                  The database schema needs to be updated to include the new AI fields.
+                  Please run the migration:
+                </p>
+                <code className="block bg-secondary px-2 py-1 rounded text-xs font-mono border border-border">
                   railway run npm run db:push
                 </code>
-              </div>
-              <p className="text-sm text-yellow-700">
-                Or use the migration endpoint: <code className="bg-yellow-100 px-2 py-1 rounded">POST /api/admin/migrate</code>
-              </p>
-            </div>
+                <p className="text-xs">
+                  Or use the migration endpoint:{" "}
+                  <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono border border-border">
+                    POST /api/admin/migrate
+                  </code>
+                </p>
+              </AlertDescription>
+            </Alert>
           </div>
-        </div>
+        </ClearDShell>
       )
     }
-    // Re-throw other errors to show the error page
     throw error
   }
 }
-

@@ -1,6 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import { Sparkles, Plus } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+
+interface Optimization {
+  headline?: string
+  about?: string
+  skillSuggestions?: string[]
+  overallFeedback?: string
+}
 
 interface ProfileOptimizationProps {
   onApplyHeadline?: (headline: string) => void
@@ -8,8 +19,12 @@ interface ProfileOptimizationProps {
   onAddSkill?: (skill: string) => void
 }
 
-export default function ProfileOptimization({ onApplyHeadline, onApplyAbout, onAddSkill }: ProfileOptimizationProps) {
-  const [optimization, setOptimization] = useState<any>(null)
+export default function ProfileOptimization({
+  onApplyHeadline,
+  onApplyAbout,
+  onAddSkill,
+}: ProfileOptimizationProps) {
+  const [optimization, setOptimization] = useState<Optimization | null>(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -34,116 +49,129 @@ export default function ProfileOptimization({ onApplyHeadline, onApplyAbout, onA
 
   if (!optimization && !loading) {
     return (
-      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 p-6 mb-6">
-        <div className="flex items-center justify-between">
+      <Card>
+        <CardContent className="p-6 flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <span>✨</span>
-              <span>AI Profile Optimization</span>
+            <h3 className="text-base font-semibold text-foreground mb-1 inline-flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+              AI Profile Optimization
             </h3>
-            <p className="text-sm text-gray-600">
-              Get AI-powered suggestions to improve your profile
+            <p className="text-sm text-muted-foreground">
+              Get AI-powered suggestions to improve your profile.
             </p>
           </div>
-          <button
-            onClick={loadOptimization}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium flex items-center gap-2"
-          >
-            <span>🤖</span>
-            <span>Optimize</span>
-          </button>
-        </div>
-      </div>
+          <Button onClick={loadOptimization} className="gap-2">
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Optimize
+          </Button>
+        </CardContent>
+      </Card>
     )
   }
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <p className="text-gray-600 text-center">Analyzing your profile...</p>
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-muted-foreground">Analyzing your profile…</p>
+        </CardContent>
+      </Card>
     )
   }
 
   if (!optimization) return null
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <span>✨</span>
-          <span>Optimization Suggestions</span>
-        </h3>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-sm text-purple-600 hover:text-purple-700"
-        >
-          {expanded ? "Collapse" : "Expand"}
-        </button>
-      </div>
-
-      {expanded && (
-        <div className="space-y-4">
-          {optimization.headline && (
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-gray-900">Improved Headline</h4>
-                {onApplyHeadline && (
-                  <button
-                    onClick={() => onApplyHeadline(optimization.headline)}
-                    className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
-                  >
-                    Apply
-                  </button>
-                )}
-              </div>
-              <p className="text-sm text-gray-700">{optimization.headline}</p>
-            </div>
-          )}
-
-          {optimization.about && (
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-gray-900">Improved About Section</h4>
-                {onApplyAbout && (
-                  <button
-                    onClick={() => onApplyAbout(optimization.about)}
-                    className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
-                  >
-                    Apply
-                  </button>
-                )}
-              </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{optimization.about}</p>
-            </div>
-          )}
-
-          {optimization.skillSuggestions && optimization.skillSuggestions.length > 0 && (
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Suggested Skills</h4>
-              <div className="flex flex-wrap gap-2">
-                {optimization.skillSuggestions.map((skill: string, idx: number) => (
-                  <button
-                    key={idx}
-                    onClick={() => onAddSkill?.(skill)}
-                    className="px-3 py-1 text-xs bg-purple-50 text-purple-700 rounded border border-purple-200 hover:bg-purple-100"
-                  >
-                    + {skill}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {optimization.overallFeedback && (
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Overall Feedback</h4>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{optimization.overallFeedback}</p>
-            </div>
-          )}
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-foreground inline-flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+            Optimization Suggestions
+          </h3>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? "Collapse" : "Expand"}
+          </Button>
         </div>
-      )}
-    </div>
+
+        {expanded && (
+          <div className="space-y-4">
+            {optimization.headline && (
+              <div className="rounded-md p-4 border border-border">
+                <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <h4 className="font-semibold text-foreground">Improved Headline</h4>
+                  {onApplyHeadline && (
+                    <Button
+                      size="sm"
+                      onClick={() => onApplyHeadline(optimization.headline!)}
+                    >
+                      Apply
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">{optimization.headline}</p>
+              </div>
+            )}
+
+            {optimization.about && (
+              <div className="rounded-md p-4 border border-border">
+                <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <h4 className="font-semibold text-foreground">Improved About Section</h4>
+                  {onApplyAbout && (
+                    <Button
+                      size="sm"
+                      onClick={() => onApplyAbout(optimization.about!)}
+                    >
+                      Apply
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {optimization.about}
+                </p>
+              </div>
+            )}
+
+            {optimization.skillSuggestions && optimization.skillSuggestions.length > 0 && (
+              <div className="rounded-md p-4 border border-border">
+                <h4 className="font-semibold text-foreground mb-2">Suggested Skills</h4>
+                <div className="flex flex-wrap gap-2">
+                  {optimization.skillSuggestions.map((skill, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => onAddSkill?.(skill)}
+                      className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                    >
+                      <Badge
+                        variant="outline"
+                        className="text-primary border-primary/30 gap-1"
+                      >
+                        <Plus className="h-3 w-3" aria-hidden />
+                        {skill}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {optimization.overallFeedback && (
+              <div className="rounded-md p-4 border border-border">
+                <h4 className="font-semibold text-foreground mb-2">Overall Feedback</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {optimization.overallFeedback}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
-

@@ -46,15 +46,15 @@ export default function SetupGroupsButton() {
       </button>
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+          <p className="text-destructive text-sm">{error}</p>
         </div>
       )}
 
       {result && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 font-semibold mb-2">✅ Groups setup complete!</p>
-          <div className="text-sm text-green-700 space-y-1">
+        <div className="mt-4 p-4 bg-success/10 border border-success/40 rounded-lg">
+          <p className="text-success font-semibold mb-2">✅ Groups setup complete!</p>
+          <div className="text-sm text-success space-y-1">
             <p>Groups created: {result.results?.groupsCreated || 0}</p>
             <p>Groups updated: {result.results?.groupsUpdated || 0}</p>
             <p>Candidates assigned: {result.results?.candidatesAssigned || 0}</p>
@@ -62,7 +62,7 @@ export default function SetupGroupsButton() {
           </div>
           <button
             onClick={() => window.location.href = "/groups"}
-            className="mt-3 text-sm text-green-700 hover:text-green-900 underline"
+            className="mt-3 text-sm text-success hover:text-green-900 underline"
           >
             View Groups →
           </button>

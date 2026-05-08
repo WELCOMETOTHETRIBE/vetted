@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { ClearDShell } from "@/components/layout/cleard-shell"
-import Sidebar from "@/components/Sidebar"
 import FeedContent from "@/components/FeedContent"
 import TechTrends from "@/components/TechTrends"
+import { Card, CardContent } from "@/components/ui/card"
 
 async function getFeed(userId: string) {
   // Get user's connections
@@ -32,31 +32,20 @@ async function getFeed(userId: string) {
     where: {
       authorId: { in: Array.from(connectedUserIds) },
       isActive: true,
-      groupId: null, // Only main feed posts, not group posts
+      groupId: null,
     },
     include: {
       author: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-          handle: true,
-        },
+        select: { id: true, name: true, image: true, handle: true },
       },
       reactions: {
-        select: {
-          id: true,
-          userId: true,
-          type: true,
-        },
+        select: { id: true, userId: true, type: true },
       },
       comments: {
         where: { isActive: true },
         select: { id: true },
       },
-      reposts: {
-        select: { id: true },
-      },
+      reposts: { select: { id: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 20,
@@ -82,16 +71,14 @@ export default async function FeedPage() {
         accountType: session.user.accountType,
       }}
     >
+      {/*
+       * Two-column desktop layout: feed (max-w-2xl) | right rail (w-80).
+       * The legacy in-page secondary `Sidebar` was folded into ClearDSidebar
+       * (see components/layout/cleard-sidebar.tsx Resources group) per brief
+       * LP #8. This drops the dual-sidebar pattern that previously consumed
+       * 32rem of horizontal space on lg+ viewports.
+       */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-        {/*
-         * The legacy `Sidebar` component is the in-page secondary nav (Groups
-         * / Companies / Referrals / Admin quick-links). It is NOT the shell
-         * sidebar. Keeping it here preserves the feed's tri-column layout
-         * that long-tenured users are used to. Defer its merge into the
-         * shell sidebar to a follow-up pass — the brief flagged shell chrome
-         * as the priority, not the in-page secondary nav.
-         */}
-        <Sidebar className="hidden lg:block" />
         <main className="flex-1 w-full max-w-2xl mx-auto lg:mx-0">
           <FeedContent initialPosts={posts} userId={session.user.id} />
         </main>
@@ -101,15 +88,17 @@ export default async function FeedPage() {
               <TechTrends />
             </div>
             <div className="lg:hidden">
-              <div className="rounded-md border border-border bg-card p-4">
-                <h2 className="text-sm font-semibold text-foreground mb-1">
-                  Mission brief
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Keep updates professional and security-conscious. Avoid
-                  posting classified or sensitive details.
-                </p>
-              </div>
+              <Card>
+                <CardContent className="p-4">
+                  <h2 className="text-sm font-semibold text-foreground mb-1">
+                    Mission brief
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Keep updates professional and security-conscious. Avoid
+                    posting classified or sensitive details.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </aside>

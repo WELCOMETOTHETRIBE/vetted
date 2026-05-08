@@ -159,13 +159,13 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
   )
 
   return (
-    <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-xl border-2 border-orange-200 shadow-lg overflow-hidden">
-      <div className="bg-white/70 backdrop-blur-sm border-b border-orange-200 px-6 py-5">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <span className="text-orange-600">🎯</span>
+    <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-xl border-2 border-warning/40 shadow-lg overflow-hidden">
+      <div className="bg-card/70 backdrop-blur-sm border-b border-warning/40 px-6 py-5">
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <span className="text-warning">🎯</span>
           Interview Preparation
         </h2>
-        <p className="text-gray-600 text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-1">
           Select a candidate to generate tailored interview questions and insights for {jobTitle}
         </p>
       </div>
@@ -173,7 +173,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
       <div className="px-6 py-6">
         {/* Candidate Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-foreground mb-2">
             Select Candidate
           </label>
           <div className="relative" ref={dropdownRef}>
@@ -190,7 +190,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
                 placeholder="Search candidates by name, title, or company..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
               />
               {selectedCandidate && (
                 <button
@@ -198,7 +198,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                     setSelectedCandidate(null)
                     setSearchQuery("")
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -208,14 +208,14 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
             </div>
 
             {isDropdownOpen && (
-              <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
                 {isLoadingCandidates ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-4 text-center text-muted-foreground">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mx-auto"></div>
                     <p className="mt-2 text-sm">Loading candidates...</p>
                   </div>
                 ) : filteredCandidates.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500 text-sm">
+                  <div className="p-4 text-center text-muted-foreground text-sm">
                     {searchQuery.length < 2 ? "Type at least 2 characters to search" : "No candidates found"}
                   </div>
                 ) : (
@@ -227,11 +227,11 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                         setSearchQuery(candidate.fullName)
                         setIsDropdownOpen(false)
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-orange-50 transition-colors border-b border-gray-100 last:border-b-0"
+                      className="w-full px-4 py-3 text-left hover:bg-warning/10 transition-colors border-b border-border last:border-b-0"
                     >
-                      <div className="font-medium text-gray-900">{candidate.fullName}</div>
+                      <div className="font-medium text-foreground">{candidate.fullName}</div>
                       {(candidate.jobTitle || candidate.currentCompany) && (
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="text-sm text-muted-foreground mt-1">
                           {candidate.jobTitle && candidate.currentCompany
                             ? `${candidate.jobTitle} at ${candidate.currentCompany}`
                             : candidate.jobTitle || candidate.currentCompany}
@@ -247,7 +247,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
 
         {/* Task Type Selector */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-sm font-semibold text-foreground mb-2">
             Select Task Type
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -260,8 +260,8 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
               }}
               className={`px-4 py-3 rounded-lg border-2 transition-all font-medium text-sm ${
                 taskType === "interview"
-                  ? "bg-orange-600 text-white border-orange-600 shadow-md"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-orange-300 hover:bg-orange-50"
+                  ? "bg-warning text-white border-orange-600 shadow-md"
+                  : "bg-card text-foreground border-border hover:border-warning/40 hover:bg-warning/10"
               }`}
             >
               🎯 Interview Prep
@@ -275,8 +275,8 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
               }}
               className={`px-4 py-3 rounded-lg border-2 transition-all font-medium text-sm ${
                 taskType === "resume"
-                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50"
+                  ? "bg-primary text-white border-blue-600 shadow-md"
+                  : "bg-card text-foreground border-border hover:border-primary/40 hover:bg-primary/10"
               }`}
             >
               📄 Resume Updates
@@ -291,7 +291,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
               className={`px-4 py-3 rounded-lg border-2 transition-all font-medium text-sm ${
                 taskType === "cover-letter"
                   ? "bg-green-600 text-white border-green-600 shadow-md"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-green-300 hover:bg-green-50"
+                  : "bg-card text-foreground border-border hover:border-green-300 hover:bg-success/10"
               }`}
             >
               ✉️ Cover Letter
@@ -305,9 +305,9 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
           disabled={!selectedCandidate || isLoading}
           className={`w-full px-6 py-3 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2 shadow-sm ${
             taskType === "interview"
-              ? "bg-orange-600 hover:bg-orange-700"
+              ? "bg-warning hover:bg-warning/90"
               : taskType === "resume"
-              ? "bg-blue-600 hover:bg-blue-700"
+              ? "bg-primary hover:bg-primary/90"
               : "bg-green-600 hover:bg-green-700"
           }`}
         >
@@ -328,7 +328,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
 
         {/* Error Message */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
             <p className="text-red-800 text-sm">{error}</p>
           </div>
         )}
@@ -336,20 +336,20 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
         {/* Resume Updates Results */}
         {resumeData && taskType === "resume" && (
           <div className="mt-6 space-y-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="text-blue-600">📄</span>
+            <div className="bg-card rounded-lg border border-border p-6">
+              <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <span className="text-primary">📄</span>
                 Resume Updates & Modifications for {selectedCandidate?.fullName}
               </h3>
               <div className="prose max-w-none">
                 {resumeData.suggestions && resumeData.suggestions.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-semibold text-gray-900 mb-3">Suggested Updates</h4>
+                    <h4 className="font-semibold text-foreground mb-3">Suggested Updates</h4>
                     <ul className="space-y-2">
                       {resumeData.suggestions.map((suggestion: string, i: number) => (
                         <li key={i} className="flex items-start gap-3">
                           <span className="text-blue-500 mt-1.5 flex-shrink-0">•</span>
-                          <p className="text-gray-700 leading-relaxed">{suggestion}</p>
+                          <p className="text-foreground leading-relaxed">{suggestion}</p>
                         </li>
                       ))}
                     </ul>
@@ -358,17 +358,17 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                 {resumeData.updatedSections && (
                   <div className="space-y-4">
                     {Object.entries(resumeData.updatedSections).map(([section, content]: [string, any]) => (
-                      <div key={section} className="border-t border-gray-200 pt-4">
-                        <h4 className="font-semibold text-gray-900 mb-2 capitalize">{section.replace(/([A-Z])/g, ' $1').trim()}</h4>
-                        <div className="text-gray-700 whitespace-pre-wrap">{typeof content === 'string' ? content : JSON.stringify(content, null, 2)}</div>
+                      <div key={section} className="border-t border-border pt-4">
+                        <h4 className="font-semibold text-foreground mb-2 capitalize">{section.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                        <div className="text-foreground whitespace-pre-wrap">{typeof content === 'string' ? content : JSON.stringify(content, null, 2)}</div>
                       </div>
                     ))}
                   </div>
                 )}
                 {resumeData.summary && (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2">Summary</h4>
-                    <p className="text-gray-700">{resumeData.summary}</p>
+                  <div className="mt-6 p-4 bg-primary/10 rounded-lg">
+                    <h4 className="font-semibold text-foreground mb-2">Summary</h4>
+                    <p className="text-foreground">{resumeData.summary}</p>
                   </div>
                 )}
               </div>
@@ -379,10 +379,10 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
         {/* Cover Letter Results */}
         {coverLetterData && taskType === "cover-letter" && (
           <div className="mt-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-card rounded-lg border border-border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <span className="text-green-600">✉️</span>
+                <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <span className="text-success">✉️</span>
                   Cover Letter for {selectedCandidate?.fullName}
                 </h3>
                 <button
@@ -396,7 +396,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                 </button>
               </div>
               <div className="prose max-w-none">
-                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="whitespace-pre-wrap text-foreground leading-relaxed p-4 bg-secondary/40 rounded-lg border border-border">
                   {coverLetterData}
                 </div>
               </div>
@@ -408,25 +408,25 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
         {interviewData && taskType === "interview" && (
           <div className="mt-6 space-y-6">
             {/* Header */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-card rounded-lg border border-border p-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold text-gray-900">Interview Prep for {interviewData.candidateName}</h3>
-                <span className="text-sm text-gray-600">{interviewData.companyName}</span>
+                <h3 className="text-lg font-bold text-foreground">Interview Prep for {interviewData.candidateName}</h3>
+                <span className="text-sm text-muted-foreground">{interviewData.companyName}</span>
               </div>
-              <p className="text-sm text-gray-600">Position: {interviewData.jobTitle}</p>
+              <p className="text-sm text-muted-foreground">Position: {interviewData.jobTitle}</p>
             </div>
 
             {/* Questions */}
             {interviewData.questions && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="text-blue-600">❓</span>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h4 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <span className="text-primary">❓</span>
                   Interview Questions
                 </h4>
                 <div className="space-y-6">
                   {interviewData.questions.technical && interviewData.questions.technical.length > 0 && (
                     <div>
-                      <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h5 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <span className="text-blue-500">💻</span>
                         Technical Questions
                       </h5>
@@ -434,7 +434,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                         {interviewData.questions.technical.map((q, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-blue-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{q}</p>
+                            <p className="text-foreground leading-relaxed">{q}</p>
                           </li>
                         ))}
                       </ul>
@@ -443,7 +443,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
 
                   {interviewData.questions.behavioral && interviewData.questions.behavioral.length > 0 && (
                     <div>
-                      <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h5 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <span className="text-purple-500">🧠</span>
                         Behavioral Questions
                       </h5>
@@ -451,7 +451,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                         {interviewData.questions.behavioral.map((q, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-purple-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{q}</p>
+                            <p className="text-foreground leading-relaxed">{q}</p>
                           </li>
                         ))}
                       </ul>
@@ -460,7 +460,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
 
                   {interviewData.questions.roleSpecific && interviewData.questions.roleSpecific.length > 0 && (
                     <div>
-                      <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h5 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <span className="text-green-500">🎯</span>
                         Role-Specific Questions
                       </h5>
@@ -468,7 +468,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                         {interviewData.questions.roleSpecific.map((q, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-green-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{q}</p>
+                            <p className="text-foreground leading-relaxed">{q}</p>
                           </li>
                         ))}
                       </ul>
@@ -477,15 +477,15 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
 
                   {interviewData.questions.general && interviewData.questions.general.length > 0 && (
                     <div>
-                      <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <span className="text-gray-500">💬</span>
+                      <h5 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <span className="text-muted-foreground">💬</span>
                         General Questions
                       </h5>
                       <ul className="space-y-2">
                         {interviewData.questions.general.map((q, i) => (
                           <li key={i} className="flex items-start gap-3">
-                            <span className="text-gray-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{q}</p>
+                            <span className="text-muted-foreground mt-1.5 flex-shrink-0">•</span>
+                            <p className="text-foreground leading-relaxed">{q}</p>
                           </li>
                         ))}
                       </ul>
@@ -497,23 +497,23 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
 
             {/* Insights */}
             {interviewData.insights && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="text-indigo-600">💡</span>
+              <div className="bg-card rounded-lg border border-border p-6">
+                <h4 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <span className="text-primary">💡</span>
                   Interview Insights
                 </h4>
                 <div className="space-y-6">
                   {interviewData.insights.candidateStrengths && interviewData.insights.candidateStrengths.length > 0 && (
                     <div>
                       <h5 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
-                        <span className="text-green-600">✅</span>
+                        <span className="text-success">✅</span>
                         Candidate Strengths
                       </h5>
                       <ul className="space-y-2">
                         {interviewData.insights.candidateStrengths.map((strength, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-green-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{strength}</p>
+                            <p className="text-foreground leading-relaxed">{strength}</p>
                           </li>
                         ))}
                       </ul>
@@ -523,14 +523,14 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                   {interviewData.insights.areasToExplore && interviewData.insights.areasToExplore.length > 0 && (
                     <div>
                       <h5 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                        <span className="text-blue-600">🔍</span>
+                        <span className="text-primary">🔍</span>
                         Areas to Explore
                       </h5>
                       <ul className="space-y-2">
                         {interviewData.insights.areasToExplore.map((area, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-blue-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{area}</p>
+                            <p className="text-foreground leading-relaxed">{area}</p>
                           </li>
                         ))}
                       </ul>
@@ -540,14 +540,14 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                   {interviewData.insights.redFlags && interviewData.insights.redFlags.length > 0 && (
                     <div>
                       <h5 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
-                        <span className="text-red-600">⚠️</span>
+                        <span className="text-destructive">⚠️</span>
                         Red Flags
                       </h5>
                       <ul className="space-y-2">
                         {interviewData.insights.redFlags.map((flag, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-red-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{flag}</p>
+                            <p className="text-foreground leading-relaxed">{flag}</p>
                           </li>
                         ))}
                       </ul>
@@ -557,14 +557,14 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                   {interviewData.insights.talkingPoints && interviewData.insights.talkingPoints.length > 0 && (
                     <div>
                       <h5 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                        <span className="text-purple-600">💬</span>
+                        <span className="text-primary">💬</span>
                         Talking Points
                       </h5>
                       <ul className="space-y-2">
                         {interviewData.insights.talkingPoints.map((point, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-purple-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{point}</p>
+                            <p className="text-foreground leading-relaxed">{point}</p>
                           </li>
                         ))}
                       </ul>
@@ -581,7 +581,7 @@ export default function InterviewPrep({ jobId, jobTitle }: InterviewPrepProps) {
                         {interviewData.insights.recommendedAssessments.map((assessment, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="text-amber-500 mt-1.5 flex-shrink-0">•</span>
-                            <p className="text-gray-700 leading-relaxed">{assessment}</p>
+                            <p className="text-foreground leading-relaxed">{assessment}</p>
                           </li>
                         ))}
                       </ul>

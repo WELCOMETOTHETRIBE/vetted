@@ -2,6 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { Building2, Target, ExternalLink, Eye, Users, Loader2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface JobCardProps {
   job: {
@@ -40,7 +45,7 @@ const JobCard = ({ job }: JobCardProps) => {
         const data = await response.json()
         setMatchScore(data.matchScore)
       }
-    } catch (error) {
+    } catch {
       // Silently fail - match score is optional
     } finally {
       setLoadingMatch(false)
@@ -55,143 +60,148 @@ const JobCard = ({ job }: JobCardProps) => {
 
   const salaryText =
     job.salaryMin && job.salaryMax
-      ? `${job.salaryCurrency || "$"}${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}`
+      ? `${job.salaryCurrency || "$"}${job.salaryMin.toLocaleString()} – ${job.salaryMax.toLocaleString()}`
       : null
 
-  const getMatchColor = (score: number | null) => {
-    if (score === null) return "gray"
-    if (score >= 80) return "green"
-    if (score >= 60) return "blue"
-    if (score >= 40) return "yellow"
-    return "gray"
-  }
-
-  const matchColor = getMatchColor(matchScore)
+  const matchTier =
+    matchScore === null
+      ? null
+      : matchScore >= 80
+      ? "high"
+      : matchScore >= 60
+      ? "med"
+      : matchScore >= 40
+      ? "low"
+      : "none"
 
   return (
-    <Link href={`/jobs/${job.id}`}>
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-card p-6 hover:shadow-card-hover hover:border-primary-300 transition-all duration-200 cursor-pointer group">
-        <div className="flex items-start gap-4 mb-4">
-          {job.company.logo ? (
-            <div className="w-14 h-14 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 border border-primary-200 shadow-sm">
-              <span className="text-2xl">🏢</span>
+    <Link
+      href={`/jobs/${job.id}`}
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+    >
+      <Card className="transition-colors group hover:border-primary/40">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-12 h-12 rounded-md bg-secondary border border-border flex items-center justify-center flex-shrink-0 text-primary">
+              <Building2 className="h-5 w-5" aria-hidden />
             </div>
-          ) : (
-            <div className="w-14 h-14 bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl flex items-center justify-center flex-shrink-0 border border-neutral-200 shadow-sm">
-              <span className="text-2xl">🏢</span>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                {job.title}
+              </h3>
+              {/*
+               * Per brief §15 #1: link to /companies/{slug} not the deleted
+               * singular /company/{slug} route.
+               */}
+              <Link
+                href={`/companies/${job.company.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-primary hover:text-primary/80 font-medium text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                {job.company.name}
+              </Link>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-neutral-900 mb-1 group-hover:text-primary-600 transition-colors">
-              {job.title}
-            </h3>
-            <Link
-              href={`/company/${job.company.slug}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-primary-600 hover:text-primary-700 font-semibold text-sm inline-block transition-colors"
-            >
-              {job.company.name}
-            </Link>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {loadingMatch ? (
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm bg-neutral-50 text-neutral-700 border-neutral-200">
-              <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-neutral-600 mr-1"></span>
-              <span>Analyzing...</span>
-            </span>
-          ) : matchScore !== null ? (
-            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm ${
-              matchColor === "green" ? "bg-success-50 text-success-700 border-success-200" :
-              matchColor === "blue" ? "bg-primary-50 text-primary-700 border-primary-200" :
-              matchColor === "yellow" ? "bg-warning-50 text-warning-700 border-warning-200" :
-              "bg-neutral-50 text-neutral-700 border-neutral-200"
-            }`}>
-              <span>🎯</span>
-              <span className="ml-1">{matchScore}% Match</span>
-            </span>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                loadMatchScore()
-              }}
-              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border shadow-sm bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 transition-colors"
-            >
-              <span>🎯</span>
-              <span className="ml-1">Check Match</span>
-            </button>
-          )}
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200 shadow-sm">
-            {locationText}
-          </span>
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-neutral-50 text-neutral-700 border border-neutral-200 shadow-sm">
-            {job.employmentType.replace("_", " ")}
-          </span>
-          {salaryText && (
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-success-50 text-success-700 border border-success-200 shadow-sm">
-              💰 {salaryText}
-            </span>
-          )}
-        </div>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {loadingMatch ? (
+              <Badge variant="outline" className="gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                Analyzing…
+              </Badge>
+            ) : matchScore !== null ? (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "gap-1.5",
+                  matchTier === "high" && "text-success border-success/40",
+                  matchTier === "med" && "text-primary border-primary/40",
+                  matchTier === "low" && "text-warning border-warning/40",
+                  matchTier === "none" && "text-muted-foreground",
+                )}
+              >
+                <Target className="h-3 w-3" aria-hidden />
+                {matchScore}% Match
+              </Badge>
+            ) : (
+              <Button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  loadMatchScore()
+                }}
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5"
+              >
+                <Target className="h-3 w-3" aria-hidden />
+                Check Match
+              </Button>
+            )}
+            <Badge variant="outline">{locationText}</Badge>
+            <Badge variant="outline">{job.employmentType.replace("_", " ")}</Badge>
+            {salaryText && (
+              <Badge variant="outline" className="text-success border-success/40">
+                {salaryText}
+              </Badge>
+            )}
+          </div>
 
-        {job.description && (
-          <div className="mb-4">
-            <p className="text-sm text-neutral-600 line-clamp-2 leading-relaxed">
-              {job.description.length > 200 
-                ? `${job.description.substring(0, 200)}...` 
+          {job.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-4">
+              {job.description.length > 200
+                ? `${job.description.substring(0, 200)}…`
                 : job.description}
             </p>
-          </div>
-        )}
+          )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
-          <div className="flex items-center gap-4 text-xs text-neutral-500">
-            <span className="flex items-center gap-1 font-mono text-xs bg-gray-100 px-2 py-1 rounded border border-gray-200" title={`Job ID: ${job.id}`}>
-              <span>🆔</span>
-              <span className="select-all">{job.id}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span>👁️</span>
-              <span>{job.views || 0} views</span>
-            </span>
-            {job.applications && job.applications.length > 0 && (
-              <span className="flex items-center gap-1">
-                <span>👥</span>
-                <span>{job.applications.length} {job.applications.length === 1 ? 'applicant' : 'applicants'}</span>
+          <div className="flex items-center justify-between pt-4 border-t border-border gap-3 flex-wrap">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+              <span className="font-mono inline-flex items-center gap-1 bg-secondary border border-border px-2 py-1 rounded">
+                <span className="select-all">{job.id.slice(0, 8)}</span>
               </span>
-            )}
+              <span className="inline-flex items-center gap-1">
+                <Eye className="h-3 w-3" aria-hidden />
+                {job.views || 0} views
+              </span>
+              {job.applications && job.applications.length > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3 w-3" aria-hidden />
+                  {job.applications.length}{" "}
+                  {job.applications.length === 1 ? "applicant" : "applicants"}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {job.originalUrl && (
+                <a
+                  href={job.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                >
+                  <ExternalLink className="h-3 w-3" aria-hidden />
+                  Original Post
+                </a>
+              )}
+              <span className="text-xs text-muted-foreground">
+                Posted{" "}
+                {new Date(job.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year:
+                    new Date(job.createdAt).getFullYear() !== new Date().getFullYear()
+                      ? "numeric"
+                      : undefined,
+                })}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {job.originalUrl && (
-              <a
-                href={job.originalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border border-primary-200"
-                title="View original job posting"
-              >
-                <span>🔗</span>
-                <span>Original Post</span>
-                <span className="text-[10px]">↗</span>
-              </a>
-            )}
-            <span className="text-xs text-neutral-400">
-              Posted {new Date(job.createdAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: new Date(job.createdAt).getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
-              })}
-            </span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </Link>
   )
 }
 
 export default JobCard
-

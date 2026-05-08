@@ -1,6 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { RefreshCw, Loader2, Rocket, Zap, Sparkles } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface TrendItem {
   title: string
@@ -44,6 +49,14 @@ interface StartupsResponse {
 
 type TabType = "trends" | "startups"
 
+const CATEGORY_LABEL: Record<string, string> = {
+  startups: "Startups",
+  software_engineering: "Engineering",
+  engineering: "Engineering",
+  ai: "AI",
+  innovation: "Innovation",
+}
+
 export default function TechTrends() {
   const [activeTab, setActiveTab] = useState<TabType>("trends")
   const [trends, setTrends] = useState<TrendItem[]>([])
@@ -60,41 +73,27 @@ export default function TechTrends() {
         setLoading(true)
       }
       setError(null)
-      console.log("[TechTrends] Fetching trends from /api/trends", forceRefresh ? "(force refresh)" : "")
       const url = forceRefresh ? "/api/trends?refresh=true" : "/api/trends"
       const response = await fetch(url, {
         cache: forceRefresh ? "no-store" : "default",
       })
-      
-      console.log("[TechTrends] Response status:", response.status)
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error("[TechTrends] API error:", errorData)
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch trends`)
       }
-      
+
       const data: TrendsResponse = await response.json()
-      console.log("[TechTrends] Received data:", {
-        itemsCount: data.items?.length || 0,
-        lastUpdated: data.last_updated,
-        cached: data.cached,
-        stale: data.stale,
-      })
-      
-      // Always update trends if we got data, even if stale
       if (data.items && data.items.length > 0) {
         setTrends(data.items)
         setError(null)
       } else if (trends.length === 0) {
-        // Only show error if we don't have any trends cached
         setError("No trends available")
       }
-    } catch (err: any) {
-      console.error("[TechTrends] Failed to fetch trends:", err)
-      // Don't clear existing trends on error - keep showing what we have
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load trends."
       if (trends.length === 0) {
-        setError(err.message || "Unable to load trends. Check console for details.")
+        setError(message)
       }
     } finally {
       setLoading(false)
@@ -108,37 +107,27 @@ export default function TechTrends() {
         setLoadingStartups(true)
       }
       setStartupsError(null)
-      console.log("[TechTrends] Fetching startups from /api/startups", forceRefresh ? "(force refresh)" : "")
       const url = forceRefresh ? "/api/startups?refresh=true" : "/api/startups"
       const response = await fetch(url, {
         cache: forceRefresh ? "no-store" : "default",
       })
-      
-      console.log("[TechTrends] Startups response status:", response.status)
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error("[TechTrends] Startups API error:", errorData)
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch startups`)
       }
-      
+
       const data: StartupsResponse = await response.json()
-      console.log("[TechTrends] Received startups data:", {
-        itemsCount: data.items?.length || 0,
-        lastUpdated: data.last_updated,
-        cached: data.cached,
-      })
-      
       if (data.items && data.items.length > 0) {
         setStartups(data.items)
         setStartupsError(null)
       } else if (startups.length === 0) {
         setStartupsError("No startups available")
       }
-    } catch (err: any) {
-      console.error("[TechTrends] Failed to fetch startups:", err)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load startups."
       if (startups.length === 0) {
-        setStartupsError(err.message || "Unable to load startups. Check console for details.")
+        setStartupsError(message)
       }
     } finally {
       setLoadingStartups(false)
@@ -160,18 +149,18 @@ export default function TechTrends() {
 
   const formatTimeAgo = (dateString: string | null) => {
     if (!dateString) return "Recent"
-    
+
     try {
       const date = new Date(dateString)
       const now = new Date()
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-      
+
       if (diffInHours < 1) return "Just now"
       if (diffInHours < 24) return `${diffInHours}h ago`
-      
+
       const diffInDays = Math.floor(diffInHours / 24)
       if (diffInDays < 7) return `${diffInDays}d ago`
-      
+
       const diffInWeeks = Math.floor(diffInDays / 7)
       return `${diffInWeeks}w ago`
     } catch {
@@ -179,27 +168,8 @@ export default function TechTrends() {
     }
   }
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      startups: "bg-blue-100 text-blue-800",
-      software_engineering: "bg-green-100 text-green-800",
-      engineering: "bg-green-100 text-green-800", // Same color as software_engineering
-      ai: "bg-purple-100 text-purple-800",
-      innovation: "bg-indigo-100 text-indigo-800",
-    }
-    return colors[category] || "bg-gray-100 text-gray-800"
-  }
-
-  const getCategoryLabel = (category: string) => {
-    const labels: Record<string, string> = {
-      startups: "Startups",
-      software_engineering: "Engineering",
-      engineering: "Engineering",
-      ai: "AI",
-      innovation: "Innovation",
-    }
-    return labels[category] || category
-  }
+  const getCategoryLabel = (category: string) =>
+    CATEGORY_LABEL[category] || category
 
   const renderTrendsContent = () => {
     if (loading) {
@@ -207,8 +177,8 @@ export default function TechTrends() {
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-secondary rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-secondary rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -218,7 +188,7 @@ export default function TechTrends() {
     if (error) {
       return (
         <div className="text-center py-6">
-          <p className="text-sm text-gray-600">{error}</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
         </div>
       )
     }
@@ -226,7 +196,7 @@ export default function TechTrends() {
     if (trends.length === 0 && !loading) {
       return (
         <div className="text-center py-6">
-          <p className="text-sm text-gray-500">No trends available</p>
+          <p className="text-sm text-muted-foreground">No trends available</p>
         </div>
       )
     }
@@ -239,33 +209,23 @@ export default function TechTrends() {
             href={trend.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block group"
+            className="block group rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <div className="py-2 border-b border-gray-100 last:border-0 hover:border-gray-200 transition-colors">
+            <div className="py-2 border-b border-border last:border-0 transition-colors">
               <div className="flex items-start justify-between gap-2 mb-1.5">
-                <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 group-hover:text-gray-700">
+                <h4 className="text-sm font-medium text-foreground line-clamp-2 flex-1 group-hover:text-primary transition-colors">
                   {trend.title}
                 </h4>
-                <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
-                  trend.category === "ai"
-                    ? "bg-purple-50 text-purple-700"
-                    : trend.category === "software_engineering" || trend.category === "engineering"
-                    ? "bg-green-50 text-green-700"
-                    : trend.category === "startups"
-                    ? "bg-blue-50 text-blue-700"
-                    : trend.category === "innovation"
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "bg-gray-50 text-gray-700"
-                }`}>
+                <Badge variant="outline" className="flex-shrink-0 text-[10px]">
                   {getCategoryLabel(trend.category)}
-                </span>
+                </Badge>
               </div>
               {(trend.highlight || trend.raw_excerpt) && (
-                <p className="text-xs text-gray-600 line-clamp-3 mt-1.5 mb-1.5 leading-relaxed">
+                <p className="text-xs text-muted-foreground line-clamp-3 mt-1.5 mb-1.5 leading-relaxed">
                   {trend.highlight || trend.raw_excerpt}
                 </p>
               )}
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{trend.source}</span>
                 <span>•</span>
                 <span>{formatTimeAgo(trend.published_at)}</span>
@@ -283,8 +243,8 @@ export default function TechTrends() {
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-secondary rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-secondary rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -294,7 +254,7 @@ export default function TechTrends() {
     if (startupsError) {
       return (
         <div className="text-center py-6">
-          <p className="text-sm text-gray-600">{startupsError}</p>
+          <p className="text-sm text-muted-foreground">{startupsError}</p>
         </div>
       )
     }
@@ -302,7 +262,7 @@ export default function TechTrends() {
     if (startups.length === 0 && !loadingStartups) {
       return (
         <div className="text-center py-6">
-          <p className="text-sm text-gray-500">No startups available</p>
+          <p className="text-sm text-muted-foreground">No startups available</p>
         </div>
       )
     }
@@ -311,98 +271,69 @@ export default function TechTrends() {
       <div className="space-y-3">
         {startups.slice(0, 5).map((startup, idx) => {
           const companyUrl = startup.website
-            ? (startup.website.startsWith('http') ? startup.website : `https://${startup.website}`)
+            ? (startup.website.startsWith("http") ? startup.website : `https://${startup.website}`)
             : startup.url
 
+          const TypeIcon =
+            startup.type === "ipo" ? Rocket : startup.type === "cutting_edge" ? Zap : Sparkles
+          const typeLabel =
+            startup.type === "ipo"
+              ? "IPO Ready"
+              : startup.type === "cutting_edge"
+              ? "Cutting Edge"
+              : "Unicorn"
+
+          const body = (
+            <>
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                    {startup.name}
+                  </h4>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge
+                      variant="outline"
+                      className="gap-1 text-[10px] border-primary/30 text-primary"
+                    >
+                      <TypeIcon className="h-3 w-3" aria-hidden />
+                      {typeLabel}
+                    </Badge>
+                    {startup.industry && (
+                      <span className="text-xs text-muted-foreground">{startup.industry}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {(startup.highlight || startup.usp || startup.description) && (
+                <p className="text-xs text-muted-foreground line-clamp-3 mt-2 mb-1.5 leading-relaxed">
+                  {startup.highlight || startup.usp || startup.description}
+                </p>
+              )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5">
+                {startup.source && <span>{startup.source}</span>}
+                {startup.published_at && (
+                  <>
+                    {startup.source && <span>•</span>}
+                    <span>{formatTimeAgo(startup.published_at)}</span>
+                  </>
+                )}
+              </div>
+            </>
+          )
+
           return (
-            <div key={idx} className="py-2 border-b border-gray-100 last:border-0">
+            <div key={idx} className="py-2 border-b border-border last:border-0">
               {companyUrl ? (
                 <a
                   href={companyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block group"
+                  className="block group rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-gray-700">
-                        {startup.name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
-                          startup.type === "ipo"
-                            ? "bg-green-100 text-green-800"
-                            : startup.type === "cutting_edge"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-purple-100 text-purple-800"
-                        }`}>
-                          <span>{startup.type === "ipo" ? "🚀" : startup.type === "cutting_edge" ? "⚡" : "🦄"}</span>
-                          <span>{startup.type === "ipo" ? "IPO Ready" : startup.type === "cutting_edge" ? "Cutting Edge" : "Unicorn"}</span>
-                        </span>
-                        {startup.industry && (
-                          <span className="text-xs text-gray-500">
-                            {startup.industry}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {(startup.highlight || startup.usp || startup.description) && (
-                    <p className="text-xs text-gray-700 line-clamp-3 mt-2 mb-1.5 leading-relaxed">
-                      {startup.highlight || startup.usp || startup.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
-                    {startup.source && <span>{startup.source}</span>}
-                    {startup.published_at && (
-                      <>
-                        {startup.source && <span>•</span>}
-                        <span>{formatTimeAgo(startup.published_at)}</span>
-                      </>
-                    )}
-                  </div>
+                  {body}
                 </a>
               ) : (
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
-                        {startup.name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
-                          startup.type === "ipo"
-                            ? "bg-green-100 text-green-800"
-                            : startup.type === "cutting_edge"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-purple-100 text-purple-800"
-                        }`}>
-                          <span>{startup.type === "ipo" ? "🚀" : startup.type === "cutting_edge" ? "⚡" : "🦄"}</span>
-                          <span>{startup.type === "ipo" ? "IPO Ready" : startup.type === "cutting_edge" ? "Cutting Edge" : "Unicorn"}</span>
-                        </span>
-                        {startup.industry && (
-                          <span className="text-xs text-gray-500">
-                            {startup.industry}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {(startup.highlight || startup.usp || startup.description) && (
-                    <p className="text-xs text-gray-700 line-clamp-3 mt-2 mb-1.5 leading-relaxed font-medium">
-                      {startup.highlight || startup.usp || startup.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
-                    {startup.source && <span>{startup.source}</span>}
-                    {startup.published_at && (
-                      <>
-                        {startup.source && <span>•</span>}
-                        <span>{formatTimeAgo(startup.published_at)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <div className="group">{body}</div>
               )}
             </div>
           )
@@ -412,34 +343,43 @@ export default function TechTrends() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1">
+    <Card>
+      <div className="px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between gap-2">
+          <div role="tablist" aria-label="Tech feed" className="flex gap-1">
             <button
+              role="tab"
               onClick={() => setActiveTab("trends")}
-              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+              aria-selected={activeTab === "trends"}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 activeTab === "trends"
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              }`}
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40",
+              )}
             >
               Trends
             </button>
             <button
+              role="tab"
               onClick={() => setActiveTab("startups")}
-              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+              aria-selected={activeTab === "startups"}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 activeTab === "startups"
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              }`}
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40",
+              )}
             >
               Startups
             </button>
           </div>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={refreshing}
             onClick={() => {
               setRefreshing(true)
               if (activeTab === "trends") {
@@ -448,26 +388,21 @@ export default function TechTrends() {
                 fetchStartups(true)
               }
             }}
-            disabled={refreshing}
-            className="p-1.5 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
-            title="Refresh"
+            aria-label="Refresh feed"
+            className="h-8 w-8"
           >
             {refreshing ? (
-              <div className="w-3.5 h-3.5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
             ) : (
-              <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="p-4">
+      <CardContent className="p-4">
         {activeTab === "trends" ? renderTrendsContent() : renderStartupsContent()}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
-

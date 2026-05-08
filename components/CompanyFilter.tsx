@@ -1,6 +1,14 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface Company {
   id: string
@@ -12,13 +20,16 @@ interface CompanyFilterProps {
   selectedCompanyId?: string
 }
 
-export default function CompanyFilter({ companies, selectedCompanyId }: CompanyFilterProps) {
+export default function CompanyFilter({
+  companies,
+  selectedCompanyId,
+}: CompanyFilterProps) {
   const router = useRouter()
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (value: string) => {
     const newParams = new URLSearchParams(window.location.search)
-    if (e.target.value) {
-      newParams.set("company", e.target.value)
+    if (value && value !== "ALL") {
+      newParams.set("company", value)
     } else {
       newParams.delete("company")
     }
@@ -27,23 +38,28 @@ export default function CompanyFilter({ companies, selectedCompanyId }: CompanyF
 
   return (
     <div className="flex items-center gap-3">
-      <label htmlFor="company-filter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
-        Company:
-      </label>
-      <select
-        id="company-filter"
-        value={selectedCompanyId || ""}
-        onChange={handleChange}
-        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white min-w-[200px]"
+      <Label
+        htmlFor="company-filter"
+        className="text-sm font-medium text-foreground whitespace-nowrap"
       >
-        <option value="">All Companies</option>
-        {companies.map((company) => (
-          <option key={company.id} value={company.id}>
-            {company.name}
-          </option>
-        ))}
-      </select>
+        Company:
+      </Label>
+      <Select
+        value={selectedCompanyId || "ALL"}
+        onValueChange={handleChange}
+      >
+        <SelectTrigger id="company-filter" className="min-w-[200px]">
+          <SelectValue placeholder="All Companies" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All Companies</SelectItem>
+          {companies.map((company) => (
+            <SelectItem key={company.id} value={company.id}>
+              {company.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }
-

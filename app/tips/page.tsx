@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
 import TipsContent from "@/components/TipsContent"
 
 export default async function TipsPage() {
@@ -10,13 +11,21 @@ export default async function TipsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Tips & Tricks</h1>
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        accountType: session.user.accountType,
+      }}
+    >
+      <div className="max-w-5xl mx-auto space-y-6">
+        <PageHeader
+          title="Tips & Tricks"
+          description="Practical playbooks for profile, networking, jobs, and personal brand."
+        />
         <TipsContent />
       </div>
-    </div>
+    </ClearDShell>
   )
 }
-

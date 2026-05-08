@@ -86,7 +86,7 @@ function ResumeUploadForm({ onSuccess, onClose }: { onSuccess?: () => void; onCl
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           LinkedIn URL (optional)
         </label>
         <input
@@ -94,21 +94,21 @@ function ResumeUploadForm({ onSuccess, onClose }: { onSuccess?: () => void; onCl
           value={linkedinUrl}
           onChange={(e) => setLinkedinUrl(e.target.value)}
           placeholder="https://linkedin.com/in/..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Upload Resume (PDF/DOCX/TXT)
         </label>
         <input
           type="file"
           accept=".pdf,.docx,.doc,.txt"
           onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/15"
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc'))
             ? "✅ PDF/DOCX file selected - text will be extracted automatically"
             : "Upload PDF, DOCX, or TXT file. Text will be extracted automatically, or paste text below."}
@@ -116,44 +116,44 @@ function ResumeUploadForm({ onSuccess, onClose }: { onSuccess?: () => void; onCl
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Resume Text {resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc')) ? "(optional - will be extracted from file)" : "*"}
         </label>
         <textarea
           value={resumeText}
           onChange={(e) => setResumeText(e.target.value)}
           rows={10}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
           placeholder={resumeFile && (resumeFile.name.toLowerCase().endsWith('.pdf') || resumeFile.name.toLowerCase().endsWith('.docx') || resumeFile.name.toLowerCase().endsWith('.doc'))
             ? "Text will be extracted from file automatically. You can also paste additional text here if needed."
             : "Paste resume text here, or upload a PDF/DOCX file above"}
           required={!resumeFile || (!resumeFile.name.toLowerCase().endsWith('.pdf') && !resumeFile.name.toLowerCase().endsWith('.docx') && !resumeFile.name.toLowerCase().endsWith('.doc'))}
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {resumeText.length} characters
         </p>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-600">
+        <div className="p-3 bg-success/10 border border-success/40 rounded-lg">
+          <p className="text-sm text-success">
             ✅ Candidate created successfully! AI is analyzing the resume...
           </p>
         </div>
       )}
 
-      <div className="flex gap-3 pt-4 border-t border-gray-200">
+      <div className="flex gap-3 pt-4 border-t border-border">
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-secondary/40 transition-colors"
             disabled={loading}
           >
             Cancel
@@ -422,10 +422,10 @@ export default function CandidatesContent({
 
   const statusColors = {
     ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    CONTACTED: "bg-blue-50 text-blue-700 border-blue-200",
-    HIRED: "bg-purple-50 text-purple-700 border-purple-200",
-    REJECTED: "bg-red-50 text-red-700 border-red-200",
-    ARCHIVED: "bg-gray-50 text-gray-700 border-gray-200",
+    CONTACTED: "bg-primary/10 text-primary border-primary/30",
+    HIRED: "bg-primary/10 text-primary border-primary/30",
+    REJECTED: "bg-destructive/10 text-destructive border-destructive/30",
+    ARCHIVED: "bg-secondary/40 text-foreground border-border",
   }
 
   const statusIcons = {
@@ -486,11 +486,11 @@ export default function CandidatesContent({
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Candidates</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-foreground mb-1">Candidates</h1>
+            <p className="text-sm text-muted-foreground">
               {total} total candidate{total !== 1 ? 's' : ''} • Page {page} of {totalPages}
             </p>
           </div>
@@ -501,7 +501,7 @@ export default function CandidatesContent({
                 fetchCandidates()
               }}
               disabled={loading}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
+              className="px-4 py-2 bg-card border border-border text-foreground rounded-lg hover:bg-secondary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
               title="Refresh candidates list"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -520,7 +520,7 @@ export default function CandidatesContent({
             </button>
             <button
               onClick={() => setShowColumnSelector(true)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm font-medium"
+              className="px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 text-sm font-medium"
               title="Configure columns"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -536,7 +536,7 @@ export default function CandidatesContent({
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -545,7 +545,7 @@ export default function CandidatesContent({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, company, title, location..."
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="block w-full pl-10 pr-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-primary text-sm"
               />
             </div>
           </form>
@@ -557,7 +557,7 @@ export default function CandidatesContent({
               setPage(1)
               setTimeout(() => fetchCandidates(), 0)
             }}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white min-w-[180px]"
+            className="px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-primary text-sm bg-card min-w-[180px]"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">✓ Active</option>
@@ -572,16 +572,16 @@ export default function CandidatesContent({
       {/* Column Selector Modal */}
       {showColumnSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowColumnSelector(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-card rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Configure Columns</h2>
-                  <p className="text-sm text-gray-500 mt-1">Select which columns to display in the table</p>
+                  <h2 className="text-xl font-bold text-foreground">Configure Columns</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Select which columns to display in the table</p>
                 </div>
                 <button
                   onClick={() => setShowColumnSelector(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -593,12 +593,12 @@ export default function CandidatesContent({
               <div className="space-y-6">
                 {Object.entries(columnsByCategory).map(([category, cols]) => (
                   <div key={category}>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">{category}</h3>
+                    <h3 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">{category}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {cols.map((column) => (
                         <label
                           key={column.key}
-                          className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                          className="flex items-center space-x-2 cursor-pointer hover:bg-secondary/40 p-2 rounded-lg transition-colors"
                         >
                           <input
                             type="checkbox"
@@ -610,11 +610,11 @@ export default function CandidatesContent({
                                 setSelectedColumns(selectedColumns.filter((key) => key !== column.key))
                               }
                             }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-border text-primary focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">{column.label}</span>
+                          <span className="text-sm text-foreground">{column.label}</span>
                           {column.default && (
-                            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">default</span>
+                            <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">default</span>
                           )}
                         </label>
                       ))}
@@ -623,13 +623,13 @@ export default function CandidatesContent({
                 ))}
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div className="p-6 border-t border-border bg-secondary/40 flex items-center justify-between">
               <div className="flex gap-2">
                 <button
                   onClick={() => {
                     setSelectedColumns(allColumns.filter(col => col.default).map(col => col.key))
                   }}
-                  className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm text-foreground bg-card border border-border rounded-lg hover:bg-secondary/40 transition-colors"
                 >
                   Reset to Defaults
                 </button>
@@ -637,14 +637,14 @@ export default function CandidatesContent({
                   onClick={() => {
                     setSelectedColumns(allColumns.map(col => col.key))
                   }}
-                  className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-sm text-foreground bg-card border border-border rounded-lg hover:bg-secondary/40 transition-colors"
                 >
                   Select All
                 </button>
               </div>
               <button
                 onClick={() => setShowColumnSelector(false)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
               >
                 Done ({selectedColumns.length} selected)
               </button>
@@ -656,16 +656,16 @@ export default function CandidatesContent({
       {/* Upload Resume Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowUploadModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-card rounded-xl shadow-xl max-w-2xl w-full my-8" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Upload Resume</h2>
-                  <p className="text-sm text-gray-500 mt-1">Upload a resume (PDF/DOCX/TXT) to create a new candidate</p>
+                  <h2 className="text-xl font-bold text-foreground">Upload Resume</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Upload a resume (PDF/DOCX/TXT) to create a new candidate</p>
                 </div>
                 <button
                   onClick={() => setShowUploadModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -685,22 +685,22 @@ export default function CandidatesContent({
       )}
 
       {/* Candidates Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading candidates...</p>
+            <p className="text-muted-foreground">Loading candidates...</p>
           </div>
         ) : candidates.length === 0 ? (
           <div className="p-12 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mx-auto h-12 w-12 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates found</h3>
-            <p className="text-gray-500 mb-4">Get started by uploading a resume to create a new candidate.</p>
+            <h3 className="text-lg font-medium text-foreground mb-2">No candidates found</h3>
+            <p className="text-muted-foreground mb-4">Get started by uploading a resume to create a new candidate.</p>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
             >
               Upload Resume
             </button>
@@ -708,24 +708,24 @@ export default function CandidatesContent({
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-secondary/40">
                 <tr>
                   {visibleColumns.map((column) => (
                     <th
                       key={column.key}
-                      className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky top-0 bg-gray-50 z-10"
+                      className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider sticky top-0 bg-secondary/40 z-10"
                     >
                       {column.label}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky top-0 bg-gray-50 z-10">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider sticky top-0 bg-secondary/40 z-10">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-gray-200">
                 {candidates.map((candidate) => (
-                  <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={candidate.id} className="hover:bg-secondary/40 transition-colors">
                     {visibleColumns.map((column) => {
                       const value = (candidate as any)[column.key]
                       
@@ -737,7 +737,7 @@ export default function CandidatesContent({
                                 {candidate.fullName?.charAt(0).toUpperCase() || "?"}
                               </div>
                               <div className="ml-3">
-                                <div className="text-sm font-medium text-gray-900">
+                                <div className="text-sm font-medium text-foreground">
                                   {candidate.fullName || "-"}
                                 </div>
                                 {candidate.linkedinUrl && (
@@ -745,7 +745,7 @@ export default function CandidatesContent({
                                     href={candidate.linkedinUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+                                    className="text-xs text-primary hover:text-primary inline-flex items-center gap-1"
                                   >
                                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
@@ -786,7 +786,7 @@ export default function CandidatesContent({
                               href={value}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:text-blue-800 break-all inline-flex items-center gap-1"
+                              className="text-sm text-primary hover:text-primary break-all inline-flex items-center gap-1"
                             >
                               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
@@ -799,7 +799,7 @@ export default function CandidatesContent({
                       
                       return (
                         <td key={column.key} className="px-4 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs">
+                          <div className="text-sm text-foreground max-w-xs">
                             {formatCellValue(value, column.key)}
                           </div>
                         </td>
@@ -808,7 +808,7 @@ export default function CandidatesContent({
                     <td className="px-4 py-4 whitespace-nowrap">
                       <button
                         onClick={() => loadCandidateDetails(candidate.id)}
-                        className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                        className="text-primary hover:text-primary font-medium text-sm transition-colors"
                       >
                         View
                       </button>
@@ -823,9 +823,9 @@ export default function CandidatesContent({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-foreground">
               Showing <span className="font-medium">{(page - 1) * initialLimit + 1}</span> to{" "}
               <span className="font-medium">{Math.min(page * initialLimit, total)}</span> of{" "}
               <span className="font-medium">{total}</span> candidates
@@ -837,7 +837,7 @@ export default function CandidatesContent({
                   setTimeout(() => fetchCandidates(), 0)
                 }}
                 disabled={page === 1 || loading}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary/40 transition-colors text-sm font-medium"
               >
                 Previous
               </button>
@@ -864,8 +864,8 @@ export default function CandidatesContent({
                       disabled={loading}
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         page === pageNum
-                          ? "bg-blue-600 text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          ? "bg-primary text-white"
+                          : "bg-card border border-border text-foreground hover:bg-secondary/40"
                       } disabled:opacity-50`}
                     >
                       {pageNum}
@@ -879,7 +879,7 @@ export default function CandidatesContent({
                   setTimeout(() => fetchCandidates(), 0)
                 }}
                 disabled={page === totalPages || loading}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary/40 transition-colors text-sm font-medium"
               >
                 Next
               </button>
@@ -891,23 +891,23 @@ export default function CandidatesContent({
       {/* Candidate Detail Modal */}
       {selectedCandidate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCandidate(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full h-[90vh] flex flex-col my-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 sm:p-6 z-10">
+          <div className="bg-card rounded-xl shadow-xl max-w-7xl w-full h-[90vh] flex flex-col my-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex-shrink-0 bg-card border-b border-border p-4 sm:p-6 z-10">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
                     {selectedCandidate.fullName?.charAt(0).toUpperCase() || "?"}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedCandidate.fullName}</h2>
+                    <h2 className="text-2xl font-bold text-foreground">{selectedCandidate.fullName}</h2>
                     <div className="flex items-center gap-3 mt-1">
                       {selectedCandidate.jobTitle && (
-                        <span className="text-gray-600">{selectedCandidate.jobTitle}</span>
+                        <span className="text-muted-foreground">{selectedCandidate.jobTitle}</span>
                       )}
                       {selectedCandidate.currentCompany && (
                         <>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-600">{selectedCandidate.currentCompany}</span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="text-muted-foreground">{selectedCandidate.currentCompany}</span>
                         </>
                       )}
                     </div>
@@ -916,7 +916,7 @@ export default function CandidatesContent({
                         href={selectedCandidate.linkedinUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-flex items-center gap-1"
+                        className="text-primary hover:text-primary text-sm mt-2 inline-flex items-center gap-1"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
@@ -931,7 +931,7 @@ export default function CandidatesContent({
                     setSelectedCandidate(null)
                     setAiResults(null)
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+                  className="text-muted-foreground hover:text-muted-foreground transition-colors p-2"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -945,25 +945,25 @@ export default function CandidatesContent({
               <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 {/* AI Summary Section - Full Width at Top */}
                 {selectedCandidate.aiSummary && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200 mb-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-primary/30 mb-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
-                    <h3 className="font-semibold text-gray-900">AI Summary</h3>
+                    <h3 className="font-semibold text-foreground">AI Summary</h3>
                     {selectedCandidate.aiSummaryGeneratedAt && (
-                      <span className="text-xs text-gray-500 ml-auto">
+                      <span className="text-xs text-muted-foreground ml-auto">
                         Generated {new Date(selectedCandidate.aiSummaryGeneratedAt).toLocaleDateString()}
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-700 mb-4 leading-relaxed">{selectedCandidate.aiSummary}</p>
+                  <p className="text-foreground mb-4 leading-relaxed">{selectedCandidate.aiSummary}</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedCandidate.aiKeyStrengths && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2 text-sm">Key Strengths</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        <h4 className="font-medium text-foreground mb-2 text-sm">Key Strengths</h4>
+                      <ul className="list-disc list-inside text-sm text-foreground space-y-1">
                         {(() => {
                           try {
                             const strengths = JSON.parse(selectedCandidate.aiKeyStrengths || "[]")
@@ -980,18 +980,18 @@ export default function CandidatesContent({
                   
                   {selectedCandidate.aiBestFitRoles && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2 text-sm">Best Fit Roles</h4>
+                        <h4 className="font-medium text-foreground mb-2 text-sm">Best Fit Roles</h4>
                       <div className="flex flex-wrap gap-2">
                         {(() => {
                           try {
                             const roles = JSON.parse(selectedCandidate.aiBestFitRoles || "[]")
                               return Array.isArray(roles) ? roles.slice(0, 4).map((r: string, i: number) => (
-                                <span key={i} className="px-2 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-medium">
+                                <span key={i} className="px-2 py-1 bg-blue-200 text-primary rounded-full text-xs font-medium">
                                 {r}
                               </span>
                             )) : null
                           } catch {
-                              return <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-medium">
+                              return <span className="px-2 py-1 bg-blue-200 text-primary rounded-full text-xs font-medium">
                               {selectedCandidate.aiBestFitRoles}
                             </span>
                           }
@@ -1008,28 +1008,28 @@ export default function CandidatesContent({
                     {/* Candidate Details Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {selectedCandidate.location && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</h3>
-                          <p className="text-gray-900">{selectedCandidate.location}</p>
+                        <div className="bg-secondary/40 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Location</h3>
+                          <p className="text-foreground">{selectedCandidate.location}</p>
                         </div>
                       )}
                       {selectedCandidate.totalYearsExperience && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Experience</h3>
-                          <p className="text-gray-900">{selectedCandidate.totalYearsExperience} years</p>
+                        <div className="bg-secondary/40 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Experience</h3>
+                          <p className="text-foreground">{selectedCandidate.totalYearsExperience} years</p>
                         </div>
                       )}
                       {selectedCandidate.skillsCount && selectedCandidate.skillsCount > 0 && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Skills</h3>
-                          <p className="text-gray-900">
+                        <div className="bg-secondary/40 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Skills</h3>
+                          <p className="text-foreground">
                             {selectedCandidate.skillsCount} skill{selectedCandidate.skillsCount !== 1 ? 's' : ''} listed
                           </p>
                         </div>
                       )}
                       {selectedCandidate.status && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</h3>
+                        <div className="bg-secondary/40 rounded-lg p-4">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Status</h3>
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusColors[selectedCandidate.status]}`}>
                             {statusIcons[selectedCandidate.status]} {selectedCandidate.status}
                           </span>
@@ -1039,9 +1039,9 @@ export default function CandidatesContent({
 
                     {/* Education Section */}
                     {(selectedCandidate.universities || selectedCandidate.fieldsOfStudy || selectedCandidate.degrees) && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                     </svg>
@@ -1050,8 +1050,8 @@ export default function CandidatesContent({
                   <div className="space-y-4">
                     {selectedCandidate.universities && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Universities</h4>
-                        <p className="text-gray-900">
+                        <h4 className="text-sm font-medium text-foreground mb-1">Universities</h4>
+                        <p className="text-foreground">
                           {(() => {
                             try {
                               const unis = JSON.parse(selectedCandidate.universities)
@@ -1065,8 +1065,8 @@ export default function CandidatesContent({
                     )}
                     {selectedCandidate.fieldsOfStudy && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Fields of Study</h4>
-                        <p className="text-gray-900">
+                        <h4 className="text-sm font-medium text-foreground mb-1">Fields of Study</h4>
+                        <p className="text-foreground">
                           {(() => {
                             try {
                               const fields = JSON.parse(selectedCandidate.fieldsOfStudy)
@@ -1080,14 +1080,14 @@ export default function CandidatesContent({
                     )}
                     {selectedCandidate.degrees && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Degrees</h4>
-                        <p className="text-gray-900">{selectedCandidate.degrees}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Degrees</h4>
+                        <p className="text-foreground">{selectedCandidate.degrees}</p>
                       </div>
                     )}
                     {selectedCandidate.undergradGraduationYear && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Undergrad Year</h4>
-                        <p className="text-gray-900">{selectedCandidate.undergradGraduationYear}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Undergrad Year</h4>
+                        <p className="text-foreground">{selectedCandidate.undergradGraduationYear}</p>
                       </div>
                     )}
                   </div>
@@ -1096,9 +1096,9 @@ export default function CandidatesContent({
 
                     {/* Experience Section */}
                     {(selectedCandidate.companies || selectedCandidate.previousTitles || selectedCandidate.currentCompany) && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     Experience
@@ -1106,13 +1106,13 @@ export default function CandidatesContent({
                   <div className="space-y-4">
                     {selectedCandidate.currentCompany && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Current Company</h4>
-                        <p className="text-gray-900">{selectedCandidate.currentCompany}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Current Company</h4>
+                        <p className="text-foreground">{selectedCandidate.currentCompany}</p>
                         {selectedCandidate.jobTitle && (
-                          <p className="text-sm text-gray-600 mt-1">as {selectedCandidate.jobTitle}</p>
+                          <p className="text-sm text-muted-foreground mt-1">as {selectedCandidate.jobTitle}</p>
                         )}
                         {selectedCandidate.currentCompanyStartDate && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {selectedCandidate.currentCompanyStartDate}
                             {selectedCandidate.currentCompanyEndDate ? ` - ${selectedCandidate.currentCompanyEndDate}` : " - Present"}
                           </p>
@@ -1121,10 +1121,10 @@ export default function CandidatesContent({
                     )}
                     {selectedCandidate.previousTargetCompany && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Previous Company</h4>
-                        <p className="text-gray-900">{selectedCandidate.previousTargetCompany}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Previous Company</h4>
+                        <p className="text-foreground">{selectedCandidate.previousTargetCompany}</p>
                         {selectedCandidate.previousTargetCompanyStartDate && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {selectedCandidate.previousTargetCompanyStartDate}
                             {selectedCandidate.previousTargetCompanyEndDate ? ` - ${selectedCandidate.previousTargetCompanyEndDate}` : ""}
                           </p>
@@ -1133,8 +1133,8 @@ export default function CandidatesContent({
                     )}
                     {selectedCandidate.companies && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">All Companies</h4>
-                        <p className="text-gray-900">
+                        <h4 className="text-sm font-medium text-foreground mb-1">All Companies</h4>
+                        <p className="text-foreground">
                           {(() => {
                             try {
                               const comps = JSON.parse(selectedCandidate.companies)
@@ -1148,14 +1148,14 @@ export default function CandidatesContent({
                     )}
                     {selectedCandidate.previousTitles && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Previous Titles</h4>
-                        <p className="text-gray-900">{selectedCandidate.previousTitles}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Previous Titles</h4>
+                        <p className="text-foreground">{selectedCandidate.previousTitles}</p>
                       </div>
                     )}
                     {selectedCandidate.totalYearsExperience && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Total Experience</h4>
-                        <p className="text-gray-900">{selectedCandidate.totalYearsExperience} years</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Total Experience</h4>
+                        <p className="text-foreground">{selectedCandidate.totalYearsExperience} years</p>
                       </div>
                     )}
                   </div>
@@ -1164,25 +1164,25 @@ export default function CandidatesContent({
 
                     {/* Additional Information */}
                     {(selectedCandidate.certifications || selectedCandidate.languages || selectedCandidate.projects) && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                      <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Additional Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedCandidate.certifications && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Certifications</h4>
-                        <p className="text-sm text-gray-900">{selectedCandidate.certifications}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Certifications</h4>
+                        <p className="text-sm text-foreground">{selectedCandidate.certifications}</p>
                       </div>
                     )}
                     {selectedCandidate.languages && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Languages</h4>
-                        <p className="text-sm text-gray-900">{selectedCandidate.languages}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Languages</h4>
+                        <p className="text-sm text-foreground">{selectedCandidate.languages}</p>
                       </div>
                     )}
                     {selectedCandidate.projects && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Projects</h4>
-                        <p className="text-sm text-gray-900">{selectedCandidate.projects}</p>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Projects</h4>
+                        <p className="text-sm text-foreground">{selectedCandidate.projects}</p>
                       </div>
                     )}
                   </div>
@@ -1191,28 +1191,28 @@ export default function CandidatesContent({
 
                     {/* Notes */}
                     {selectedCandidate.notes && (
-                      <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-4 sm:p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="bg-warning/10 rounded-lg border border-warning/40 p-4 sm:p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     Notes
                   </h3>
-                  <p className="text-gray-700 whitespace-pre-wrap">{selectedCandidate.notes}</p>
+                  <p className="text-foreground whitespace-pre-wrap">{selectedCandidate.notes}</p>
                 </div>
               )}
 
                     {/* Raw Data */}
                     {selectedCandidate.rawData && (
-                      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 sm:p-6">
+                      <div className="bg-secondary/40 rounded-lg border border-border p-4 sm:p-6">
                   <details className="text-sm">
-                    <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium mb-2 flex items-center gap-2">
+                    <summary className="cursor-pointer text-primary hover:text-primary font-medium mb-2 flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       View Raw Data
                     </summary>
-                    <pre className="text-xs text-gray-600 bg-white p-4 rounded border border-gray-200 overflow-auto max-h-96 mt-2">
+                    <pre className="text-xs text-muted-foreground bg-card p-4 rounded border border-border overflow-auto max-h-96 mt-2">
                       {typeof selectedCandidate.rawData === 'string'
                         ? selectedCandidate.rawData
                         : JSON.stringify(selectedCandidate.rawData, null, 2)}
@@ -1223,15 +1223,15 @@ export default function CandidatesContent({
                   </div>
 
                 {/* Candidate Tools & Actions - Full Width Tabs Section */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm mt-6">
+                <div className="bg-card rounded-lg border border-border shadow-sm mt-6">
                   {/* Tabs Header */}
-                  <div className="flex border-b border-gray-200">
+                  <div className="flex border-b border-border">
                     <button
                       onClick={() => setActiveRightTab("recommendations")}
                       className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                         activeRightTab === "recommendations"
-                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          ? "text-primary border-b-2 border-blue-600 bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                       }`}
                     >
                       <span className="flex items-center justify-center gap-2">
@@ -1243,8 +1243,8 @@ export default function CandidatesContent({
                       onClick={() => setActiveRightTab("workflows")}
                       className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                         activeRightTab === "workflows"
-                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          ? "text-primary border-b-2 border-blue-600 bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                       }`}
                     >
                       <span className="flex items-center justify-center gap-2">
@@ -1256,8 +1256,8 @@ export default function CandidatesContent({
                       onClick={() => setActiveRightTab("timeline")}
                       className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                         activeRightTab === "timeline"
-                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          ? "text-primary border-b-2 border-blue-600 bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                       }`}
                     >
                       <span className="flex items-center justify-center gap-2">
@@ -1269,8 +1269,8 @@ export default function CandidatesContent({
                       onClick={() => setActiveRightTab("actions")}
                       className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                         activeRightTab === "actions"
-                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          ? "text-primary border-b-2 border-blue-600 bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                       }`}
                     >
                       <span className="flex items-center justify-center gap-2">
@@ -1301,7 +1301,7 @@ export default function CandidatesContent({
 
                     {activeRightTab === "actions" && (
                       <div className="space-y-3">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Quick Actions</h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">AI Quick Actions</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <button
                             onClick={async () => {
@@ -1319,7 +1319,7 @@ export default function CandidatesContent({
                               }
                             }}
                             disabled={aiLoading !== null}
-                            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                            className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
                           >
                             {aiLoading === "match" ? (
                               <>
@@ -1379,11 +1379,11 @@ export default function CandidatesContent({
 
                 {/* AI Results Display - Full Width */}
                 {aiResults && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200 mt-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-primary/30 mt-4">
                     {aiResults.type === "match" && (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                           Job Matches
@@ -1391,19 +1391,19 @@ export default function CandidatesContent({
                         {aiResults.data.matches && aiResults.data.matches.length > 0 ? (
                           <div className="space-y-3">
                             {aiResults.data.matches.slice(0, 5).map((match: any, i: number) => (
-                              <div key={i} className="bg-white rounded-lg p-4 border border-gray-200">
+                              <div key={i} className="bg-card rounded-lg p-4 border border-border">
                                 <div className="flex justify-between items-start mb-2">
                                   <div>
-                                    <h4 className="font-medium text-gray-900">{match.jobTitle}</h4>
-                                    <p className="text-sm text-gray-600">{match.companyName}</p>
+                                    <h4 className="font-medium text-foreground">{match.jobTitle}</h4>
+                                    <p className="text-sm text-muted-foreground">{match.companyName}</p>
                                   </div>
-                                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
+                                  <span className="px-3 py-1 bg-primary/15 text-purple-800 rounded-full text-xs font-semibold">
                                     {match.matchScore}% match
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-700 mb-2">{match.reasoning}</p>
+                                <p className="text-sm text-foreground mb-2">{match.reasoning}</p>
                                 {match.strengths && match.strengths.length > 0 && (
-                                  <div className="text-xs text-gray-600">
+                                  <div className="text-xs text-muted-foreground">
                                     <strong>Strengths:</strong> {match.strengths.join(", ")}
                                   </div>
                                 )}
@@ -1411,27 +1411,27 @@ export default function CandidatesContent({
                             ))}
                           </div>
                         ) : (
-                          <p className="text-gray-600">No matches found</p>
+                          <p className="text-muted-foreground">No matches found</p>
                         )}
                       </div>
                     )}
                     {aiResults.type === "outreach" && (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                           <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                           Generated Outreach Message
                         </h3>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
-                          <p className="text-gray-700 whitespace-pre-wrap">{aiResults.data.message}</p>
+                        <div className="bg-card rounded-lg p-4 border border-border mb-3">
+                          <p className="text-foreground whitespace-pre-wrap">{aiResults.data.message}</p>
                         </div>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(aiResults.data.message)
                             alert("Message copied to clipboard!")
                           }}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
                         >
                           Copy to Clipboard
                         </button>

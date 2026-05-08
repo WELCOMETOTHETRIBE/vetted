@@ -142,25 +142,25 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
   const getStatusColor = (status: string) => {
     switch (status) {
       case "PENDING":
-        return "bg-gray-100 text-gray-800"
+        return "bg-secondary text-foreground"
       case "SCHEDULED":
-        return "bg-blue-100 text-blue-800"
+        return "bg-primary/15 text-primary"
       case "SENT":
-        return "bg-green-100 text-green-800"
+        return "bg-success/15 text-success"
       case "DELIVERED":
-        return "bg-green-100 text-green-800"
+        return "bg-success/15 text-success"
       case "OPENED":
-        return "bg-purple-100 text-purple-800"
+        return "bg-primary/15 text-purple-800"
       case "CLICKED":
-        return "bg-indigo-100 text-indigo-800"
+        return "bg-primary/15 text-indigo-800"
       case "RESPONDED":
         return "bg-emerald-100 text-emerald-800"
       case "FAILED":
-        return "bg-red-100 text-red-800"
+        return "bg-destructive/15 text-red-800"
       case "CANCELLED":
-        return "bg-gray-100 text-gray-800"
+        return "bg-secondary text-foreground"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-secondary text-foreground"
     }
   }
 
@@ -183,22 +183,22 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-card rounded-lg border border-border p-4">
         <div className="animate-pulse space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-8 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-secondary rounded w-1/3"></div>
+          <div className="h-8 bg-secondary rounded"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+    <div className="bg-card rounded-lg border border-border p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Engagement Workflows</h3>
+        <h3 className="text-lg font-semibold text-foreground">Engagement Workflows</h3>
         <button
           onClick={() => setShowEngagements(!showEngagements)}
-          className="text-sm text-blue-600 hover:text-blue-700"
+          className="text-sm text-primary hover:text-primary"
         >
           {showEngagements ? "Hide" : "Show"} Engagements ({engagements.length})
         </button>
@@ -207,13 +207,13 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
       {/* Execute Workflow */}
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Select Workflow
           </label>
           <select
             value={selectedWorkflow}
             onChange={(e) => setSelectedWorkflow(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-primary"
             disabled={executing}
           >
             <option value="">Choose a workflow...</option>
@@ -228,8 +228,8 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
         </div>
 
         {selectedWorkflow && (
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-gray-700">
+          <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
+            <p className="text-sm text-foreground">
               {workflows.find((w) => w.id === selectedWorkflow)?.description ||
                 "This workflow will schedule automated engagements with the candidate."}
             </p>
@@ -239,7 +239,7 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
         <button
           onClick={executeWorkflow}
           disabled={!selectedWorkflow || executing}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
         >
           {executing ? "Executing..." : "Execute Workflow"}
         </button>
@@ -247,10 +247,10 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
 
       {/* Engagements List */}
       {showEngagements && (
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">Scheduled Engagements</h4>
+        <div className="mt-4 border-t border-border pt-4">
+          <h4 className="text-sm font-semibold text-foreground mb-3">Scheduled Engagements</h4>
           {engagements.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4">
               No engagements scheduled yet.
             </p>
           ) : (
@@ -258,32 +258,32 @@ export default function EngagementWorkflow({ candidateId, jobId }: EngagementWor
               {engagements.map((engagement) => (
                 <div
                   key={engagement.id}
-                  className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+                  className="p-3 border border-border rounded-lg hover:border-primary/40 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-lg">{getTypeIcon(engagement.type)}</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-foreground">
                           {engagement.type}
                           {engagement.workflow && (
-                            <span className="text-xs text-gray-500 ml-2">
+                            <span className="text-xs text-muted-foreground ml-2">
                               ({engagement.workflow.name})
                             </span>
                           )}
                         </span>
                       </div>
                       {engagement.subject && (
-                        <p className="text-sm font-medium text-gray-700 mb-1">
+                        <p className="text-sm font-medium text-foreground mb-1">
                           {engagement.subject}
                         </p>
                       )}
                       {engagement.content && (
-                        <p className="text-xs text-gray-600 line-clamp-2">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
                           {engagement.content}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         Scheduled: {new Date(engagement.scheduledAt).toLocaleString()}
                       </p>
                     </div>

@@ -104,41 +104,41 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
   const getSourceBadgeColor = (source: string) => {
     switch (source) {
       case "linkedin":
-        return "bg-blue-100 text-blue-800"
+        return "bg-primary/15 text-primary"
       case "github":
-        return "bg-gray-100 text-gray-800"
+        return "bg-secondary text-foreground"
       case "scholar":
-        return "bg-green-100 text-green-800"
+        return "bg-success/15 text-success"
       case "youtube":
-        return "bg-red-100 text-red-800"
+        return "bg-destructive/15 text-red-800"
       case "patents":
-        return "bg-purple-100 text-purple-800"
+        return "bg-primary/15 text-purple-800"
       case "stackoverflow":
-        return "bg-orange-100 text-orange-800"
+        return "bg-warning/15 text-orange-800"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-secondary text-foreground"
     }
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return "bg-green-100 text-green-800"
-    if (score >= 40) return "bg-yellow-100 text-yellow-800"
-    return "bg-gray-100 text-gray-800"
+    if (score >= 70) return "bg-success/15 text-success"
+    if (score >= 40) return "bg-warning/15 text-warning"
+    return "bg-secondary text-foreground"
   }
 
   const sortedResults = [...results].sort((a, b) => (b.score || 0) - (a.score || 0))
   const allSelected = selectedResults.size === results.length && results.length > 0
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border bg-secondary/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               Results ({results.length})
             </h3>
             {selectedResults.size > 0 && (
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {selectedResults.size} selected
               </span>
             )}
@@ -154,7 +154,7 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
               </button>
             )}
             {runId && (
-              <span className="text-xs text-gray-500">Run ID: {runId.substring(0, 8)}...</span>
+              <span className="text-xs text-muted-foreground">Run ID: {runId.substring(0, 8)}...</span>
             )}
           </div>
         </div>
@@ -162,8 +162,8 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
           <div
             className={`mt-3 px-4 py-2 rounded-lg text-sm ${
               saveMessage.type === "success"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                ? "bg-success/15 text-success"
+                : "bg-destructive/15 text-red-800"
             }`}
           >
             {saveMessage.text}
@@ -173,37 +173,37 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-secondary/40">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider w-12">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-border text-primary focus:ring-blue-500"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                 Title
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                 Source
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                 Snippet
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                 Signals
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                 Score
               </th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-gray-200">
             {sortedResults.map((result, idx) => {
               const isSelected = selectedResults.has(idx)
               const isSaved = result.source === "linkedin" && savedLinks.has(result.link)
@@ -212,8 +212,8 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
               return (
                 <tr
                   key={idx}
-                  className={`hover:bg-gray-50 transition-colors ${
-                    isSelected ? "bg-blue-50" : ""
+                  className={`hover:bg-secondary/40 transition-colors ${
+                    isSelected ? "bg-primary/10" : ""
                   } ${isSaved ? "opacity-75" : ""}`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -222,26 +222,26 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelection(idx)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-border text-primary focus:ring-blue-500"
                       />
                     ) : (
-                      <span className="text-xs text-gray-400" title="Only LinkedIn profiles can be saved">
+                      <span className="text-xs text-muted-foreground" title="Only LinkedIn profiles can be saved">
                         —
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900 max-w-xs">
+                  <div className="text-sm font-medium text-foreground max-w-xs">
                     <a
                       href={result.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                      className="text-primary hover:text-primary hover:underline"
                     >
                       {result.title}
                     </a>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">{result.displayLink}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{result.displayLink}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -253,7 +253,7 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-600 max-w-md line-clamp-2">
+                  <div className="text-sm text-muted-foreground max-w-md line-clamp-2">
                     {result.snippet || "No snippet available"}
                   </div>
                 </td>
@@ -262,13 +262,13 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
                     {result.signals.slice(0, 3).map((signal, sIdx) => (
                       <span
                         key={sIdx}
-                        className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                        className="inline-flex items-center px-2 py-0.5 bg-secondary text-foreground rounded text-xs"
                       >
                         {signal.split(":")[1]?.trim() || signal}
                       </span>
                     ))}
                     {result.signals.length > 3 && (
-                      <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
+                      <span className="inline-flex items-center px-2 py-0.5 bg-secondary text-foreground rounded text-xs">
                         +{result.signals.length - 3}
                       </span>
                     )}
@@ -286,14 +286,14 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2">
                     {isSaved && (
-                      <span className="text-xs text-green-600 font-medium" title="Saved to candidates">
+                      <span className="text-xs text-success font-medium" title="Saved to candidates">
                         ✓ Saved
                       </span>
                     )}
                     {isSelected && !isSaved && (
                       <button
                         onClick={() => handleRemoveFromSelection(idx)}
-                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        className="text-xs text-destructive hover:text-red-800 font-medium"
                         title="Remove from selection"
                       >
                         Remove
@@ -303,12 +303,12 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
                       href={result.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-900 font-medium transition-colors"
+                      className="text-primary hover:text-blue-900 font-medium transition-colors"
                     >
                       Open
                     </a>
                     {result.enrichment && (
-                      <div className="text-xs text-gray-500" title={JSON.stringify(result.enrichment, null, 2)}>
+                      <div className="text-xs text-muted-foreground" title={JSON.stringify(result.enrichment, null, 2)}>
                         ⭐
                       </div>
                     )}
@@ -324,8 +324,8 @@ export default function EngineerFinderResults({ results, runId }: EngineerFinder
       {results.length === 0 && (
         <div className="p-12 text-center">
           <div className="text-6xl mb-4">📊</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No results found</h3>
-          <p className="text-gray-600">Try adjusting your search query or filters</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
+          <p className="text-muted-foreground">Try adjusting your search query or filters</p>
         </div>
       )}
     </div>

@@ -80,22 +80,22 @@ export default function EngineerFinderSavedRuns({ onLoadRun }: EngineerFinderSav
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading saved runs...</p>
+        <p className="text-muted-foreground">Loading saved runs...</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border bg-secondary/40">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Saved Search Runs</h3>
+            <h3 className="text-lg font-semibold text-foreground">Saved Search Runs</h3>
             <button
               onClick={loadRuns}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-xs font-medium"
+              className="px-3 py-1.5 bg-secondary text-foreground rounded-lg hover:bg-secondary text-xs font-medium"
             >
               Refresh
             </button>
@@ -103,65 +103,65 @@ export default function EngineerFinderSavedRuns({ onLoadRun }: EngineerFinderSav
         </div>
 
         {error && (
-          <div className="px-6 py-4 bg-red-100 text-red-800 text-sm">{error}</div>
+          <div className="px-6 py-4 bg-destructive/15 text-red-800 text-sm">{error}</div>
         )}
 
         {runs.length === 0 ? (
           <div className="p-12 text-center">
             <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No saved runs</h3>
-            <p className="text-gray-600">Run a search to see it saved here</p>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No saved runs</h3>
+            <p className="text-muted-foreground">Run a search to see it saved here</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-secondary/40">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Query
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Results
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Created
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                     Created By
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-gray-200">
                 {runs.map((run) => (
                   <tr
                     key={run.id}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      selectedRunId === run.id ? "bg-blue-50" : ""
+                    className={`hover:bg-secondary/40 transition-colors ${
+                      selectedRunId === run.id ? "bg-primary/10" : ""
                     }`}
                   >
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900 max-w-md truncate">
+                      <div className="text-sm font-medium text-foreground max-w-md truncate">
                         {run.query}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/15 text-primary">
                         {run.resultCount}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {formatDate(run.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {run.createdBy?.name || run.createdBy?.email || "Unknown"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => loadRunDetails(run.id)}
-                        className="text-blue-600 hover:text-blue-900 font-medium transition-colors"
+                        className="text-primary hover:text-blue-900 font-medium transition-colors"
                       >
                         View Results
                       </button>
@@ -175,49 +175,49 @@ export default function EngineerFinderSavedRuns({ onLoadRun }: EngineerFinderSav
       </div>
 
       {runDetails && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Run Details</h3>
+            <h3 className="text-lg font-semibold text-foreground">Run Details</h3>
             <button
               onClick={() => {
                 setRunDetails(null)
                 setSelectedRunId(null)
               }}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-muted-foreground hover:text-muted-foreground"
             >
               ×
             </button>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Query</label>
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <code className="text-xs text-gray-800 break-all">{runDetails.query}</code>
+              <label className="block text-xs font-medium text-foreground mb-1">Query</label>
+              <div className="bg-secondary/40 rounded-lg p-3 border border-border">
+                <code className="text-xs text-foreground break-all">{runDetails.query}</code>
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Results ({runDetails.results?.length || 0})</label>
+              <label className="block text-xs font-medium text-foreground mb-1">Results ({runDetails.results?.length || 0})</label>
               {runDetails.results && runDetails.results.length > 0 && (
                 <div className="mt-2 space-y-2 max-h-96 overflow-y-auto">
                   {runDetails.results.map((result: any, idx: number) => (
-                    <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div key={idx} className="bg-secondary/40 rounded-lg p-3 border border-border">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <a
                             href={result.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                            className="text-sm font-medium text-primary hover:text-primary hover:underline"
                           >
                             {result.title}
                           </a>
-                          <div className="text-xs text-gray-500 mt-1">{result.displayLink}</div>
+                          <div className="text-xs text-muted-foreground mt-1">{result.displayLink}</div>
                           {result.snippet && (
-                            <div className="text-xs text-gray-600 mt-2 line-clamp-2">{result.snippet}</div>
+                            <div className="text-xs text-muted-foreground mt-2 line-clamp-2">{result.snippet}</div>
                           )}
                         </div>
                         <div className="ml-4 text-right">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/15 text-primary">
                             Score: {result.score || 0}
                           </span>
                         </div>
@@ -227,7 +227,7 @@ export default function EngineerFinderSavedRuns({ onLoadRun }: EngineerFinderSav
                           {result.signals.map((signal: string, sIdx: number) => (
                             <span
                               key={sIdx}
-                              className="inline-flex items-center px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-xs"
+                              className="inline-flex items-center px-2 py-0.5 bg-secondary text-foreground rounded text-xs"
                             >
                               {signal.split(":")[1]?.trim() || signal}
                             </span>

@@ -1,7 +1,10 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import Link from "next/link"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import ProfileEditForm from "@/components/ProfileEditForm"
 import ResumeProfileUpload from "@/components/ResumeProfileUpload"
 
@@ -11,27 +14,23 @@ async function getProfileData(userId: string) {
       where: { id: userId },
       include: {
         profile: true,
-        experiences: {
-          include: { company: true },
-          orderBy: { startDate: "desc" },
-        },
-        educations: {
-          orderBy: { startDate: "desc" },
-        },
-        skills: {
-          include: { skill: true },
-        },
+        experiences: { include: { company: true }, orderBy: { startDate: "desc" } },
+        educations: { orderBy: { startDate: "desc" } },
+        skills: { include: { skill: true } },
       },
     })
-
     return user
-  } catch (error: any) {
-    console.error("Error fetching profile data:", error)
-    // If it's a database schema error, throw it so we can show helpful message
-    if (error.message?.includes("column") || error.message?.includes("Unknown column") || error.code === "P2021" || error.code === "P2022") {
+  } catch (error) {
+    const e = error as { message?: string; code?: string }
+    console.error("Error fetching profile data:", e)
+    if (
+      e.message?.includes("column") ||
+      e.message?.includes("Unknown column") ||
+      e.code === "P2021" ||
+      e.code === "P2022"
+    ) {
       throw error
     }
-    // For other errors, return null
     return null
   }
 }
@@ -43,56 +42,65 @@ export default async function ProfileEditPage() {
       redirect("/auth/signin")
     }
 
+    const viewer = {
+      name: session.user.name,
+      email: session.user.email,
+      role: session.user.role,
+      accountType: session.user.accountType,
+    }
+
     const user = await getProfileData(session.user.id)
 
     if (!user) {
       redirect("/auth/signin")
     }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Cleared Mission Profile</h1>
-        <div className="mb-6">
-          <ResumeProfileUpload />
-        </div>
-        <ProfileEditForm user={user} />
-      </div>
-    </div>
-    )
-  } catch (error: any) {
-    console.error("Profile edit page error:", error)
     return (
-      <div className="min-h-screen bg-gray-50">
-        <NavbarAdvanced />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-yellow-900 mb-2">Database Migration Required</h2>
-            <p className="text-yellow-800 mb-4">
-              {error.message?.includes("column") || error.message?.includes("Unknown column") || error.code === "P2021" || error.code === "P2022"
-                ? "The database schema needs to be updated to include the new profile fields. Please run the migration."
-                : "An error occurred while loading the profile. Please try again."}
-            </p>
-            {(error.message?.includes("column") || error.code === "P2021" || error.code === "P2022") && (
-              <div className="bg-white rounded p-4 mb-4">
-                <p className="text-sm text-gray-700 mb-2">Run this command or use the admin migration button:</p>
-                <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                  npx prisma db push
-                </code>
-              </div>
-            )}
-            <a
-              href="/feed"
-              className="text-blue-600 hover:underline"
-            >
-              ← Back to Feed
-            </a>
-          </div>
+      <ClearDShell viewer={viewer}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <PageHeader
+            title="Edit Cleared Mission Profile"
+            description="Maintain clearance continuity, mission readiness, and validated capabilities."
+          />
+          <ResumeProfileUpload />
+          <ProfileEditForm user={user as any} />
         </div>
-      </div>
+      </ClearDShell>
+    )
+  } catch (error) {
+    const e = error as { message?: string; code?: string }
+    console.error("Profile edit page error:", e)
+    return (
+      <ClearDShell
+        viewer={{
+          name: null,
+          email: "",
+          role: "USER",
+          accountType: "CANDIDATE",
+        }}
+      >
+        <div className="max-w-4xl mx-auto py-8">
+          <Alert variant="warning">
+            <AlertTitle>Database Migration Required</AlertTitle>
+            <AlertDescription className="space-y-3">
+              <p>
+                {e.message?.includes("column") ||
+                e.message?.includes("Unknown column") ||
+                e.code === "P2021" ||
+                e.code === "P2022"
+                  ? "The database schema needs to be updated to include the new profile fields. Please run the migration."
+                  : "An error occurred while loading the profile. Please try again."}
+              </p>
+              <Link
+                href="/feed"
+                className="inline-flex items-center gap-1 text-primary hover:text-primary/80 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                ← Back to Feed
+              </Link>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </ClearDShell>
     )
   }
 }
-
-

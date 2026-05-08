@@ -1,19 +1,18 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import NavbarAdvanced from "@/components/NavbarAdvanced"
+import { Briefcase } from "lucide-react"
+import { ClearDShell } from "@/components/layout/cleard-shell"
+import { PageHeader } from "@/components/layout/page-header"
+import { Card, CardContent } from "@/components/ui/card"
 import JobCard from "@/components/JobCard"
+import JobFilters from "@/components/JobFilters"
 
 type JobForCard = {
   id: string
   title: string
   description?: string | null
-  company: {
-    id: string
-    name: string
-    slug: string
-    logo?: string | null
-  }
+  company: { id: string; name: string; slug: string; logo?: string | null }
   location?: string | null
   isRemote: boolean
   isHybrid: boolean
@@ -30,27 +29,12 @@ type JobForCard = {
 async function getJobs(): Promise<JobForCard[]> {
   try {
     const jobs = await prisma.job.findMany({
-      where: {
-        isActive: true,
-      },
+      where: { isActive: true },
       include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logo: true,
-          },
-        },
-        applications: {
-          select: {
-            id: true,
-          },
-        },
+        company: { select: { id: true, name: true, slug: true, logo: true } },
+        applications: { select: { id: true } },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       take: 50,
     })
 
@@ -102,34 +86,50 @@ export default async function JobsPage() {
   const jobs = await getJobs()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavbarAdvanced />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Jobs</h1>
-          <p className="text-gray-600">
-            Discover opportunities from top companies
-          </p>
-        </div>
+    <ClearDShell
+      viewer={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        accountType: session.user.accountType,
+      }}
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
+        <PageHeader
+          title="Jobs"
+          description="Mission-aligned roles from cleared employers and partner contractors."
+        />
 
-        {jobs.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">💼</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              No jobs available
-            </h2>
-            <p className="text-gray-600">
-              Check back soon for new opportunities!
-            </p>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <aside className="lg:col-span-1">
+            <JobFilters />
+          </aside>
+
+          <div className="lg:col-span-3">
+            {jobs.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="mx-auto w-12 h-12 rounded-md bg-secondary border border-border flex items-center justify-center mb-3 text-muted-foreground">
+                    <Briefcase className="h-5 w-5" aria-hidden />
+                  </div>
+                  <h2 className="text-base font-semibold text-foreground mb-1">
+                    No jobs available
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Check back soon for new opportunities.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {jobs.map((job: JobForCard) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="space-y-6">
-            {jobs.map((job: JobForCard) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </ClearDShell>
   )
 }
